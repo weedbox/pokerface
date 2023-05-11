@@ -36,7 +36,7 @@ type Status struct {
 	CurrentWager        int64          `json:"current_wager"`
 	CurrentRaiser       int            `json:"current_raiser"`
 	CurrentPlayer       int            `json:"current_player"`
-	CurrentEvent        WorkflowEvent  `json:"current_event"`
+	CurrentEvent        *WorkflowEvent `json:"current_event"`
 }
 
 type Pot struct {
