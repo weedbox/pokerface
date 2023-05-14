@@ -90,6 +90,7 @@ var (
 
 type Game interface {
 	ApplyOptions(opts *GameOptions) error
+	GetWaitGroup() *waitgroup.WaitGroup
 	GetState() *GameState
 	LoadState(gs *GameState) error
 	Player(idx int) Player
@@ -112,6 +113,10 @@ type game struct {
 
 func NewGame() *game {
 	return &game{}
+}
+
+func (g *game) GetWaitGroup() *waitgroup.WaitGroup {
+	return g.gs
 }
 
 func (g *game) GetState() *GameState {
@@ -287,10 +292,10 @@ func (g *game) PlayerLoop() error {
 
 	if p.ActionCount == 0 {
 		g.SetCurrentPlayer(p)
-		//TODO: finally, it should trigger PlayerDidAction event and p.ActionCount++
+		// finally, it should trigger PlayerDidAction event
 	} else if p.Idx != g.gs.Status.CurrentRaiser {
 		g.SetCurrentPlayer(p)
-		//TODO: finally, it should trigger PlayerDidAction event and p.ActionCount++
+		// finally, it should trigger PlayerDidAction event
 	} else {
 		g.SetCurrentPlayer(nil)
 		// No more player can move
@@ -539,7 +544,21 @@ func (g *game) onRoundInitialized() error {
 }
 
 func (g *game) onRoundPrepared() error {
-	//TODO
+
+	wg, err := g.WaitForAllPlayersReady()
+	if err != nil {
+		return err
+	}
+
+	if wg.IsCompleted() {
+		g.wg = nil
+
+		// All players is ready
+		return g.PlayerLoop()
+	}
+
+	// Nothing to do, just waiting for all players to be ready
+
 	return nil
 }
 

@@ -63,12 +63,17 @@ func (p *player) Ready() error {
 		return nil
 	}
 
-	// Check waitgroup type
-	if p.game.wg.Type != waitgroup.TypeReady {
+	wg := p.game.GetWaitGroup()
+	if wg == nil {
 		return nil
 	}
 
-	p.game.wg.GetStateByIdx(p.idx).State.State = true
+	// Check waitgroup type
+	if wg.Type != waitgroup.TypeReady {
+		return nil
+	}
+
+	wg.GetStateByIdx(p.idx).State.State = true
 
 	return nil
 }
@@ -89,8 +94,13 @@ func (p *player) PayAnte(chips int64) error {
 		return nil
 	}
 
+	wg := p.game.GetWaitGroup()
+	if wg == nil {
+		return nil
+	}
+
 	// Check waitgroup type
-	if p.game.wg.Type != waitgroup.TypePayAnte {
+	if wg.Type != waitgroup.TypePayAnte {
 		return nil
 	}
 
