@@ -23,3 +23,16 @@ var CombinationPowerShortDeck = []Combination{
 	CombinationFourOfAKind,
 	CombinationStraightFlush,
 }
+
+type PowerState struct {
+	Combination Combination
+	Score       uint64
+	Cards       []string
+}
+
+func (g *game) CalculatePower(p *PlayerState) *PowerState {
+
+	//TODO: calculate power with player state
+
+	return &PowerState{}
+}

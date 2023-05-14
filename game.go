@@ -655,7 +655,11 @@ func (g *game) onGameCompleted() error {
 }
 
 func (g *game) onSettlementRequested() error {
-	// TODO
+
+	ranks := g.CalculatePowerRanking()
+
+	//TODO: Calculate results with ranks
+
 	return g.EmitEvent(GameEvent_SettlementCompleted, nil)
 }
 
