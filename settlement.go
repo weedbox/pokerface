@@ -28,7 +28,7 @@ func (g *game) CalculatePowerRanking() []*RankInfo {
 	// Calculate power for all players
 	ranks := make([]*RankInfo, 0)
 	for _, p := range players {
-		powerState := g.CalculatePower(p)
+		powerState := g.CalculatePlayerPower(p)
 
 		ranks = append(ranks, &RankInfo{
 			Player: p,
