@@ -35,26 +35,18 @@ type PowerState struct {
 func (g *game) CalculatePlayerPower(p *PlayerState) *PowerState {
 
 	// calculate power with player state
-	powers := g.GetAllCombinationsByPlayer(p)
+	powers := g.GetAllPowersByPlayer(p)
 
 	// The first combination is the best result
 	return powers[0]
 }
 
-func (g *game) GetAllCombinationsByPlayer(p *PlayerState) []*PowerState {
+func (g *game) GetAllPowersByPlayer(p *PlayerState) []*PowerState {
 
 	powers := make([]*PowerState, 0)
-	combinations := make([][]string, 0)
-
-	if g.gs.Meta.RequiredHoleCardsCount == 0 {
-		//TODO:
-		combinations = append(combinations, []string{})
-	} else {
-		//TODO: must pick cards from hole cards
-		combinations = append(combinations, []string{})
-	}
 
 	// Calcuate power for all combinations
+	combinations := g.GetAllPossibileCombinations(p, g.gs.Meta.RequiredHoleCardsCount)
 	for _, c := range combinations {
 		ps := g.CalculateCombinationPower(c)
 		powers = append(powers, ps)
@@ -75,4 +67,13 @@ func (g *game) CalculateCombinationPower(cards []string) *PowerState {
 	return &PowerState{
 		Cards: cards,
 	}
+}
+
+func (g *game) GetAllPossibileCombinations(p *PlayerState, holeCardsCount int) [][]string {
+
+	combinations := make([][]string, 0)
+
+	//TODO
+
+	return combinations
 }
