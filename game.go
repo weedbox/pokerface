@@ -3,6 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
+
+	"github.com/cfsghost/pokerface/waitgroup"
 )
 
 type GameEvent int32
@@ -100,11 +102,12 @@ type Game interface {
 	SetCurrentPlayer(p *PlayerState) error
 	GetAllowedActions(player *PlayerState) []string
 	GetAllowedBetActions(player *PlayerState) []string
-	EmitEvent(event GameEvent, runtimePayload map[string]interface{}) error
+	EmitEvent(event GameEvent, runtime interface{}) error
 }
 
 type game struct {
 	gs *GameState
+	wg *waitgroup.WaitGroup
 }
 
 func NewGame() *game {
@@ -121,7 +124,9 @@ func (g *game) LoadState(gs *GameState) error {
 	// emit event if state has event
 	if g.gs.Status.CurrentEvent != nil {
 		event := GameEventBySymbol[g.gs.Status.CurrentEvent.Name]
-		g.emitEvent(event)
+
+		// Activate by the last event
+		g.EmitEvent(event, g.gs.Status.CurrentEvent.Runtime)
 	}
 
 	return nil
@@ -356,15 +361,6 @@ func (g *game) GetAllowedBetActions(player *PlayerState) []string {
 	return actions
 }
 
-func (g *game) WaitForAllPlayersReady() error {
-
-	wq := NewWaitGroup(len(g.gs.Players))
-
-	// Nothing to do, just waiting for players
-
-	return nil
-}
-
 func (g *game) triggerEvent(event GameEvent) error {
 
 	switch event {
@@ -444,11 +440,11 @@ func (g *game) triggerEvent(event GameEvent) error {
 	return nil
 }
 
-func (g *game) EmitEvent(event GameEvent, runtimePayload map[string]interface{}) error {
+func (g *game) EmitEvent(event GameEvent, runtime interface{}) error {
 
 	// Update current event
 	g.gs.Status.CurrentEvent.Name = GameEventSymbols[event]
-	g.gs.Status.CurrentEvent.Runtime = runtimePayload
+	g.gs.Status.CurrentEvent.Runtime = runtime
 
 	return g.triggerEvent(event)
 }
@@ -487,28 +483,36 @@ func (g *game) onStarted() error {
 }
 
 func (g *game) onInitialized() error {
-	// TODO: waiting for players to be ready, and trigger AnteRequested event
-	//return g.EmitEvent(GameEvent_AntePrepared)
 
-	// Initializing event runtime payload to store states
-	if g.gs.Status.CurrentEvent.Runtime == nil {
-
-		r := make(map[string]interface{})
-
-		playerWaitStates := make([]*PlayerWaitState, 0)
-		r["playerStates"] = playerWaitStates
-
-		g.gs.Status.CurrentEvent.Runtime = r
+	wg, err := g.WaitForAllPlayersReady()
+	if err != nil {
+		return err
 	}
 
-	//TODO
+	if wg.IsCompleted() {
+		g.wg = nil
+		return g.EmitEvent(GameEvent_AnteRequested, nil)
+	}
+
+	// Nothing to do, just waiting for all players to be ready
 
 	return nil
 }
 
 func (g *game) onAnteRequested() error {
-	// TODO: waiting for players to pay ante, and trigger AnteReceived event
-	//return g.EmitEvent(GameEvent_AnteReceived)
+
+	wg, err := g.WaitForAllPlayersPaidAnte()
+	if err != nil {
+		return err
+	}
+
+	if wg.IsCompleted() {
+		g.wg = nil
+		return g.EmitEvent(GameEvent_AnteReceived, nil)
+	}
+
+	// Nothing to do, just waiting for all players paid
+
 	return nil
 }
 

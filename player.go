@@ -1,5 +1,7 @@
 package main
 
+import "github.com/cfsghost/pokerface/waitgroup"
+
 type Player interface {
 	State() *PlayerState
 
@@ -61,7 +63,12 @@ func (p *player) Ready() error {
 		return nil
 	}
 
-	// Implement the logic for the Ready() function
+	// Check waitgroup type
+	if p.game.wg.Type != waitgroup.TypeReady {
+		return nil
+	}
+
+	p.game.wg.GetStateByIdx(p.idx).State.State = true
 
 	return nil
 }
@@ -73,6 +80,22 @@ func (p *player) Pass() error {
 	}
 
 	// Implement the logic for the Pass() function
+	return nil
+}
+
+func (p *player) PayAnte(chips int64) error {
+
+	if !p.CheckAction("pay_ante") {
+		return nil
+	}
+
+	// Check waitgroup type
+	if p.game.wg.Type != waitgroup.TypePayAnte {
+		return nil
+	}
+
+	//TODO: implement the logic for paying ante
+
 	return nil
 }
 
