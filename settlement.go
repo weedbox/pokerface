@@ -43,3 +43,10 @@ func (g *game) CalculatePowerRanking() []*RankInfo {
 
 	return ranks
 }
+
+func (g *game) CalculateGameResults([]*RankInfo) error {
+
+	//TODO: Calculate and update g.gs.Results
+
+	return nil
+}
