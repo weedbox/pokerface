@@ -35,7 +35,7 @@ var CombinationSymbol = map[Combination]string{
 // Flush			: 13 * 12 * 11 * 10 * 9 ~= 13^5				= 371,293
 // FullHouse		: 13(toak) * 12(pair) ~= 13^2				= 169
 // FourOfAKind		: 13(foak) * 12 ~= 13^2						= 169
-// StraightFlush	: 10(5~A) ~= 13^2							= 13
+// StraightFlush	: 10(5~A) ~= 13^1							= 13
 
 var CombinationLevel = map[Combination]uint64{
 	CombinationHighCard:      371293,
