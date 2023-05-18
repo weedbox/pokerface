@@ -73,7 +73,7 @@ func (p *player) Ready() error {
 		return nil
 	}
 
-	wg.GetStateByIdx(p.idx).State.State = true
+	wg.GetStateByIdx(p.idx).State = true
 
 	return nil
 }
