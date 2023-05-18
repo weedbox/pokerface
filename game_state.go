@@ -1,5 +1,7 @@
 package main
 
+import "github.com/cfsghost/pokerface/combination"
+
 type GameState struct {
 	GameID    string        `json:"game_id"`
 	CreatedAt int64         `json:"created_at"`
@@ -11,14 +13,14 @@ type GameState struct {
 }
 
 type Meta struct {
-	Ante                   int64         `json:"ante"`
-	Blind                  BlindSetting  `json:"blind"`
-	Limit                  string        `json:"limit"`
-	HoleCardsCount         int           `json:"hole_cards_count"`
-	RequiredHoleCardsCount int           `json:"required_hole_cards_count"`
-	CombinationPowers      []Combination `json:"combination_powers"`
-	Deck                   []string      `json:"deck"`
-	BurnCount              int           `json:"burn_count"`
+	Ante                   int64                     `json:"ante"`
+	Blind                  BlindSetting              `json:"blind"`
+	Limit                  string                    `json:"limit"`
+	HoleCardsCount         int                       `json:"hole_cards_count"`
+	RequiredHoleCardsCount int                       `json:"required_hole_cards_count"`
+	CombinationPowers      combination.PowerRankings `json:"combination_powers"`
+	Deck                   []string                  `json:"deck"`
+	BurnCount              int                       `json:"burn_count"`
 }
 
 type WorkflowEvent struct {

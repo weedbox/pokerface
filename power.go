@@ -1,38 +1,12 @@
 package main
 
-import "sort"
+import (
+	"sort"
 
-var CombinationPowerStandard = []Combination{
-	CombinationHighCard,
-	CombinationPair,
-	CombinationTwoPair,
-	CombinationThreeOfAKind,
-	CombinationStraight,
-	CombinationFlush,
-	CombinationFullHouse,
-	CombinationFourOfAKind,
-	CombinationStraightFlush,
-}
+	"github.com/cfsghost/pokerface/combination"
+)
 
-var CombinationPowerShortDeck = []Combination{
-	CombinationHighCard,
-	CombinationPair,
-	CombinationTwoPair,
-	CombinationThreeOfAKind,
-	CombinationStraight,
-	CombinationFullHouse,
-	CombinationFlush,
-	CombinationFourOfAKind,
-	CombinationStraightFlush,
-}
-
-type PowerState struct {
-	Combination Combination
-	Score       uint64
-	Cards       []string
-}
-
-func (g *game) CalculatePlayerPower(p *PlayerState) *PowerState {
+func (g *game) CalculatePlayerPower(p *PlayerState) *combination.PowerState {
 
 	// calculate power with player state
 	powers := g.GetAllPowersByPlayer(p)
@@ -41,9 +15,9 @@ func (g *game) CalculatePlayerPower(p *PlayerState) *PowerState {
 	return powers[0]
 }
 
-func (g *game) GetAllPowersByPlayer(p *PlayerState) []*PowerState {
+func (g *game) GetAllPowersByPlayer(p *PlayerState) []*combination.PowerState {
 
-	powers := make([]*PowerState, 0)
+	powers := make([]*combination.PowerState, 0)
 
 	// Calcuate power for all combinations
 	combinations := g.GetAllPossibileCombinations(p, g.gs.Meta.RequiredHoleCardsCount)
@@ -60,20 +34,34 @@ func (g *game) GetAllPowersByPlayer(p *PlayerState) []*PowerState {
 	return powers
 }
 
-func (g *game) CalculateCombinationPower(cards []string) *PowerState {
-
-	//TODO: Calculate score
-
-	return &PowerState{
-		Cards: cards,
-	}
+func (g *game) CalculateCombinationPower(cards []string) *combination.PowerState {
+	return combination.CalculatePower(g.gs.Meta.CombinationPowers, cards)
 }
 
 func (g *game) GetAllPossibileCombinations(p *PlayerState, holeCardsCount int) [][]string {
 
 	combinations := make([][]string, 0)
 
-	//TODO
+	if holeCardsCount == 0 {
+		allCards := make([]string, 0)
+		allCards = append(allCards, p.HoleCards...)
+		allCards = append(allCards, g.gs.Status.Board...)
+		return combination.GetAllPossibleCombinations(allCards, 5)
+	}
+
+	holeCardCombinations := combination.GetAllPossibleCombinations(p.HoleCards, holeCardsCount)
+	boardCardCombinations := combination.GetAllPossibleCombinations(g.gs.Status.Board, 5-holeCardsCount)
+
+	for _, cards := range holeCardCombinations {
+		allCards := make([]string, 0)
+		allCards = append(allCards, cards...)
+
+		for _, bCards := range boardCardCombinations {
+			allCards = append(allCards, bCards...)
+		}
+
+		combinations = append(combinations, allCards)
+	}
 
 	return combinations
 }

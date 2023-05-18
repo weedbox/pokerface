@@ -21,7 +21,7 @@ func (g *game) GetAlivePlayers() []*PlayerState {
 	return players
 }
 
-func (g *game) CalculatePowerRanking() []*RankInfo {
+func (g *game) CalculatePlayersRanking() []*RankInfo {
 
 	players := g.GetAlivePlayers()
 

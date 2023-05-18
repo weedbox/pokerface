@@ -1,14 +1,16 @@
 package main
 
+import "github.com/cfsghost/pokerface/combination"
+
 type GameOptions struct {
-	Ante                   int64         `json:"ante"`
-	Blind                  BlindSetting  `json:"blind"`
-	Limit                  string        `json:"limit"`
-	HoleCardsCount         int           `json:"hole_cards_count"`
-	RequiredHoleCardsCount int           `json:"required_hole_cards_count"`
-	CombinationPowers      []Combination `json:"combination_powers"`
-	Deck                   []string      `json:"deck"`
-	BurnCount              int           `json:"burn_count"`
+	Ante                   int64                     `json:"ante"`
+	Blind                  BlindSetting              `json:"blind"`
+	Limit                  string                    `json:"limit"`
+	HoleCardsCount         int                       `json:"hole_cards_count"`
+	RequiredHoleCardsCount int                       `json:"required_hole_cards_count"`
+	CombinationPowers      []combination.Combination `json:"combination_powers"`
+	Deck                   []string                  `json:"deck"`
+	BurnCount              int                       `json:"burn_count"`
 }
 
 type BlindSetting struct {
@@ -28,7 +30,7 @@ func NewStardardGameOptions() *GameOptions {
 		Limit:                  "no",
 		HoleCardsCount:         2,
 		RequiredHoleCardsCount: 0,
-		CombinationPowers:      CombinationPowerStandard,
+		CombinationPowers:      combination.CombinationPowerStandard,
 		//Deck
 		BurnCount: 1,
 	}
@@ -36,7 +38,7 @@ func NewStardardGameOptions() *GameOptions {
 func NewShortDeckGameOptions() *GameOptions {
 
 	opts := NewStardardGameOptions()
-	opts.CombinationPowers = CombinationPowerShortDeck
+	opts.CombinationPowers = combination.CombinationPowerShortDeck
 	opts.RequiredHoleCardsCount = 2
 
 	return opts

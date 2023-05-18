@@ -656,7 +656,7 @@ func (g *game) onGameCompleted() error {
 
 func (g *game) onSettlementRequested() error {
 
-	ranks := g.CalculatePowerRanking()
+	ranks := g.CalculatePlayersRanking()
 
 	// Calculate results with ranks
 	err := g.CalculateGameResults(ranks)
