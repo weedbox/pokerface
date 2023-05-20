@@ -116,7 +116,7 @@ func NewGame() *game {
 }
 
 func (g *game) GetWaitGroup() *waitgroup.WaitGroup {
-	return g.gs
+	return g.wg
 }
 
 func (g *game) GetState() *GameState {
@@ -271,20 +271,26 @@ func (g *game) SetCurrentPlayer(p *PlayerState) error {
 	return nil
 }
 
-func (g *game) PlayerLoop() error {
+func (g *game) AlivePlayerCount() int {
 
-	liveCount := len(g.gs.Players)
+	aliveCount := len(g.gs.Players)
 
 	for _, p := range g.gs.Players {
 		if p.Fold {
-			liveCount--
+			aliveCount--
 		}
 	}
 
+	return aliveCount
+}
+
+func (g *game) PlayerLoop() error {
+
+	aliveCount := g.AlivePlayerCount()
+
 	// only one player left
-	if liveCount < 2 {
-		// Game is completed
-		return g.EmitEvent(GameEvent_GameCompleted, nil)
+	if aliveCount == 1 {
+		return g.EmitEvent(GameEvent_RoundClosed, nil)
 	}
 
 	// next player
@@ -630,7 +636,19 @@ func (g *game) onRiverRoundEntered() error {
 
 func (g *game) onRoundClosed() error {
 
+	// Update pots
+	err := g.updatePots()
+	if err != nil {
+		return err
+	}
+
 	g.ResetAllPlayerStatus()
+
+	aliveCount := g.AlivePlayerCount()
+	if aliveCount == 1 {
+		// Game is completed
+		return g.EmitEvent(GameEvent_GameCompleted, nil)
+	}
 
 	switch g.gs.Status.Round {
 	case "preflop":

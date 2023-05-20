@@ -1,6 +1,9 @@
 package main
 
-import "github.com/cfsghost/pokerface/combination"
+import (
+	"github.com/cfsghost/pokerface/combination"
+	"github.com/cfsghost/pokerface/pot"
+)
 
 type GameState struct {
 	GameID    string        `json:"game_id"`
@@ -30,7 +33,7 @@ type WorkflowEvent struct {
 
 type Status struct {
 	MiniBet             int64          `json:"min_bet"`
-	Pots                map[string]Pot `json:"pots"`
+	Pots                []*pot.Pot     `json:"pots"`
 	Round               string         `json:"round"`
 	Burned              []string       `json:"burned"`
 	Board               []string       `json:"board"`
@@ -39,11 +42,6 @@ type Status struct {
 	CurrentRaiser       int            `json:"current_raiser"`
 	CurrentPlayer       int            `json:"current_player"`
 	CurrentEvent        *WorkflowEvent `json:"current_event"`
-}
-
-type Pot struct {
-	Chips        int   `json:"chips"`
-	Contributers []int `json:"contributers"`
 }
 
 type PlayerState struct {
