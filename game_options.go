@@ -11,12 +11,18 @@ type GameOptions struct {
 	CombinationPowers      []combination.Combination `json:"combination_powers"`
 	Deck                   []string                  `json:"deck"`
 	BurnCount              int                       `json:"burn_count"`
+	Players                []*PlayerSetting          `json:"players"`
 }
 
 type BlindSetting struct {
 	Dealer int64 `json:"dealer"`
 	SB     int64 `json:"sb"`
 	BB     int64 `json:"bb"`
+}
+
+type PlayerSetting struct {
+	Bankroll  int64    `json:"bankroll"`
+	Positions []string `json:"positions"`
 }
 
 func NewStardardGameOptions() *GameOptions {
@@ -33,6 +39,7 @@ func NewStardardGameOptions() *GameOptions {
 		CombinationPowers:      combination.CombinationPowerStandard,
 		//Deck
 		BurnCount: 1,
+		Players:   make([]*PlayerSetting, 0),
 	}
 }
 func NewShortDeckGameOptions() *GameOptions {

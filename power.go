@@ -18,7 +18,7 @@ func (g *game) CalculatePlayerPower(p *PlayerState) *combination.PowerState {
 func (g *game) UpdateCombinationOfAllPlayers() error {
 
 	for _, p := range g.gs.Players {
-		ps := g.CalculatePlayerPower(&p)
+		ps := g.CalculatePlayerPower(p)
 
 		p.Combination.Type = combination.CombinationSymbol[ps.Combination]
 

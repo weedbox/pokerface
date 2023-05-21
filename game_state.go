@@ -12,7 +12,7 @@ type GameState struct {
 	UpdatedAt int64              `json:"updated_at"`
 	Meta      Meta               `json:"meta"`
 	Status    Status             `json:"status"`
-	Players   []PlayerState      `json:"players"`
+	Players   []*PlayerState     `json:"players"`
 	Result    *settlement.Result `json:"result"`
 }
 
@@ -47,20 +47,20 @@ type Status struct {
 
 type PlayerState struct {
 	Idx              int             `json:"idx"`
-	Position         []string        `json:"position"`
-	DidAction        string          `json:"did_action"`
+	Positions        []string        `json:"positions"`
+	DidAction        string          `json:"did_action,omitempty"`
 	Bankroll         int64           `json:"bankroll"`
 	InitialStackSize int64           `json:"initial_stack_size"` // bankroll - pot
 	StackSize        int64           `json:"stack_size"`         // initial_stack_size - wager
 	Pot              int64           `json:"pot"`
 	Wager            int64           `json:"wager"`
-	HoleCards        []string        `json:"hole_cards"`
+	HoleCards        []string        `json:"hole_cards,omitempty"`
 	Fold             bool            `json:"fold"`
 	ActionCount      int             `json:"action_count"`
 	Combination      CombinationInfo `json:"combination"`
 
 	// Actions
-	AllowedActions []string `json:"allowed_actions"`
+	AllowedActions []string `json:"allowed_actions,omitempty"`
 }
 
 type CombinationInfo struct {

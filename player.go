@@ -29,7 +29,7 @@ func (p *player) State() *PlayerState {
 		return nil
 	}
 
-	return &state.Players[p.idx]
+	return state.Players[p.idx]
 }
 
 func (p *player) AllowActions(actions []string) error {

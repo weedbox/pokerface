@@ -17,7 +17,7 @@ func (g *game) GetAlivePlayers() []*PlayerState {
 
 		// Find the player who did not fold
 		if !p.Fold {
-			players = append(players, &p)
+			players = append(players, p)
 		}
 	}
 

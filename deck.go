@@ -44,7 +44,7 @@ func NewStandardDeckCards() []string {
 
 	for _, suit := range CardSuits {
 		for i := 0; i < 13; i++ {
-			cards = append(cards, fmt.Sprintf("%s%d", suit, CardPoints[i]))
+			cards = append(cards, fmt.Sprintf("%s%s", suit, CardPoints[i]))
 		}
 	}
 
@@ -59,7 +59,7 @@ func NewShortDeckCards() []string {
 
 		// Take off 2, 3, 4 and 5
 		for i := 4; i < 13; i++ {
-			cards = append(cards, fmt.Sprintf("%s%d", suit, CardPoints[i]))
+			cards = append(cards, fmt.Sprintf("%s%s", suit, CardPoints[i]))
 		}
 	}
 

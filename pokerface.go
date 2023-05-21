@@ -1,7 +1,14 @@
 package main
 
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
+
 type PokerFace interface {
-	NewGame() Game
+	NewGame(opts *GameOptions) Game
+	NewGameFromState(gs *GameState) Game
 }
 
 type pokerface struct {
@@ -11,6 +18,16 @@ func NewPokerFace() PokerFace {
 	return &pokerface{}
 }
 
-func (pf *pokerface) NewGame() Game {
-	return NewGame()
+func (pf *pokerface) NewGame(opts *GameOptions) Game {
+	g := NewGame(opts)
+	s := g.GetState()
+	s.GameID = uuid.New().String()
+	s.CreatedAt = time.Now().Unix()
+	s.UpdatedAt = time.Now().Unix()
+
+	return g
+}
+
+func (pf *pokerface) NewGameFromState(gs *GameState) Game {
+	return NewGameFromState(gs)
 }

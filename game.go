@@ -111,8 +111,16 @@ type game struct {
 	wg *waitgroup.WaitGroup
 }
 
-func NewGame() *game {
-	return &game{}
+func NewGame(opts *GameOptions) *game {
+	g := &game{}
+	g.ApplyOptions(opts)
+	return g
+}
+
+func NewGameFromState(gs *GameState) *game {
+	g := &game{}
+	g.LoadState(gs)
+	return g
 }
 
 func (g *game) GetWaitGroup() *waitgroup.WaitGroup {
@@ -152,6 +160,27 @@ func (g *game) ApplyOptions(opts *GameOptions) error {
 		},
 	}
 
+	// Loading players
+	g.gs.Players = make([]*PlayerState, 0)
+	for idx, p := range opts.Players {
+		g.AddPlayer(idx, p)
+	}
+
+	return nil
+}
+
+func (g *game) AddPlayer(idx int, setting *PlayerSetting) error {
+
+	ps := &PlayerState{
+		Idx:              idx,
+		Positions:        setting.Positions,
+		Bankroll:         setting.Bankroll,
+		InitialStackSize: setting.Bankroll,
+		StackSize:        setting.Bankroll,
+	}
+
+	g.gs.Players = append(g.gs.Players, ps)
+
 	return nil
 }
 
@@ -166,7 +195,7 @@ func (g *game) Player(idx int) Player {
 	return &player{
 		idx:   idx,
 		game:  g,
-		state: &p,
+		state: p,
 	}
 }
 
@@ -190,9 +219,9 @@ func (g *game) Burn(count int) error {
 func (g *game) FindDealer() *PlayerState {
 
 	for _, p := range g.gs.Players {
-		for _, pos := range p.Position {
+		for _, pos := range p.Positions {
 			if pos == "dealer" {
-				return &p
+				return p
 			}
 		}
 	}
@@ -247,7 +276,7 @@ func (g *game) NextMovablePlayer() *PlayerState {
 
 		// Find the player who did not fold
 		if !p.Fold {
-			return &p
+			return p
 		}
 	}
 
