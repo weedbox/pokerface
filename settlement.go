@@ -1,12 +1,13 @@
 package main
 
 import (
+	"github.com/cfsghost/pokerface/combination"
 	"github.com/cfsghost/pokerface/settlement"
 )
 
 type RankInfo struct {
 	Player *PlayerState
-	Power  *PowerState
+	Power  *combination.PowerState
 }
 
 func (g *game) GetAlivePlayers() []*PlayerState {

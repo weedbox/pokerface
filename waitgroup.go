@@ -32,7 +32,7 @@ func (g *game) WaitForAllPlayersReady() (*waitgroup.WaitGroup, error) {
 			continue
 		}
 
-		if s.State {
+		if s.State.(bool) {
 			continue
 		}
 
@@ -77,7 +77,7 @@ func (g *game) WaitForAllPlayersPaidAnte() (*waitgroup.WaitGroup, error) {
 			continue
 		}
 
-		if s.State {
+		if s.State.(bool) {
 			continue
 		}
 
