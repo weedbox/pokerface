@@ -28,8 +28,8 @@ type Meta struct {
 }
 
 type WorkflowEvent struct {
-	Name    string      `json:"name"`
-	Runtime interface{} `json:"runtime"`
+	Name    string      `json:"name,omitempty"`
+	Runtime interface{} `json:"runtime,omitempty"`
 }
 
 type Status struct {

@@ -75,6 +75,8 @@ func (p *player) Ready() error {
 
 	wg.GetStateByIdx(p.idx).State = true
 
+	p.game.Resume()
+
 	return nil
 }
 
@@ -105,6 +107,7 @@ func (p *player) PayAnte(chips int64) error {
 	}
 
 	//TODO: implement the logic for paying ante
+	p.game.Resume()
 
 	return nil
 }

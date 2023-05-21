@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -38,25 +39,25 @@ const (
 	GameEvent_GameClosed
 )
 
-var GameEventSymbols = []string{
-	"Started",
-	"Initialized",
-	"AnteRequested",
-	"AnteReceived",
-	"Dealt",
-	"WagerRequested",
-	"PreflopRoundEntered",
-	"FlopRoundEntered",
-	"TurnRoundEntered",
-	"RiverRoundEntered",
-	"RoundInitialized",
-	"RoundPrepared",
-	"RoundClosed",
-	"PlayerDidAction",
-	"GameCompleted",
-	"SettlementRequested",
-	"SettlementCompleted",
-	"GameClosed",
+var GameEventSymbols = map[GameEvent]string{
+	GameEvent_Started:             "Started",
+	GameEvent_Initialized:         "Initialized",
+	GameEvent_AnteRequested:       "AnteRequested",
+	GameEvent_AnteReceived:        "AnteReceived",
+	GameEvent_Dealt:               "Dealt",
+	GameEvent_WagerRequested:      "WagerRequested",
+	GameEvent_PreflopRoundEntered: "PreflopRoundEntered",
+	GameEvent_FlopRoundEntered:    "FlopRoundEntered",
+	GameEvent_TurnRoundEntered:    "TurnRoundEntered",
+	GameEvent_RiverRoundEntered:   "RiverRoundEntered",
+	GameEvent_RoundInitialized:    "RoundInitialized",
+	GameEvent_RoundPrepared:       "RoundPrepared",
+	GameEvent_RoundClosed:         "RoundClosed",
+	GameEvent_PlayerDidAction:     "PlayerDidAction",
+	GameEvent_GameCompleted:       "GameCompleted",
+	GameEvent_SettlementRequested: "SettlementRequested",
+	GameEvent_SettlementCompleted: "SettlementCompleted",
+	GameEvent_GameClosed:          "GameClosed",
 }
 
 var GameEventBySymbol = map[string]GameEvent{
@@ -90,8 +91,11 @@ var (
 
 type Game interface {
 	ApplyOptions(opts *GameOptions) error
+	Start() error
+	Resume() error
 	GetWaitGroup() *waitgroup.WaitGroup
 	GetState() *GameState
+	GetStateJSON() ([]byte, error)
 	LoadState(gs *GameState) error
 	Player(idx int) Player
 	Deal(count int) []string
@@ -131,8 +135,18 @@ func (g *game) GetState() *GameState {
 	return g.gs
 }
 
+func (g *game) GetStateJSON() ([]byte, error) {
+	return json.Marshal(g.gs)
+}
+
 func (g *game) LoadState(gs *GameState) error {
 	g.gs = gs
+	return g.Resume()
+}
+
+func (g *game) Resume() error {
+
+	fmt.Println("Resume")
 
 	// emit event if state has event
 	if g.gs.Status.CurrentEvent != nil {
@@ -148,6 +162,7 @@ func (g *game) LoadState(gs *GameState) error {
 func (g *game) ApplyOptions(opts *GameOptions) error {
 
 	g.gs = &GameState{
+		Players: make([]*PlayerState, 0),
 		Meta: Meta{
 			Ante:                   opts.Ante,
 			Blind:                  opts.Blind,
@@ -161,12 +176,19 @@ func (g *game) ApplyOptions(opts *GameOptions) error {
 	}
 
 	// Loading players
-	g.gs.Players = make([]*PlayerState, 0)
 	for idx, p := range opts.Players {
 		g.AddPlayer(idx, p)
 	}
 
 	return nil
+}
+
+func (g *game) Start() error {
+
+	// Initializing game status
+	g.gs.Status.CurrentEvent = &WorkflowEvent{}
+
+	return g.EmitEvent(GameEvent_Started, nil)
 }
 
 func (g *game) AddPlayer(idx int, setting *PlayerSetting) error {

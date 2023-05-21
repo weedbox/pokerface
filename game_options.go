@@ -37,9 +37,9 @@ func NewStardardGameOptions() *GameOptions {
 		HoleCardsCount:         2,
 		RequiredHoleCardsCount: 0,
 		CombinationPowers:      combination.CombinationPowerStandard,
-		//Deck
-		BurnCount: 1,
-		Players:   make([]*PlayerSetting, 0),
+		Deck:                   make([]string, 0),
+		BurnCount:              1,
+		Players:                make([]*PlayerSetting, 0),
 	}
 }
 func NewShortDeckGameOptions() *GameOptions {
