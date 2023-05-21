@@ -1,9 +1,6 @@
 package main
 
 import (
-	"sort"
-
-	"github.com/cfsghost/pokerface/pot"
 	"github.com/cfsghost/pokerface/settlement"
 )
 
@@ -26,45 +23,37 @@ func (g *game) GetAlivePlayers() []*PlayerState {
 	return players
 }
 
+/*
 func (g *game) CalculatePlayersRanking() []*RankInfo {
 
-	players := g.GetAlivePlayers()
+		players := g.GetAlivePlayers()
 
-	// Calculate power for all players
-	ranks := make([]*RankInfo, 0)
-	for _, p := range players {
-		powerState := g.CalculatePlayerPower(p)
+		// Calculate power for all players
+		ranks := make([]*RankInfo, 0)
+		for _, p := range players {
+			powerState := g.CalculatePlayerPower(p)
 
-		ranks = append(ranks, &RankInfo{
-			Player: p,
-			Power:  powerState,
+			ranks = append(ranks, &RankInfo{
+				Player: p,
+				Power:  powerState,
+			})
+		}
+
+		// Sort by power score
+		sort.Slice(ranks, func(i, j int) bool {
+			return ranks[i].Power.Score > ranks[j].Power.Score
 		})
+
+		return ranks
 	}
-
-	// Sort by power score
-	sort.Slice(ranks, func(i, j int) bool {
-		return ranks[i].Power.Score > ranks[j].Power.Score
-	})
-
-	return ranks
-}
-
+*/
 func (g *game) CalculateGameResults() error {
 
-	r := &settlement.Result{
-		Players: make([]*settlement.PlayerResult, 0),
-		Pots:    make([]*settlement.PotResult, 0),
-	}
+	r := settlement.NewResult()
 
 	// Initializing player results
 	for _, p := range g.gs.Players {
-		pr := &settlement.PlayerResult{
-			Idx:     p.Idx,
-			Final:   p.Bankroll,
-			Changed: 0,
-		}
-
-		r.Players = append(r.Players, pr)
+		r.AddPlayer(p.Idx, p.StackSize)
 	}
 
 	// Initializing pot results
@@ -72,45 +61,26 @@ func (g *game) CalculateGameResults() error {
 		r.AddPot(pot.Total)
 	}
 
-	// Update winner and loser results for each pot
+	// Add contributers to each pot
 	for potIdx, pot := range g.gs.Status.Pots {
 
-		potRank := g.CalculatePotRank(pot)
-		winners := potRank.GetWinners()
+		for _, c := range pot.Contributers {
+			player := g.Player(c).State()
 
-		// Calculate chips for multiple winners of this pot
-		chips := pot.Total / int64(len(winners))
+			// No score if player fold already
+			if player.Fold {
+				r.AddContributer(potIdx, c, 0)
+				continue
+			}
 
-		//TODO: Solve problem that chips of pot is indivisible by winners
-
-		for _, wIdx := range winners {
-			r.Withdraw(potIdx, wIdx, chips)
-		}
-
-		// Update loser results (should be negtive)
-		losers := potRank.GetLoser()
-		for _, lIdx := range losers {
-			r.Withdraw(potIdx, lIdx, -pot.Wager)
+			r.AddContributer(potIdx, c, player.Combination.Power)
 		}
 	}
+
+	r.Calculate()
+
+	// Update state
+	g.gs.Result = r
 
 	return nil
-}
-
-func (g *game) CalculatePotRank(p *pot.Pot) *pot.PotRank {
-
-	pr := pot.NewPotRank()
-	for _, c := range p.Contributers {
-		ps := g.Player(c).State()
-		if ps.Fold {
-			pr.AddContributer(0, c)
-			continue
-		}
-
-		pr.AddContributer(g.Player(c).State().Combination.Power, c)
-	}
-
-	pr.Calculate()
-
-	return pr
 }

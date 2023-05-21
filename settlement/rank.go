@@ -1,4 +1,4 @@
-package pot
+package settlement
 
 import "sort"
 
@@ -8,16 +8,20 @@ type RankGroup struct {
 }
 
 type PotRank struct {
-	groups []*RankGroup
+	contributerCount int
+	groups           []*RankGroup
 }
 
 func NewPotRank() *PotRank {
 	return &PotRank{
-		groups: make([]*RankGroup, 0),
+		contributerCount: 0,
+		groups:           make([]*RankGroup, 0),
 	}
 }
 
 func (pr *PotRank) AddContributer(score int, contributerIdx int) {
+
+	pr.contributerCount++
 
 	for _, g := range pr.groups {
 
@@ -44,6 +48,10 @@ func (pr *PotRank) Calculate() {
 	sort.Slice(pr.groups, func(i, j int) bool {
 		return pr.groups[i].Score > pr.groups[j].Score
 	})
+}
+
+func (pr *PotRank) ContributerCount() int {
+	return pr.contributerCount
 }
 
 func (pr *PotRank) GetWinners() []int {
