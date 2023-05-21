@@ -89,10 +89,21 @@ func (r *Result) CalculateWagerOfPot(total int64, contributerCount int) int64 {
 	return total / int64(contributerCount)
 }
 
-func (r *Result) CalculateWinnerRewards(total int64, winnerCount int) int64 {
+func (r *Result) CalculateWinnerRewards(potIdx int, wager int64, total int64, winners []int) {
 
-	//TODO: Solve problem that chips of pot is indivisible by winners
-	return total / int64(winnerCount)
+	based := total / int64(len(winners))
+	remainder := total % int64(len(winners))
+
+	for i, wIdx := range winners {
+
+		reward := based
+
+		if int64(i) < remainder {
+			reward += 1
+		}
+
+		r.Update(potIdx, wIdx, reward-wager)
+	}
 }
 
 func (r *Result) Calculate() {
@@ -105,14 +116,9 @@ func (r *Result) Calculate() {
 		// Calculate contributer ranks of this pot by score
 		pot.rank.Calculate()
 
-		winners := pot.rank.GetWinners()
-
 		// Calculate chips for multiple winners of this pot
-		chips := r.CalculateWinnerRewards(pot.Chips, len(winners))
-
-		for _, wIdx := range winners {
-			r.Update(potIdx, wIdx, chips-wager)
-		}
+		winners := pot.rank.GetWinners()
+		r.CalculateWinnerRewards(potIdx, wager, pot.Chips, winners)
 
 		// Update loser results (should be negtive)
 		losers := pot.rank.GetLoser()
