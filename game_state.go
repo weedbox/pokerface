@@ -3,16 +3,17 @@ package main
 import (
 	"github.com/cfsghost/pokerface/combination"
 	"github.com/cfsghost/pokerface/pot"
+	"github.com/cfsghost/pokerface/settlement"
 )
 
 type GameState struct {
-	GameID    string        `json:"game_id"`
-	CreatedAt int64         `json:"created_at"`
-	UpdatedAt int64         `json:"updated_at"`
-	Meta      Meta          `json:"meta"`
-	Status    Status        `json:"status"`
-	Players   []PlayerState `json:"players"`
-	Result    Result        `json:"result"`
+	GameID    string             `json:"game_id"`
+	CreatedAt int64              `json:"created_at"`
+	UpdatedAt int64              `json:"updated_at"`
+	Meta      Meta               `json:"meta"`
+	Status    Status             `json:"status"`
+	Players   []PlayerState      `json:"players"`
+	Result    *settlement.Result `json:"result"`
 }
 
 type Meta struct {
@@ -66,25 +67,4 @@ type CombinationInfo struct {
 	Type  string   `json:"type"`
 	Cards []string `json:"cards"`
 	Power int      `json:"power"`
-}
-
-type Result struct {
-	Players []PlayerResult `json:"players"`
-	Pots    []PotResult    `json:"pots"`
-}
-
-type PlayerResult struct {
-	Idx     int   `json:"idx"`
-	Final   int64 `json:"final"`
-	Changed int64 `json:"changed"`
-}
-
-type PotResult struct {
-	Chips   int64    `json:"chips"`
-	Winners []Winner `json:"winners"`
-}
-
-type Winner struct {
-	Idx   int   `json:"idx"`
-	Chips int64 `json:"chips"`
 }

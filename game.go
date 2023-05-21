@@ -532,17 +532,22 @@ func (g *game) onAnteReceived() error {
 }
 
 func (g *game) onRoundInitialized() error {
-	//return g.EmitEvent(GameEvent_RoundClosed)
 
-	// Preparing round
-	if g.gs.Meta.Blind.Dealer > 0 || g.gs.Meta.Blind.SB > 0 || g.gs.Meta.Blind.BB > 0 {
-		//TODO: required players to pay for blinds
-	} else {
+	err := g.UpdateCombinationOfAllPlayers()
+	if err != nil {
+		return err
+	}
 
-		// Start at dealer
-		_, err := g.StartAtDealer()
-		if err != nil {
-			return err
+	if g.gs.Status.Round == "preflop" {
+		if g.gs.Meta.Blind.Dealer > 0 || g.gs.Meta.Blind.SB > 0 || g.gs.Meta.Blind.BB > 0 {
+			//TODO: required players to pay for blinds
+		} else {
+
+			// Start at dealer
+			_, err := g.StartAtDealer()
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -674,10 +679,11 @@ func (g *game) onGameCompleted() error {
 
 func (g *game) onSettlementRequested() error {
 
-	ranks := g.CalculatePlayersRanking()
+	//Note: this task is not required because we done need player ranking
+	//ranks := g.CalculatePlayersRanking()
 
 	// Calculate results with ranks
-	err := g.CalculateGameResults(ranks)
+	err := g.CalculateGameResults()
 	if err != nil {
 		return err
 	}

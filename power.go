@@ -15,6 +15,23 @@ func (g *game) CalculatePlayerPower(p *PlayerState) *combination.PowerState {
 	return powers[0]
 }
 
+func (g *game) UpdateCombinationOfAllPlayers() error {
+
+	for _, p := range g.gs.Players {
+		ps := g.CalculatePlayerPower(&p)
+
+		p.Combination.Type = combination.CombinationSymbol[ps.Combination]
+
+		for _, c := range ps.Cards {
+			p.Combination.Cards = append(p.Combination.Cards, c.ToString())
+		}
+
+		p.Combination.Power = int(ps.Score)
+	}
+
+	return nil
+}
+
 func (g *game) GetAllPowersByPlayer(p *PlayerState) []*combination.PowerState {
 
 	powers := make([]*combination.PowerState, 0)
