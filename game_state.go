@@ -13,7 +13,7 @@ type GameState struct {
 	Meta      Meta               `json:"meta"`
 	Status    Status             `json:"status"`
 	Players   []*PlayerState     `json:"players"`
-	Result    *settlement.Result `json:"result"`
+	Result    *settlement.Result `json:"result,omitempty"`
 }
 
 type Meta struct {
