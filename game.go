@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/cfsghost/pokerface/pot"
 	"github.com/cfsghost/pokerface/waitgroup"
 )
 
@@ -146,11 +147,11 @@ func (g *game) LoadState(gs *GameState) error {
 
 func (g *game) Resume() error {
 
-	fmt.Println("Resume")
-
 	// emit event if state has event
 	if g.gs.Status.CurrentEvent != nil {
 		event := GameEventBySymbol[g.gs.Status.CurrentEvent.Name]
+
+		fmt.Printf("Resume: %s\n", g.gs.Status.CurrentEvent.Name)
 
 		// Activate by the last event
 		g.EmitEvent(event, g.gs.Status.CurrentEvent.Runtime)
@@ -186,6 +187,7 @@ func (g *game) ApplyOptions(opts *GameOptions) error {
 func (g *game) Start() error {
 
 	// Initializing game status
+	g.gs.Status.Pots = make([]*pot.Pot, 0)
 	g.gs.Status.CurrentEvent = &WorkflowEvent{}
 
 	return g.EmitEvent(GameEvent_Started, nil)
@@ -221,13 +223,47 @@ func (g *game) Player(idx int) Player {
 	}
 }
 
+func (g *game) Dealer() Player {
+	for _, ps := range g.gs.Players {
+		p := g.Player(ps.Idx)
+		if p.CheckPosition("dealer") {
+			return p
+		}
+	}
+
+	return nil
+}
+
+func (g *game) SmallBlind() Player {
+	for _, ps := range g.gs.Players {
+		p := g.Player(ps.Idx)
+		if p.CheckPosition("sb") {
+			return p
+		}
+	}
+
+	return nil
+}
+
+func (g *game) BigBlind() Player {
+	for _, ps := range g.gs.Players {
+		p := g.Player(ps.Idx)
+		if p.CheckPosition("bb") {
+			return p
+		}
+	}
+
+	return nil
+}
+
 func (g *game) Deal(count int) []string {
 
 	cards := make([]string, 0, count)
 
 	finalPos := g.gs.Status.CurrentDeckPosition + count
-	for i := g.gs.Status.CurrentDeckPosition + 1; i <= finalPos; i++ {
+	for i := g.gs.Status.CurrentDeckPosition; i < finalPos; i++ {
 		cards = append(cards, g.gs.Meta.Deck[i])
+		g.gs.Status.CurrentDeckPosition++
 	}
 
 	return cards
@@ -553,7 +589,12 @@ func (g *game) onInitialized() error {
 
 	if wg.IsCompleted() {
 		g.wg = nil
-		return g.EmitEvent(GameEvent_AnteRequested, nil)
+
+		if g.gs.Meta.Ante > 0 {
+			return g.EmitEvent(GameEvent_AnteRequested, nil)
+		}
+
+		return g.EmitEvent(GameEvent_PreflopRoundEntered, nil)
 	}
 
 	// Nothing to do, just waiting for all players to be ready
@@ -579,11 +620,21 @@ func (g *game) onAnteRequested() error {
 }
 
 func (g *game) onAnteReceived() error {
+
+	// Update pots
+	err := g.updatePots()
+	if err != nil {
+		return err
+	}
+
+	g.ResetAllPlayerStatus()
+
 	return g.EmitEvent(GameEvent_PreflopRoundEntered, nil)
 }
 
 func (g *game) onRoundInitialized() error {
 
+	// Calculate power of the best combination for each player
 	err := g.UpdateCombinationOfAllPlayers()
 	if err != nil {
 		return err
@@ -591,7 +642,40 @@ func (g *game) onRoundInitialized() error {
 
 	if g.gs.Status.Round == "preflop" {
 		if g.gs.Meta.Blind.Dealer > 0 || g.gs.Meta.Blind.SB > 0 || g.gs.Meta.Blind.BB > 0 {
-			//TODO: required players to pay for blinds
+
+			// required players to pay for blinds
+			fmt.Printf("Reuqested blind: dealer=%d, sb=%d, bb=%d\n", g.gs.Meta.Blind.Dealer, g.gs.Meta.Blind.SB, g.gs.Meta.Blind.BB)
+
+			// Start at dealer
+			_, err := g.StartAtDealer()
+			if err != nil {
+				return err
+			}
+
+			// Dealer doesn't pay yet
+			if g.gs.Meta.Blind.Dealer > 0 && g.Dealer().State().Wager == 0 {
+				fmt.Printf("Waiting for dealer blind %d\n", g.gs.Meta.Blind.Dealer)
+				return nil
+			}
+
+			p := g.NextMovablePlayer()
+			g.SetCurrentPlayer(p)
+
+			// SB doesn't pay yet
+			if g.gs.Meta.Blind.SB > 0 && g.SmallBlind().State().Wager == 0 {
+				fmt.Printf("Waiting for small blind %d\n", g.gs.Meta.Blind.SB)
+				return nil
+			}
+
+			p = g.NextMovablePlayer()
+			g.SetCurrentPlayer(p)
+
+			// BB doesn't pay yet
+			if g.gs.Meta.Blind.BB > 0 && g.BigBlind().State().Wager == 0 {
+				fmt.Printf("Waiting for big blind %d\n", g.gs.Meta.Blind.BB)
+				return nil
+			}
+
 		} else {
 
 			// Start at dealer

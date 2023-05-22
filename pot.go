@@ -7,6 +7,12 @@ func (g *game) updatePots() error {
 	pots := pot.NewPotList()
 
 	for _, p := range g.gs.Players {
+
+		// Not contributer
+		if p.Wager == 0 {
+			continue
+		}
+
 		pots.AddContributer(p.Wager, p.Idx)
 	}
 

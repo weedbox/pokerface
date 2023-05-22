@@ -1,10 +1,15 @@
 package main
 
-import "github.com/cfsghost/pokerface/waitgroup"
+import (
+	"fmt"
+
+	"github.com/cfsghost/pokerface/waitgroup"
+)
 
 type Player interface {
 	State() *PlayerState
 
+	CheckPosition(pos string) bool
 	AllowActions(actions []string) error
 	Ready() error
 	Pass() error
@@ -46,6 +51,17 @@ func (p *player) IsMovable() bool {
 	return false
 }
 
+func (p *player) CheckPosition(pos string) bool {
+
+	for _, p := range p.state.Positions {
+		if p == pos {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (p *player) CheckAction(action string) bool {
 
 	for _, aa := range p.state.AllowedActions {
@@ -62,6 +78,8 @@ func (p *player) Ready() error {
 	if !p.CheckAction("ready") {
 		return nil
 	}
+
+	fmt.Printf("[Player %d] Get ready\n", p.idx)
 
 	wg := p.game.GetWaitGroup()
 	if wg == nil {
@@ -90,11 +108,27 @@ func (p *player) Pass() error {
 	return nil
 }
 
+func (p *player) pay(chips int64) error {
+
+	if p.state.StackSize < chips {
+		p.state.Wager += p.state.StackSize
+		p.state.StackSize = 0
+		return nil
+	}
+
+	p.state.Wager += chips
+	p.state.StackSize += p.state.Wager
+
+	return nil
+}
+
 func (p *player) PayAnte(chips int64) error {
 
 	if !p.CheckAction("pay_ante") {
 		return nil
 	}
+
+	fmt.Printf("[Player %d] pay ante %d\n", p.idx, chips)
 
 	wg := p.game.GetWaitGroup()
 	if wg == nil {
@@ -106,7 +140,10 @@ func (p *player) PayAnte(chips int64) error {
 		return nil
 	}
 
-	//TODO: implement the logic for paying ante
+	p.pay(chips)
+
+	wg.GetStateByIdx(p.idx).State = true
+
 	p.game.Resume()
 
 	return nil
@@ -119,6 +156,7 @@ func (p *player) Pay(chips int64) error {
 	}
 
 	// Implement the logic for the Pay() function
+
 	return nil
 }
 
