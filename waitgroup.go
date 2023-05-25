@@ -1,5 +1,6 @@
 package main
 
+/*
 import "github.com/cfsghost/pokerface/waitgroup"
 
 func (g *game) WaitForAllPlayersReady() (*waitgroup.WaitGroup, error) {
@@ -91,3 +92,4 @@ func (g *game) WaitForAllPlayersPaidAnte() (*waitgroup.WaitGroup, error) {
 
 	return wg, nil
 }
+*/

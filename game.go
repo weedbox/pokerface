@@ -1,4 +1,4 @@
-package main
+package pokerface
 
 import (
 	"encoding/json"
@@ -6,81 +6,9 @@ import (
 	"fmt"
 
 	"github.com/cfsghost/pokerface/pot"
+	"github.com/cfsghost/pokerface/task"
 	"github.com/cfsghost/pokerface/waitgroup"
 )
-
-type GameEvent int32
-
-const (
-
-	// Initialization
-	GameEvent_Started GameEvent = iota
-	GameEvent_Initialized
-	GameEvent_AnteRequested
-	GameEvent_AnteReceived
-
-	// States
-	GameEvent_Dealt
-	GameEvent_WagerRequested
-
-	// Rounds
-	GameEvent_PreflopRoundEntered
-	GameEvent_FlopRoundEntered
-	GameEvent_TurnRoundEntered
-	GameEvent_RiverRoundEntered
-	GameEvent_RoundInitialized
-	GameEvent_RoundPrepared
-	GameEvent_RoundClosed
-	GameEvent_PlayerDidAction
-
-	// Result
-	GameEvent_GameCompleted
-	GameEvent_SettlementRequested
-	GameEvent_SettlementCompleted
-	GameEvent_GameClosed
-)
-
-var GameEventSymbols = map[GameEvent]string{
-	GameEvent_Started:             "Started",
-	GameEvent_Initialized:         "Initialized",
-	GameEvent_AnteRequested:       "AnteRequested",
-	GameEvent_AnteReceived:        "AnteReceived",
-	GameEvent_Dealt:               "Dealt",
-	GameEvent_WagerRequested:      "WagerRequested",
-	GameEvent_PreflopRoundEntered: "PreflopRoundEntered",
-	GameEvent_FlopRoundEntered:    "FlopRoundEntered",
-	GameEvent_TurnRoundEntered:    "TurnRoundEntered",
-	GameEvent_RiverRoundEntered:   "RiverRoundEntered",
-	GameEvent_RoundInitialized:    "RoundInitialized",
-	GameEvent_RoundPrepared:       "RoundPrepared",
-	GameEvent_RoundClosed:         "RoundClosed",
-	GameEvent_PlayerDidAction:     "PlayerDidAction",
-	GameEvent_GameCompleted:       "GameCompleted",
-	GameEvent_SettlementRequested: "SettlementRequested",
-	GameEvent_SettlementCompleted: "SettlementCompleted",
-	GameEvent_GameClosed:          "GameClosed",
-}
-
-var GameEventBySymbol = map[string]GameEvent{
-	"Started":             GameEvent_Started,
-	"Initialized":         GameEvent_Initialized,
-	"AnteRequested":       GameEvent_AnteRequested,
-	"AnteReceived":        GameEvent_AnteReceived,
-	"Dealt":               GameEvent_Dealt,
-	"WagerRequested":      GameEvent_WagerRequested,
-	"PreflopRoundEntered": GameEvent_PreflopRoundEntered,
-	"FlopRoundEntered":    GameEvent_FlopRoundEntered,
-	"TurnRoundEntered":    GameEvent_TurnRoundEntered,
-	"RiverRoundEntered":   GameEvent_RiverRoundEntered,
-	"RoundInitialized":    GameEvent_RoundInitialized,
-	"RoundPrepared":       GameEvent_RoundPrepared,
-	"RoundClosed":         GameEvent_RoundClosed,
-	"PlayerDidAction":     GameEvent_PlayerDidAction,
-	"GameCompleted":       GameEvent_GameCompleted,
-	"SettlementRequested": GameEvent_SettlementRequested,
-	"SettlementCompleted": GameEvent_SettlementCompleted,
-	"GameClosed":          GameEvent_GameClosed,
-}
 
 var (
 	ErrNoDeck                      = errors.New("game: no deck")
@@ -88,12 +16,14 @@ var (
 	ErrInsufficientNumberOfPlayers = errors.New("game: insufficient number of players")
 	ErrUnknownRound                = errors.New("game: unknown round")
 	ErrNotFoundDealer              = errors.New("game: not found dealer")
+	ErrUnknownTask                 = errors.New("game: Unknown task")
 )
 
 type Game interface {
 	ApplyOptions(opts *GameOptions) error
 	Start() error
 	Resume() error
+	GetEvent() *Event
 	GetWaitGroup() *waitgroup.WaitGroup
 	GetState() *GameState
 	GetStateJSON() ([]byte, error)
@@ -108,7 +38,8 @@ type Game interface {
 	SetCurrentPlayer(p *PlayerState) error
 	GetAllowedActions(player *PlayerState) []string
 	GetAllowedBetActions(player *PlayerState) []string
-	EmitEvent(event GameEvent, runtime interface{}) error
+	EmitEvent(event GameEvent, payload *EventPayload) error
+	PrintState() error
 }
 
 type game struct {
@@ -154,7 +85,7 @@ func (g *game) Resume() error {
 		fmt.Printf("Resume: %s\n", g.gs.Status.CurrentEvent.Name)
 
 		// Activate by the last event
-		g.EmitEvent(event, g.gs.Status.CurrentEvent.Runtime)
+		g.EmitEvent(event, g.gs.Status.CurrentEvent.Payload)
 	}
 
 	return nil
@@ -182,15 +113,6 @@ func (g *game) ApplyOptions(opts *GameOptions) error {
 	}
 
 	return nil
-}
-
-func (g *game) Start() error {
-
-	// Initializing game status
-	g.gs.Status.Pots = make([]*pot.Pot, 0)
-	g.gs.Status.CurrentEvent = &WorkflowEvent{}
-
-	return g.EmitEvent(GameEvent_Started, nil)
 }
 
 func (g *game) AddPlayer(idx int, setting *PlayerSetting) error {
@@ -287,6 +209,14 @@ func (g *game) FindDealer() *PlayerState {
 	return nil
 }
 
+func (g *game) ResetAllPlayerAllowedActions() error {
+	for _, p := range g.gs.Players {
+		g.Player(p.Idx).ResetAllowedActions()
+	}
+
+	return nil
+}
+
 func (g *game) ResetAllPlayerStatus() error {
 	for _, p := range g.gs.Players {
 		p.DidAction = ""
@@ -316,6 +246,27 @@ func (g *game) StartAtDealer() (*PlayerState, error) {
 	return dealer, nil
 }
 
+func (g *game) NextPlayer() *PlayerState {
+
+	cur := g.gs.Status.CurrentPlayer
+
+	for i := 1; i < len(g.gs.Players); i++ {
+
+		// Find the next player
+		cur++
+
+		// The end of player list
+		if cur == len(g.gs.Players) {
+			cur = 0
+		}
+
+		p := g.gs.Players[cur]
+		return p
+	}
+
+	return nil
+}
+
 func (g *game) NextMovablePlayer() *PlayerState {
 
 	cur := g.gs.Status.CurrentPlayer
@@ -341,7 +292,7 @@ func (g *game) NextMovablePlayer() *PlayerState {
 	return nil
 }
 
-func (g *game) SetCurrentPlayer(p *PlayerState) error {
+func (g *game) setCurrentPlayer(p *PlayerState) error {
 
 	// Clear status
 	if p == nil {
@@ -351,6 +302,16 @@ func (g *game) SetCurrentPlayer(p *PlayerState) error {
 
 	// Deside player who can move
 	g.gs.Status.CurrentPlayer = p.Idx
+
+	return nil
+}
+
+func (g *game) SetCurrentPlayer(p *PlayerState) error {
+
+	err := g.setCurrentPlayer(p)
+	if err != nil {
+		return err
+	}
 
 	// Figure out actions that player can be allowed to take
 	g.Player(p.Idx).AllowActions(g.GetAllowedActions(p))
@@ -459,180 +420,84 @@ func (g *game) GetAllowedBetActions(player *PlayerState) []string {
 	return actions
 }
 
-func (g *game) triggerEvent(event GameEvent) error {
+func (g *game) Start() error {
 
-	switch event {
+	// Initializing game status
+	g.gs.Status.Pots = make([]*pot.Pot, 0)
+	g.gs.Status.CurrentEvent = &Event{}
 
-	case GameEvent_Started:
-		fmt.Println("Game has started.")
-		return g.onStarted()
-
-	case GameEvent_Initialized:
-		fmt.Println("Game has been initialized.")
-		return g.onInitialized()
-		//g.EmitEvent(GameEvent_Initialized)
-
-	case GameEvent_AnteRequested:
-		fmt.Println("Ante has been requested.")
-		return g.onAnteRequested()
-
-	case GameEvent_AnteReceived:
-		fmt.Println("Ante is received.")
-		return g.onAnteReceived()
-
-	case GameEvent_Dealt:
-		fmt.Println("Cards have been dealt.")
-		//		return g.antePreparation()
-
-	case GameEvent_WagerRequested:
-		fmt.Println("Wager has been requested.")
-
-	case GameEvent_PreflopRoundEntered:
-		fmt.Println("Entered Preflop round.")
-		return g.onPreflopRoundEntered()
-
-	case GameEvent_FlopRoundEntered:
-		fmt.Println("Entered Flop round.")
-		return g.onFlopRoundEntered()
-
-	case GameEvent_TurnRoundEntered:
-		fmt.Println("Entered Turn round.")
-		return g.onTurnRoundEntered()
-
-	case GameEvent_RiverRoundEntered:
-		fmt.Println("Entered River round.")
-		return g.onRiverRoundEntered()
-
-	case GameEvent_RoundInitialized:
-		fmt.Println("Current round has initialized.")
-		return g.onRoundInitialized()
-
-	case GameEvent_RoundPrepared:
-		fmt.Println("Current round has been prepared.")
-		return g.onRoundPrepared()
-
-	case GameEvent_RoundClosed:
-		fmt.Println("Current round has closed.")
-		return g.onRoundClosed()
-
-	case GameEvent_PlayerDidAction:
-		fmt.Println("Player did action.")
-		return g.onPlayerDidAction()
-
-	case GameEvent_GameCompleted:
-		fmt.Println("Game has been completed.")
-		return g.onGameCompleted()
-
-	case GameEvent_SettlementRequested:
-		fmt.Println("Settlement has been requested.")
-		return g.onSettlementRequested()
-
-	case GameEvent_SettlementCompleted:
-		fmt.Println("Settlement has been completed.")
-		return g.onSettlementCompleted()
-
-	case GameEvent_GameClosed:
-		fmt.Println("Game has closed.")
-	}
-
-	return nil
+	return g.EmitEvent(GameEvent_Started, nil)
 }
 
-func (g *game) EmitEvent(event GameEvent, runtime interface{}) error {
+func (g *game) Initialize() error {
 
-	// Update current event
-	g.gs.Status.CurrentEvent.Name = GameEventSymbols[event]
-	g.gs.Status.CurrentEvent.Runtime = runtime
+	// Preparing event
+	payload := NewEventPayload()
 
-	return g.triggerEvent(event)
+	// Prepare the task to wait for ready
+	wr := task.NewWaitReady("prepare")
+	wr.PreparePlayerStates(len(g.gs.Players))
+	payload.Task.AddTask(wr)
+
+	return g.EmitEvent(GameEvent_Initialized, payload)
 }
 
-func (g *game) onStarted() error {
+func (g *game) Prepare() error {
 
-	// Check the number of players
-	if len(g.gs.Players) < 2 {
-		return ErrInsufficientNumberOfPlayers
-	}
+	event := g.GetEvent()
 
-	// Check backroll
-	for _, p := range g.gs.Players {
+	event.Payload.Task.Execute()
 
-		if p.Bankroll <= 0 {
-			return ErrNotEnoughBackroll
-		}
-	}
+	if !event.Payload.Task.IsCompleted() {
 
-	// No desk was set
-	if len(g.gs.Meta.Deck) == 0 {
-		return ErrNoDeck
-	}
+		// Keep going to wait for ready
+		task := event.Payload.Task.GetAvailableTask()
 
-	// Shuffle cards
-	g.gs.Meta.Deck = ShuffleCards(g.gs.Meta.Deck)
+		// Update allowed actions of players based on task state
+		players := task.GetPayload().(map[int]bool)
+		for idx, isReady := range players {
 
-	// Initialize minimum bet
-	if g.gs.Meta.Blind.Dealer > g.gs.Meta.Blind.BB {
-		g.gs.Status.MiniBet = g.gs.Meta.Blind.Dealer
-	} else {
-		g.gs.Status.MiniBet = g.gs.Meta.Blind.BB
-	}
+			if isReady {
+				g.Player(idx).AllowActions([]string{})
+				continue
+			}
 
-	return g.EmitEvent(GameEvent_Initialized, nil)
-}
-
-func (g *game) onInitialized() error {
-
-	wg, err := g.WaitForAllPlayersReady()
-	if err != nil {
-		return err
-	}
-
-	if wg.IsCompleted() {
-		g.wg = nil
-
-		if g.gs.Meta.Ante > 0 {
-			return g.EmitEvent(GameEvent_AnteRequested, nil)
+			// Not ready so we are waiting for this player
+			g.Player(idx).AllowActions([]string{
+				"ready",
+			})
 		}
 
-		return g.EmitEvent(GameEvent_PreflopRoundEntered, nil)
+		fmt.Println("Waiting for ready")
+
+		return nil
 	}
 
-	// Nothing to do, just waiting for all players to be ready
+	g.ResetAllPlayerAllowedActions()
 
-	return nil
+	return g.EmitEvent(GameEvent_Prepared, nil)
 }
 
-func (g *game) onAnteRequested() error {
-
-	wg, err := g.WaitForAllPlayersPaidAnte()
-	if err != nil {
-		return err
-	}
-
-	if wg.IsCompleted() {
-		g.wg = nil
-		return g.EmitEvent(GameEvent_AnteReceived, nil)
-	}
-
-	// Nothing to do, just waiting for all players paid
-
-	return nil
+func (g *game) RequestAnte() error {
+	//TODO: preparing task for ante request
+	return g.EmitEvent(GameEvent_AnteRequested, nil)
 }
 
-func (g *game) onAnteReceived() error {
-
-	// Update pots
-	err := g.updatePots()
-	if err != nil {
-		return err
-	}
-
-	g.ResetAllPlayerStatus()
-
+func (g *game) EnterPreflopRound() error {
 	return g.EmitEvent(GameEvent_PreflopRoundEntered, nil)
 }
 
-func (g *game) onRoundInitialized() error {
+func (g *game) InitializeRound() error {
+
+	if g.gs.Status.Round == "preflop" {
+
+		// Deal cards to players
+		for _, p := range g.gs.Players {
+			p.HoleCards = g.Deal(g.gs.Meta.HoleCardsCount)
+		}
+	}
+
+	//TODO: Initializing for other stages (Flop, Turn and River)
 
 	// Calculate power of the best combination for each player
 	err := g.UpdateCombinationOfAllPlayers()
@@ -640,84 +505,98 @@ func (g *game) onRoundInitialized() error {
 		return err
 	}
 
-	if g.gs.Status.Round == "preflop" {
-		if g.gs.Meta.Blind.Dealer > 0 || g.gs.Meta.Blind.SB > 0 || g.gs.Meta.Blind.BB > 0 {
-
-			// required players to pay for blinds
-			fmt.Printf("Reuqested blind: dealer=%d, sb=%d, bb=%d\n", g.gs.Meta.Blind.Dealer, g.gs.Meta.Blind.SB, g.gs.Meta.Blind.BB)
-
-			// Start at dealer
-			_, err := g.StartAtDealer()
-			if err != nil {
-				return err
-			}
-
-			// Dealer doesn't pay yet
-			if g.gs.Meta.Blind.Dealer > 0 && g.Dealer().State().Wager == 0 {
-				fmt.Printf("Waiting for dealer blind %d\n", g.gs.Meta.Blind.Dealer)
-				return nil
-			}
-
-			p := g.NextMovablePlayer()
-			g.SetCurrentPlayer(p)
-
-			// SB doesn't pay yet
-			if g.gs.Meta.Blind.SB > 0 && g.SmallBlind().State().Wager == 0 {
-				fmt.Printf("Waiting for small blind %d\n", g.gs.Meta.Blind.SB)
-				return nil
-			}
-
-			p = g.NextMovablePlayer()
-			g.SetCurrentPlayer(p)
-
-			// BB doesn't pay yet
-			if g.gs.Meta.Blind.BB > 0 && g.BigBlind().State().Wager == 0 {
-				fmt.Printf("Waiting for big blind %d\n", g.gs.Meta.Blind.BB)
-				return nil
-			}
-
-		} else {
-
-			// Start at dealer
-			_, err := g.StartAtDealer()
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return g.EmitEvent(GameEvent_RoundPrepared, nil)
+	return g.EmitEvent(GameEvent_RoundInitialized, nil)
 }
 
-func (g *game) onRoundPrepared() error {
+func (g *game) PrepareRound() error {
 
-	wg, err := g.WaitForAllPlayersReady()
+	fmt.Printf("Preparing round: %s\n", g.gs.Status.Round)
+
+	if g.gs.Status.Round == "preflop" && g.gs.Meta.Blind.Dealer > 0 || g.gs.Meta.Blind.SB > 0 || g.gs.Meta.Blind.BB > 0 {
+
+		// Initializing for current event
+		event := g.GetEvent()
+
+		// Task 1: request dealer blind
+		if g.gs.Meta.Blind.Dealer > 0 && event.Payload.Task.GetTask("db") == nil {
+			t := task.NewWaitPay("db")
+			event.Payload.Task.AddTask(t)
+		}
+
+		// Task 2: request small blind
+		if g.gs.Meta.Blind.SB > 0 && event.Payload.Task.GetTask("sb") == nil {
+			t := task.NewWaitPay("sb")
+			event.Payload.Task.AddTask(t)
+		}
+
+		// Task 3: request big blind
+		if g.gs.Meta.Blind.BB > 0 && event.Payload.Task.GetTask("bb") == nil {
+			t := task.NewWaitPay("bb")
+			event.Payload.Task.AddTask(t)
+		}
+
+		// Execute and check task status
+		event.Payload.Task.Execute()
+
+		if !event.Payload.Task.IsCompleted() {
+
+			fmt.Printf("Check blinds: dealer=%d, sb=%d, bb=%d\n", g.gs.Meta.Blind.Dealer, g.gs.Meta.Blind.SB, g.gs.Meta.Blind.BB)
+
+			// Getting available task for the next action
+			t := event.Payload.Task.GetAvailableTask()
+
+			// task for dealer blind
+			switch t.GetName() {
+			case "db":
+
+				// Start at dealer
+				p := g.Dealer()
+				p.AllowActions([]string{
+					"pay",
+				})
+				g.setCurrentPlayer(p.State())
+			case "sb":
+				p := g.SmallBlind()
+				p.AllowActions([]string{
+					"pay",
+				})
+				g.setCurrentPlayer(p.State())
+			case "bb":
+
+				p := g.BigBlind()
+				p.AllowActions([]string{
+					"pay",
+				})
+				g.setCurrentPlayer(p.State())
+			default:
+				return ErrUnknownTask
+			}
+
+			fmt.Println("Waiting for blinds...")
+
+			return nil
+		}
+
+		g.ResetAllPlayerAllowedActions()
+
+		// Find out the big blind
+		p := g.BigBlind()
+		g.SetCurrentPlayer(p.State())
+
+		// Start at next position
+		ps := g.NextMovablePlayer()
+		g.SetCurrentPlayer(ps)
+
+		return g.EmitEvent(GameEvent_RoundPrepared, nil)
+	}
+
+	// Other stage: start at dealer
+	_, err := g.StartAtDealer()
 	if err != nil {
 		return err
 	}
 
-	if wg.IsCompleted() {
-		g.wg = nil
-
-		// All players is ready
-		return g.PlayerLoop()
-	}
-
-	// Nothing to do, just waiting for all players to be ready
-
-	return nil
-}
-
-func (g *game) onPreflopRoundEntered() error {
-
-	g.gs.Status.Round = "preflop"
-
-	// Deal cards to players
-	for _, p := range g.gs.Players {
-		p.HoleCards = g.Deal(g.gs.Meta.HoleCardsCount)
-	}
-
-	return g.EmitEvent(GameEvent_RoundInitialized, nil)
+	return g.EmitEvent(GameEvent_RoundPrepared, nil)
 }
 
 func (g *game) onFlopRoundEntered() error {
@@ -831,5 +710,17 @@ func (g *game) onSettlementCompleted() error {
 }
 
 func (g *game) onGameClosed() error {
+	return nil
+}
+
+func (g *game) PrintState() error {
+
+	data, err := g.GetStateJSON()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(data))
+
 	return nil
 }

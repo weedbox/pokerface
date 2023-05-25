@@ -27,22 +27,22 @@ type Meta struct {
 	BurnCount              int                       `json:"burn_count"`
 }
 
-type WorkflowEvent struct {
-	Name    string      `json:"name,omitempty"`
-	Runtime interface{} `json:"runtime,omitempty"`
+type Event struct {
+	Name    string        `json:"name,omitempty"`
+	Payload *EventPayload `json:"payload,omitempty"`
 }
 
 type Status struct {
-	MiniBet             int64          `json:"min_bet"`
-	Pots                []*pot.Pot     `json:"pots"`
-	Round               string         `json:"round"`
-	Burned              []string       `json:"burned"`
-	Board               []string       `json:"board"`
-	CurrentDeckPosition int            `json:"current_deck_position"`
-	CurrentWager        int64          `json:"current_wager"`
-	CurrentRaiser       int            `json:"current_raiser"`
-	CurrentPlayer       int            `json:"current_player"`
-	CurrentEvent        *WorkflowEvent `json:"current_event"`
+	MiniBet             int64      `json:"min_bet"`
+	Pots                []*pot.Pot `json:"pots"`
+	Round               string     `json:"round"`
+	Burned              []string   `json:"burned"`
+	Board               []string   `json:"board"`
+	CurrentDeckPosition int        `json:"current_deck_position"`
+	CurrentWager        int64      `json:"current_wager"`
+	CurrentRaiser       int        `json:"current_raiser"`
+	CurrentPlayer       int        `json:"current_player"`
+	CurrentEvent        *Event     `json:"current_event"`
 }
 
 type PlayerState struct {

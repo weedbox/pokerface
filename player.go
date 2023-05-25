@@ -1,9 +1,15 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
+	"github.com/cfsghost/pokerface/task"
 	"github.com/cfsghost/pokerface/waitgroup"
+)
+
+var (
+	ErrInvalidAction = errors.New("player: invalid action")
 )
 
 type Player interface {
@@ -11,6 +17,7 @@ type Player interface {
 
 	CheckPosition(pos string) bool
 	AllowActions(actions []string) error
+	ResetAllowedActions() error
 	Ready() error
 	Pass() error
 	Pay(chips int64) error
@@ -39,6 +46,11 @@ func (p *player) State() *PlayerState {
 
 func (p *player) AllowActions(actions []string) error {
 	p.state.AllowedActions = actions
+	return nil
+}
+
+func (p *player) ResetAllowedActions() error {
+	p.state.AllowedActions = make([]string, 0)
 	return nil
 }
 
@@ -76,23 +88,24 @@ func (p *player) CheckAction(action string) bool {
 func (p *player) Ready() error {
 
 	if !p.CheckAction("ready") {
-		return nil
+		return ErrInvalidAction
 	}
 
 	fmt.Printf("[Player %d] Get ready\n", p.idx)
 
-	wg := p.game.GetWaitGroup()
-	if wg == nil {
+	event := p.game.GetEvent()
+
+	// Getting current task
+	t := event.Payload.Task.GetAvailableTask()
+	if t.GetName() != "prepare" {
 		return nil
 	}
 
-	// Check waitgroup type
-	if wg.Type != waitgroup.TypeReady {
-		return nil
-	}
+	// Update state to be ready
+	wr := t.(*task.WaitReady)
+	wr.Ready(p.idx)
 
-	wg.GetStateByIdx(p.idx).State = true
-
+	// Keep going
 	p.game.Resume()
 
 	return nil
@@ -152,8 +165,25 @@ func (p *player) PayAnte(chips int64) error {
 func (p *player) Pay(chips int64) error {
 
 	if !p.CheckAction("pay") {
+		return ErrInvalidAction
+	}
+
+	fmt.Printf("[Player %d] Pay %d\n", p.idx, chips)
+
+	event := p.game.GetEvent()
+
+	// Getting current task
+	t := event.Payload.Task.GetAvailableTask()
+	if t.GetName() != "prepare" {
 		return nil
 	}
+
+	// Update state to be ready
+	wr := t.(*task.WaitReady)
+	wr.Ready(p.idx)
+
+	// Keep going
+	p.game.Resume()
 
 	// Implement the logic for the Pay() function
 
@@ -163,7 +193,7 @@ func (p *player) Pay(chips int64) error {
 func (p *player) Fold() error {
 
 	if !p.CheckAction("fold") {
-		return nil
+		return ErrInvalidAction
 	}
 
 	// Implement the logic for the Fold() function
@@ -173,7 +203,7 @@ func (p *player) Fold() error {
 func (p *player) Check() error {
 
 	if !p.CheckAction("check") {
-		return nil
+		return ErrInvalidAction
 	}
 
 	// Implement the logic for the Check() function
@@ -183,7 +213,7 @@ func (p *player) Check() error {
 func (p *player) Bet(chips int64) error {
 
 	if !p.CheckAction("bet") {
-		return nil
+		return ErrInvalidAction
 	}
 
 	// Implement the logic for the Bet() function
@@ -193,7 +223,7 @@ func (p *player) Bet(chips int64) error {
 func (p *player) Raise(chips int64) error {
 
 	if !p.CheckAction("raise") {
-		return nil
+		return ErrInvalidAction
 	}
 
 	// Implement the logic for the Raise() function
