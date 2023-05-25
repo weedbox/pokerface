@@ -7,7 +7,6 @@ import (
 
 	"github.com/cfsghost/pokerface/pot"
 	"github.com/cfsghost/pokerface/task"
-	"github.com/cfsghost/pokerface/waitgroup"
 )
 
 var (
@@ -24,7 +23,6 @@ type Game interface {
 	Start() error
 	Resume() error
 	GetEvent() *Event
-	GetWaitGroup() *waitgroup.WaitGroup
 	GetState() *GameState
 	GetStateJSON() ([]byte, error)
 	LoadState(gs *GameState) error
@@ -44,7 +42,6 @@ type Game interface {
 
 type game struct {
 	gs *GameState
-	wg *waitgroup.WaitGroup
 }
 
 func NewGame(opts *GameOptions) *game {
@@ -57,10 +54,6 @@ func NewGameFromState(gs *GameState) *game {
 	g := &game{}
 	g.LoadState(gs)
 	return g
-}
-
-func (g *game) GetWaitGroup() *waitgroup.WaitGroup {
-	return g.wg
 }
 
 func (g *game) GetState() *GameState {
@@ -556,13 +549,14 @@ func (g *game) PrepareRound() error {
 				})
 				g.setCurrentPlayer(p.State())
 			case "sb":
+				fmt.Println("=================================================== SB")
 				p := g.SmallBlind()
 				p.AllowActions([]string{
 					"pay",
 				})
 				g.setCurrentPlayer(p.State())
 			case "bb":
-
+				fmt.Println("=================================================== BB")
 				p := g.BigBlind()
 				p.AllowActions([]string{
 					"pay",

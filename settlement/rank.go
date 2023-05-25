@@ -3,7 +3,7 @@ package settlement
 import "sort"
 
 type RankGroup struct {
-	Contributers []int
+	Contributors []int
 	Score        int
 }
 
@@ -19,25 +19,25 @@ func NewPotRank() *PotRank {
 	}
 }
 
-func (pr *PotRank) AddContributer(score int, contributerIdx int) {
+func (pr *PotRank) AddContributor(score int, contributerIdx int) {
 
 	pr.contributerCount++
 
 	for _, g := range pr.groups {
 
 		if g.Score == score {
-			g.Contributers = append(g.Contributers, contributerIdx)
+			g.Contributors = append(g.Contributors, contributerIdx)
 			return
 		}
 	}
 
 	// Not found so create a new one
 	g := &RankGroup{
-		Contributers: make([]int, 0),
+		Contributors: make([]int, 0),
 		Score:        score,
 	}
 
-	g.Contributers = append(g.Contributers, contributerIdx)
+	g.Contributors = append(g.Contributors, contributerIdx)
 
 	pr.groups = append(pr.groups, g)
 }
@@ -50,7 +50,7 @@ func (pr *PotRank) Calculate() {
 	})
 }
 
-func (pr *PotRank) ContributerCount() int {
+func (pr *PotRank) ContributorCount() int {
 	return pr.contributerCount
 }
 
@@ -60,7 +60,7 @@ func (pr *PotRank) GetWinners() []int {
 		return []int{}
 	}
 
-	return pr.groups[0].Contributers
+	return pr.groups[0].Contributors
 }
 
 func (pr *PotRank) GetLoser() []int {
@@ -75,7 +75,7 @@ func (pr *PotRank) GetLoser() []int {
 			continue
 		}
 
-		contributers = append(contributers, g.Contributers...)
+		contributers = append(contributers, g.Contributors...)
 	}
 
 	return contributers

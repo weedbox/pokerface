@@ -51,13 +51,13 @@ func (r *Result) AddPot(total int64) {
 	r.Pots = append(r.Pots, pr)
 }
 
-func (r *Result) AddContributer(potIdx int, playerIdx int, score int) {
+func (r *Result) AddContributor(potIdx int, playerIdx int, score int) {
 
 	// Take pot
 	pot := r.Pots[potIdx]
 
 	// Add a new contributr
-	pot.rank.AddContributer(score, playerIdx)
+	pot.rank.AddContributor(score, playerIdx)
 }
 
 func (r *Result) Update(potIdx int, playerIdx int, withdraw int64) {
@@ -111,7 +111,7 @@ func (r *Result) Calculate() {
 	for potIdx, pot := range r.Pots {
 
 		// Calculate contributions of players
-		wager := r.CalculateWagerOfPot(pot.Chips, pot.rank.ContributerCount())
+		wager := r.CalculateWagerOfPot(pot.Chips, pot.rank.ContributorCount())
 
 		// Calculate contributer ranks of this pot by score
 		pot.rank.Calculate()

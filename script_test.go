@@ -1,4 +1,4 @@
-package pockerface
+package pokerface
 
 import (
 	"testing"
@@ -66,10 +66,9 @@ func Test_BasicCase(t *testing.T) {
 	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
 	assert.Equal(t, "preflop", g.GetState().Status.Round)
 
-	g.PrintState()
-
 	// Blinds
 	for _, p := range g.GetState().Players {
+		assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
 		assert.Equal(t, 2, len(p.HoleCards))
 		assert.Equal(t, 0, p.ActionCount)
 		assert.Equal(t, false, p.Fold)
@@ -89,4 +88,6 @@ func Test_BasicCase(t *testing.T) {
 			assert.Nil(t, err)
 		}
 	}
+
+	g.PrintState()
 }

@@ -1,4 +1,4 @@
-package main
+package pokerface
 
 import "github.com/cfsghost/pokerface/combination"
 

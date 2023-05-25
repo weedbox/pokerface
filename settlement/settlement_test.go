@@ -34,12 +34,12 @@ func TestResult(t *testing.T) {
 	assert.Equal(t, len(r.Pots), len(pots))
 
 	// Add contributers (pot index, player index, power score)
-	r.AddContributer(0, 0, 1000)
-	r.AddContributer(0, 1, 900)
-	r.AddContributer(0, 2, 800)
-	r.AddContributer(1, 0, 1000)
-	r.AddContributer(1, 1, 900)
-	r.AddContributer(1, 2, 800)
+	r.AddContributor(0, 0, 1000)
+	r.AddContributor(0, 1, 900)
+	r.AddContributor(0, 2, 800)
+	r.AddContributor(1, 0, 1000)
+	r.AddContributor(1, 1, 900)
+	r.AddContributor(1, 2, 800)
 
 	r.Calculate()
 
@@ -86,12 +86,12 @@ func TestMultipleWinners(t *testing.T) {
 	assert.Equal(t, len(r.Pots), len(pots))
 
 	// Add contributers (pot index, player index, power score)
-	r.AddContributer(0, 0, 1000)
-	r.AddContributer(0, 1, 1000)
-	r.AddContributer(0, 2, 800)
-	r.AddContributer(1, 0, 1000)
-	r.AddContributer(1, 1, 1000)
-	r.AddContributer(1, 2, 800)
+	r.AddContributor(0, 0, 1000)
+	r.AddContributor(0, 1, 1000)
+	r.AddContributor(0, 2, 800)
+	r.AddContributor(1, 0, 1000)
+	r.AddContributor(1, 1, 1000)
+	r.AddContributor(1, 2, 800)
 
 	r.Calculate()
 
@@ -138,11 +138,11 @@ func TestAllin(t *testing.T) {
 	assert.Equal(t, len(r.Pots), len(pots))
 
 	// Add contributers (pot index, player index, power score)
-	r.AddContributer(0, 0, 1000)
-	r.AddContributer(0, 1, 900)
-	r.AddContributer(0, 2, 800)
-	r.AddContributer(1, 1, 900)
-	r.AddContributer(1, 2, 800)
+	r.AddContributor(0, 0, 1000)
+	r.AddContributor(0, 1, 900)
+	r.AddContributor(0, 2, 800)
+	r.AddContributor(1, 1, 900)
+	r.AddContributor(1, 2, 800)
 
 	r.Calculate()
 
@@ -188,9 +188,9 @@ func TestMultipleWinnersWithRemainder(t *testing.T) {
 	assert.Equal(t, len(r.Pots), len(pots))
 
 	// Add contributers (pot index, player index, power score)
-	r.AddContributer(0, 0, 1000)
-	r.AddContributer(0, 1, 1000)
-	r.AddContributer(0, 2, 800)
+	r.AddContributor(0, 0, 1000)
+	r.AddContributor(0, 1, 1000)
+	r.AddContributor(0, 2, 800)
 
 	r.Calculate()
 

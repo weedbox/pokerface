@@ -1,11 +1,10 @@
-package main
+package pokerface
 
 import (
 	"errors"
 	"fmt"
 
 	"github.com/cfsghost/pokerface/task"
-	"github.com/cfsghost/pokerface/waitgroup"
 )
 
 var (
@@ -142,23 +141,23 @@ func (p *player) PayAnte(chips int64) error {
 	}
 
 	fmt.Printf("[Player %d] pay ante %d\n", p.idx, chips)
+	/*
+		wg := p.game.GetWaitGroup()
+		if wg == nil {
+			return nil
+		}
 
-	wg := p.game.GetWaitGroup()
-	if wg == nil {
-		return nil
-	}
+		// Check waitgroup type
+		if wg.Type != waitgroup.TypePayAnte {
+			return nil
+		}
 
-	// Check waitgroup type
-	if wg.Type != waitgroup.TypePayAnte {
-		return nil
-	}
+		p.pay(chips)
 
-	p.pay(chips)
+		wg.GetStateByIdx(p.idx).State = true
 
-	wg.GetStateByIdx(p.idx).State = true
-
-	p.game.Resume()
-
+		p.game.Resume()
+	*/
 	return nil
 }
 
@@ -174,13 +173,10 @@ func (p *player) Pay(chips int64) error {
 
 	// Getting current task
 	t := event.Payload.Task.GetAvailableTask()
-	if t.GetName() != "prepare" {
-		return nil
-	}
 
 	// Update state to be ready
-	wr := t.(*task.WaitReady)
-	wr.Ready(p.idx)
+	wp := t.(*task.WaitPay)
+	wp.Pay(chips)
 
 	// Keep going
 	p.game.Resume()

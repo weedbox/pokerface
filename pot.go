@@ -1,4 +1,4 @@
-package main
+package pokerface
 
 import "github.com/cfsghost/pokerface/pot"
 
@@ -13,7 +13,7 @@ func (g *game) updatePots() error {
 			continue
 		}
 
-		pots.AddContributer(p.Wager, p.Idx)
+		pots.AddContributor(p.Wager, p.Idx)
 	}
 
 	// Merge pots

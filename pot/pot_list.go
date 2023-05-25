@@ -20,13 +20,13 @@ func (p *PotList) GetPots() []*Pot {
 	return p.pots
 }
 
-func (p *PotList) AddContributer(wager int64, contributerIdx int) {
+func (p *PotList) AddContributor(wager int64, contributerIdx int) {
 
 	for _, pot := range p.pots {
 
 		if pot.Wager == wager {
 			pot.Total += wager
-			pot.Contributers = append(pot.Contributers, contributerIdx)
+			pot.Contributors = append(pot.Contributors, contributerIdx)
 			return
 		}
 	}
@@ -35,10 +35,10 @@ func (p *PotList) AddContributer(wager int64, contributerIdx int) {
 	pot := &Pot{
 		Wager:        wager,
 		Total:        wager,
-		Contributers: make([]int, 0),
+		Contributors: make([]int, 0),
 	}
 
-	pot.Contributers = append(pot.Contributers, contributerIdx)
+	pot.Contributors = append(pot.Contributors, contributerIdx)
 
 	p.pots = append(p.pots, pot)
 

@@ -1,4 +1,4 @@
-package main
+package pokerface
 
 import (
 	"github.com/cfsghost/pokerface/combination"
@@ -65,16 +65,16 @@ func (g *game) CalculateGameResults() error {
 	// Add contributers to each pot
 	for potIdx, pot := range g.gs.Status.Pots {
 
-		for _, c := range pot.Contributers {
+		for _, c := range pot.Contributors {
 			player := g.Player(c).State()
 
 			// No score if player fold already
 			if player.Fold {
-				r.AddContributer(potIdx, c, 0)
+				r.AddContributor(potIdx, c, 0)
 				continue
 			}
 
-			r.AddContributer(potIdx, c, player.Combination.Power)
+			r.AddContributor(potIdx, c, player.Combination.Power)
 		}
 	}
 
