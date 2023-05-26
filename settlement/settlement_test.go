@@ -6,7 +6,54 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestResult(t *testing.T) {
+func TestSinglePot(t *testing.T) {
+
+	r := NewResult()
+
+	// Bankroll of players
+	players := []int64{
+		10000,
+		10000,
+		10000,
+	}
+
+	for idx, bankroll := range players {
+		r.AddPlayer(idx, bankroll)
+	}
+
+	// Pot
+	pots := []int64{
+		6000,
+	}
+
+	for _, total := range pots {
+		r.AddPot(total)
+	}
+
+	assert.Equal(t, len(r.Pots), len(pots))
+
+	// Add contributers (pot index, player index, power score)
+	r.AddContributor(0, 0, 1000)
+	r.AddContributor(0, 1, 900)
+	r.AddContributor(0, 2, 800)
+
+	r.Calculate()
+
+	// Pot winner
+	assert.Equal(t, 1, len(r.Pots[0].Winners))
+
+	// finally, chips of player
+	assert.Equal(t, int64(14000), r.Players[0].Final)
+	assert.Equal(t, int64(8000), r.Players[1].Final)
+	assert.Equal(t, int64(8000), r.Players[2].Final)
+
+	// changes
+	assert.Equal(t, int64(4000), r.Players[0].Changed)
+	assert.Equal(t, int64(-2000), r.Players[1].Changed)
+	assert.Equal(t, int64(-2000), r.Players[2].Changed)
+}
+
+func TestMultiplePots(t *testing.T) {
 
 	r := NewResult()
 
