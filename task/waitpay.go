@@ -1,43 +1,65 @@
 package task
 
 type WaitPay struct {
+	Type      string `json:"type"`
 	Name      string `json:"name"`
 	Completed bool   `json:"completed"`
 	Payload   int64  `json:"payload"`
+
+	onUpdated   func()
+	onCompleted func()
 }
 
 func NewWaitPay(name string) *WaitPay {
 	return &WaitPay{
+		Type:    "pay",
 		Name:    name,
 		Payload: 0,
+
+		onUpdated:   func() {},
+		onCompleted: func() {},
 	}
 }
 
-func (wr *WaitPay) Instance() interface{} {
-	return wr
+func (wp *WaitPay) GetType() string {
+	return wp.Type
 }
 
-func (wr *WaitPay) GetName() string {
-	return wr.Name
+func (wp *WaitPay) GetName() string {
+	return wp.Name
 }
 
-func (wr *WaitPay) GetPayload() interface{} {
-	return wr.Payload
+func (wp *WaitPay) GetPayload() interface{} {
+	return wp.Payload
 }
 
-func (wr *WaitPay) IsCompleted() bool {
-	return wr.Completed
+func (wp *WaitPay) IsCompleted() bool {
+	return wp.Completed
 }
 
-func (wr *WaitPay) Execute() bool {
+func (wp *WaitPay) Execute() bool {
 
-	if wr.Payload > 0 {
-		wr.Completed = true
+	if wp.Payload > 0 {
+		wp.Completed = true
 	}
 
-	return wr.Completed
+	wp.onUpdated()
+
+	if wp.Completed {
+		wp.onCompleted()
+	}
+
+	return wp.Completed
 }
 
-func (wr *WaitPay) Pay(chips int64) {
-	wr.Payload = chips
+func (wp *WaitPay) Pay(chips int64) {
+	wp.Payload = chips
+}
+
+func (wp *WaitPay) OnCompleted(fn func()) {
+	wp.onCompleted = fn
+}
+
+func (wp *WaitPay) OnUpdated(fn func()) {
+	wp.onUpdated = fn
 }

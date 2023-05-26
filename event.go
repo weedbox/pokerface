@@ -215,35 +215,6 @@ func (g *game) GetEvent() *Event {
 }
 
 func (g *game) onStarted() error {
-
-	// Check the number of players
-	if len(g.gs.Players) < 2 {
-		return ErrInsufficientNumberOfPlayers
-	}
-
-	// Check backroll
-	for _, p := range g.gs.Players {
-
-		if p.Bankroll <= 0 {
-			return ErrNotEnoughBackroll
-		}
-	}
-
-	// No desk was set
-	if len(g.gs.Meta.Deck) == 0 {
-		return ErrNoDeck
-	}
-
-	// Shuffle cards
-	g.gs.Meta.Deck = ShuffleCards(g.gs.Meta.Deck)
-
-	// Initialize minimum bet
-	if g.gs.Meta.Blind.Dealer > g.gs.Meta.Blind.BB {
-		g.gs.Status.MiniBet = g.gs.Meta.Blind.Dealer
-	} else {
-		g.gs.Status.MiniBet = g.gs.Meta.Blind.BB
-	}
-
 	return g.Initialize()
 }
 
@@ -290,6 +261,14 @@ func (g *game) onAnteReceived() error {
 	return g.EmitEvent(GameEvent_PreflopRoundEntered, nil)
 }
 
+func (g *game) onRoundInitialized() error {
+	return g.PrepareRound()
+}
+
+func (g *game) onRoundPrepared() error {
+	return g.PlayerLoop()
+}
+
 func (g *game) onPreflopRoundEntered() error {
 
 	g.gs.Status.Round = "preflop"
@@ -297,44 +276,45 @@ func (g *game) onPreflopRoundEntered() error {
 	return g.InitializeRound()
 }
 
-func (g *game) onRoundInitialized() error {
-	return g.PrepareRound()
+func (g *game) onFlopRoundEntered() error {
+
+	g.gs.Status.Round = "flop"
+
+	return g.InitializeRound()
 }
 
-func (g *game) onRoundPrepared() error {
+func (g *game) onTurnRoundEntered() error {
 
-	return nil
+	g.gs.Status.Round = "turn"
 
-	event := g.GetEvent()
+	g.Burn(1)
 
-	event.Payload.Task.Execute()
+	// Board
+	g.gs.Status.Board = append(g.gs.Status.Board, g.Deal(1)...)
 
-	if !event.Payload.Task.IsCompleted() {
-
-		// Keep going to wait for ready
-		task := event.Payload.Task.GetAvailableTask()
-
-		// Update allowed actions of players based on task state
-		players := task.GetPayload().(map[int]bool)
-		for idx, isReady := range players {
-
-			if isReady {
-				g.Player(idx).AllowActions([]string{})
-				continue
-			}
-
-			// Not ready so we are waiting for this player
-			g.Player(idx).AllowActions([]string{
-				"ready",
-			})
-		}
-
-		fmt.Println("Waiting for ready")
-
-		return nil
+	// Start at dealer
+	_, err := g.StartAtDealer()
+	if err != nil {
+		return err
 	}
 
-	g.ResetAllPlayerAllowedActions()
+	return g.InitializeRound()
+}
 
-	return nil
+func (g *game) onRiverRoundEntered() error {
+
+	g.gs.Status.Round = "river"
+
+	g.Burn(1)
+
+	// Board
+	g.gs.Status.Board = append(g.gs.Status.Board, g.Deal(1)...)
+
+	// Start at dealer
+	_, err := g.StartAtDealer()
+	if err != nil {
+		return err
+	}
+
+	return g.InitializeRound()
 }

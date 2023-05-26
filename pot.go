@@ -20,7 +20,7 @@ func (g *game) updatePots() error {
 	for i, pot := range pots.GetPots() {
 
 		// More side pots
-		if i > 0 {
+		if i > 0 || len(g.gs.Status.Pots) == 0 {
 			g.gs.Status.Pots = append(g.gs.Status.Pots, pot)
 			continue
 		}
