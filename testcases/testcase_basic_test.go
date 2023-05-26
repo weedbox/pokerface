@@ -3,29 +3,30 @@ package pokerface
 import (
 	"testing"
 
+	"github.com/cfsghost/pokerface"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_BasicCase(t *testing.T) {
 
-	pf := NewPokerFace()
+	pf := pokerface.NewPokerFace()
 
-	opts := NewStardardGameOptions()
+	opts := pokerface.NewStardardGameOptions()
 
 	// Preparing deck
-	opts.Deck = NewStandardDeckCards()
+	opts.Deck = pokerface.NewStandardDeckCards()
 
 	// Preparing players
-	players := []*PlayerSetting{
-		&PlayerSetting{
+	players := []*pokerface.PlayerSetting{
+		&pokerface.PlayerSetting{
 			Bankroll:  10000,
 			Positions: []string{"dealer"},
 		},
-		&PlayerSetting{
+		&pokerface.PlayerSetting{
 			Bankroll:  10000,
 			Positions: []string{"sb"},
 		},
-		&PlayerSetting{
+		&pokerface.PlayerSetting{
 			Bankroll:  10000,
 			Positions: []string{"bb"},
 		},
