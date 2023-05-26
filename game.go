@@ -532,7 +532,7 @@ func (g *game) EnterFlopRound() error {
 
 func (g *game) InitializeRound() error {
 
-	//TODO: Initializing for stages (Preflop, Flop, Turn and River)
+	// Initializing for stages (Preflop, Flop, Turn and River)
 	switch g.gs.Status.Round {
 	case "preflop":
 
@@ -541,11 +541,15 @@ func (g *game) InitializeRound() error {
 			p.HoleCards = g.Deal(g.gs.Meta.HoleCardsCount)
 		}
 	case "flop":
+		fallthrough
+	case "turn":
+		fallthrough
+	case "riber":
 
 		g.Burn(1)
 
-		// Deal board cards
-		g.gs.Status.Board = append(g.gs.Status.Board, g.Deal(3)...)
+		// Deal board card
+		g.gs.Status.Board = append(g.gs.Status.Board, g.Deal(1)...)
 
 		// Start at dealer
 		_, err := g.StartAtDealer()

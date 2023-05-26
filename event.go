@@ -287,34 +287,12 @@ func (g *game) onTurnRoundEntered() error {
 
 	g.gs.Status.Round = "turn"
 
-	g.Burn(1)
-
-	// Board
-	g.gs.Status.Board = append(g.gs.Status.Board, g.Deal(1)...)
-
-	// Start at dealer
-	_, err := g.StartAtDealer()
-	if err != nil {
-		return err
-	}
-
 	return g.InitializeRound()
 }
 
 func (g *game) onRiverRoundEntered() error {
 
 	g.gs.Status.Round = "river"
-
-	g.Burn(1)
-
-	// Board
-	g.gs.Status.Board = append(g.gs.Status.Board, g.Deal(1)...)
-
-	// Start at dealer
-	_, err := g.StartAtDealer()
-	if err != nil {
-		return err
-	}
 
 	return g.InitializeRound()
 }
