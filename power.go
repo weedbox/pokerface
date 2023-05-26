@@ -22,6 +22,8 @@ func (g *game) UpdateCombinationOfAllPlayers() error {
 
 		p.Combination.Type = combination.CombinationSymbol[ps.Combination]
 
+		// Override old cards
+		p.Combination.Cards = make([]string, 0)
 		for _, c := range ps.Cards {
 			p.Combination.Cards = append(p.Combination.Cards, c.ToString())
 		}

@@ -541,7 +541,18 @@ func (g *game) InitializeRound() error {
 			p.HoleCards = g.Deal(g.gs.Meta.HoleCardsCount)
 		}
 	case "flop":
-		fallthrough
+
+		g.Burn(1)
+
+		// Deal 3 board cards
+		g.gs.Status.Board = append(g.gs.Status.Board, g.Deal(3)...)
+
+		// Start at dealer
+		_, err := g.StartAtDealer()
+		if err != nil {
+			return err
+		}
+
 	case "turn":
 		fallthrough
 	case "riber":
