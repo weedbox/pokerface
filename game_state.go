@@ -39,6 +39,7 @@ type Status struct {
 	Burned              []string   `json:"burned"`
 	Board               []string   `json:"board"`
 	CurrentDeckPosition int        `json:"current_deck_position"`
+	CurrentRoundPot     int64      `json:"current_round_pot"`
 	CurrentWager        int64      `json:"current_wager"`
 	CurrentRaiser       int        `json:"current_raiser"`
 	CurrentPlayer       int        `json:"current_player"`

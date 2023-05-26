@@ -100,8 +100,6 @@ func Test_BasicCase(t *testing.T) {
 	assert.Equal(t, 2, g.GetState().Status.CurrentRaiser)
 
 	// get ready
-	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
-
 	for _, p := range g.GetState().Players {
 		assert.Equal(t, "ready", p.AllowedActions[0])
 		err := g.Player(p.Idx).Ready()
@@ -149,10 +147,11 @@ func Test_BasicCase(t *testing.T) {
 	// Entering Flop
 	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
 	assert.Equal(t, "flop", g.GetState().Status.Round)
+	assert.Equal(t, int64(30), g.GetState().Status.Pots[0].Total)
+	assert.Equal(t, int64(10), g.GetState().Status.Pots[0].Wager)
+	assert.Equal(t, 3, len(g.GetState().Status.Pots[0].Contributors))
 
 	// get ready
-	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
-
 	for _, p := range g.GetState().Players {
 		assert.Equal(t, "ready", p.AllowedActions[0])
 		err := g.Player(p.Idx).Ready()
@@ -209,8 +208,6 @@ func Test_BasicCase(t *testing.T) {
 	assert.Equal(t, "turn", g.GetState().Status.Round)
 
 	// get ready
-	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
-
 	for _, p := range g.GetState().Players {
 		assert.Equal(t, "ready", p.AllowedActions[0])
 		err := g.Player(p.Idx).Ready()
@@ -219,6 +216,108 @@ func Test_BasicCase(t *testing.T) {
 
 	// Starting player loop
 	assert.Equal(t, "RoundPrepared", g.GetState().Status.CurrentEvent.Name)
+
+	// SB
+	cp = g.GetCurrentPlayer()
+	assert.Equal(t, int64(0), cp.Wager)
+	assert.Equal(t, cp.InitialStackSize, cp.Bankroll-cp.Pot)
+	assert.Equal(t, cp.StackSize, cp.Bankroll-cp.Pot-cp.Wager)
+	assert.Equal(t, 3, len(cp.AllowedActions))
+	assert.Equal(t, "allin", cp.AllowedActions[0])
+	assert.Equal(t, "check", cp.AllowedActions[1])
+	assert.Equal(t, "bet", cp.AllowedActions[2])
+
+	// SB: check
+	err = g.Player(cp.Idx).Check()
+	assert.Nil(t, err)
+
+	// BB
+	cp = g.GetCurrentPlayer()
+	assert.Equal(t, int64(0), cp.Wager)
+	assert.Equal(t, cp.InitialStackSize, cp.Bankroll-cp.Pot)
+	assert.Equal(t, cp.StackSize, cp.Bankroll-cp.Pot-cp.Wager)
+	assert.Equal(t, 3, len(cp.AllowedActions))
+	assert.Equal(t, "allin", cp.AllowedActions[0])
+	assert.Equal(t, "check", cp.AllowedActions[1])
+	assert.Equal(t, "bet", cp.AllowedActions[2])
+
+	// BB: bet 30
+	err = g.Player(cp.Idx).Bet(30)
+	assert.Nil(t, err)
+
+	// Dealer
+	cp = g.GetCurrentPlayer()
+	assert.Equal(t, int64(0), cp.Wager)
+	assert.Equal(t, cp.InitialStackSize, cp.Bankroll-cp.Pot)
+	assert.Equal(t, cp.StackSize, cp.Bankroll-cp.Pot-cp.Wager)
+	assert.Equal(t, 4, len(cp.AllowedActions))
+	assert.Equal(t, "allin", cp.AllowedActions[0])
+	assert.Equal(t, "fold", cp.AllowedActions[1])
+	assert.Equal(t, "call", cp.AllowedActions[2])
+	assert.Equal(t, "raise", cp.AllowedActions[3])
+
+	// Dealer: raise 60
+	err = g.Player(cp.Idx).Raise(60)
+	assert.Nil(t, err)
+
+	// SB
+	cp = g.GetCurrentPlayer()
+	assert.Equal(t, int64(0), cp.Wager)
+	assert.Equal(t, cp.InitialStackSize, cp.Bankroll-cp.Pot)
+	assert.Equal(t, cp.StackSize, cp.Bankroll-cp.Pot-cp.Wager)
+	assert.Equal(t, 4, len(cp.AllowedActions))
+	assert.Equal(t, "allin", cp.AllowedActions[0])
+	assert.Equal(t, "fold", cp.AllowedActions[1])
+	assert.Equal(t, "call", cp.AllowedActions[2])
+	assert.Equal(t, "raise", cp.AllowedActions[3])
+
+	// SB: call
+	err = g.Player(cp.Idx).Call()
+	assert.Nil(t, err)
+
+	// BB
+	cp = g.GetCurrentPlayer()
+	assert.Equal(t, int64(30), cp.Wager)
+	assert.Equal(t, cp.InitialStackSize, cp.Bankroll-cp.Pot)
+	assert.Equal(t, cp.StackSize, cp.Bankroll-cp.Pot-cp.Wager)
+	assert.Equal(t, 4, len(cp.AllowedActions))
+	assert.Equal(t, "allin", cp.AllowedActions[0])
+	assert.Equal(t, "fold", cp.AllowedActions[1])
+	assert.Equal(t, "call", cp.AllowedActions[2])
+	assert.Equal(t, "raise", cp.AllowedActions[3])
+
+	// BB: call
+	err = g.Player(cp.Idx).Call()
+	assert.Nil(t, err)
+
+	// Entering River
+	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
+	assert.Equal(t, "river", g.GetState().Status.Round)
+	assert.Equal(t, int64(210), g.GetState().Status.Pots[0].Total)
+	assert.Equal(t, int64(70), g.GetState().Status.Pots[0].Wager)
+	assert.Equal(t, 3, len(g.GetState().Status.Pots[0].Contributors))
+
+	// get ready
+	for _, p := range g.GetState().Players {
+		assert.Equal(t, "ready", p.AllowedActions[0])
+		err := g.Player(p.Idx).Ready()
+		assert.Nil(t, err)
+	}
+
+	// SB
+	cp = g.GetCurrentPlayer()
+	err = g.Player(cp.Idx).Check()
+	assert.Nil(t, err)
+
+	// BB
+	cp = g.GetCurrentPlayer()
+	err = g.Player(cp.Idx).Check()
+	assert.Nil(t, err)
+
+	// Dealer
+	cp = g.GetCurrentPlayer()
+	err = g.Player(cp.Idx).Check()
+	assert.Nil(t, err)
 
 	g.PrintState()
 }

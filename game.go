@@ -224,6 +224,7 @@ func (g *game) ResetAllPlayerStatus() error {
 }
 
 func (g *game) ResetRoundStatus() error {
+	g.gs.Status.CurrentRoundPot = 0
 	g.gs.Status.CurrentWager = 0
 	g.gs.Status.CurrentRaiser = g.Dealer().State().Idx
 	g.gs.Status.CurrentPlayer = g.gs.Status.CurrentRaiser

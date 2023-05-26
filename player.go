@@ -131,6 +131,11 @@ func (p *player) Pass() error {
 func (p *player) pay(chips int64) error {
 
 	if p.state.StackSize <= chips {
+
+		// Update pot of current round
+		gs := p.game.GetState()
+		gs.Status.CurrentRoundPot += p.state.InitialStackSize - p.state.Wager
+
 		p.state.DidAction = "allin"
 		p.state.Wager = p.state.InitialStackSize
 		p.state.StackSize = 0
@@ -141,8 +146,11 @@ func (p *player) pay(chips int64) error {
 	p.state.Wager += chips
 	p.state.StackSize = p.state.InitialStackSize - p.state.Wager
 
-	// Update game status if player raised
+	// Update pot of current round
 	gs := p.game.GetState()
+	gs.Status.CurrentRoundPot += chips
+
+	// player raised
 	if gs.Status.CurrentWager < p.state.Wager {
 		gs.Status.CurrentWager = chips
 		gs.Status.CurrentRaiser = p.idx
@@ -221,7 +229,8 @@ func (p *player) Fold() error {
 	p.state.DidAction = "fold"
 	p.state.ActionCount++
 
-	// Implement the logic for the Fold() function
+	p.game.Resume()
+
 	return nil
 }
 
@@ -237,10 +246,10 @@ func (p *player) Call() error {
 
 	delta := gs.Status.CurrentWager - p.state.Wager
 
-	p.pay(delta)
-
 	p.state.DidAction = "call"
 	p.state.ActionCount++
+
+	p.pay(delta)
 
 	p.game.Resume()
 
@@ -269,12 +278,15 @@ func (p *player) Bet(chips int64) error {
 		return ErrInvalidAction
 	}
 
-	fmt.Printf("[Player %d] bet\n", p.idx)
+	fmt.Printf("[Player %d] bet %d\n", p.idx, chips)
 
 	p.state.DidAction = "bet"
 	p.state.ActionCount++
 
-	// Implement the logic for the Bet() function
+	p.pay(chips)
+
+	p.game.Resume()
+
 	return nil
 }
 
@@ -289,6 +301,8 @@ func (p *player) Raise(chips int64) error {
 	p.state.DidAction = "raise"
 	p.state.ActionCount++
 
-	// Implement the logic for the Raise() function
+	p.pay(chips)
+
+	p.game.Resume()
 	return nil
 }
