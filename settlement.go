@@ -54,7 +54,7 @@ func (g *game) CalculateGameResults() error {
 
 	// Initializing player results
 	for _, p := range g.gs.Players {
-		r.AddPlayer(p.Idx, p.StackSize)
+		r.AddPlayer(p.Idx, p.Bankroll)
 	}
 
 	// Initializing pot results
