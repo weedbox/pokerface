@@ -715,63 +715,6 @@ func (g *game) PreparePreflopRound() error {
 	return nil
 }
 
-func (g *game) onRoundClosed() error {
-
-	// Update pots
-	err := g.updatePots()
-	if err != nil {
-		return err
-	}
-
-	g.ResetRoundStatus()
-	g.ResetAllPlayerStatus()
-
-	aliveCount := g.AlivePlayerCount()
-	if aliveCount == 1 {
-		// Game is completed
-		return g.EmitEvent(GameEvent_GameCompleted, nil)
-	}
-
-	switch g.gs.Status.Round {
-	case "preflop":
-		return g.EmitEvent(GameEvent_FlopRoundEntered, nil)
-	case "flop":
-		return g.EmitEvent(GameEvent_TurnRoundEntered, nil)
-	case "turn":
-		return g.EmitEvent(GameEvent_RiverRoundEntered, nil)
-	case "river":
-		return g.EmitEvent(GameEvent_GameCompleted, nil)
-	}
-
-	return ErrUnknownRound
-}
-
-func (g *game) onGameCompleted() error {
-	return g.EmitEvent(GameEvent_SettlementRequested, nil)
-}
-
-func (g *game) onSettlementRequested() error {
-
-	//Note: this task is not required because we done need player ranking
-	//ranks := g.CalculatePlayersRanking()
-
-	// Calculate results with ranks
-	err := g.CalculateGameResults()
-	if err != nil {
-		return err
-	}
-
-	return g.EmitEvent(GameEvent_SettlementCompleted, nil)
-}
-
-func (g *game) onSettlementCompleted() error {
-	return g.EmitEvent(GameEvent_GameClosed, nil)
-}
-
-func (g *game) onGameClosed() error {
-	return nil
-}
-
 func (g *game) PrintState() error {
 
 	data, err := g.GetStateJSON()
