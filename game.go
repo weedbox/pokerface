@@ -27,6 +27,9 @@ type Game interface {
 	GetStateJSON() ([]byte, error)
 	LoadState(gs *GameState) error
 	Player(idx int) Player
+	Dealer() Player
+	SmallBlind() Player
+	BigBlind() Player
 	Deal(count int) []string
 	Burn(count int) error
 	FindDealer() *PlayerState
