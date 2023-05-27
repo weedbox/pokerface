@@ -28,7 +28,6 @@ const (
 	GameEvent_RoundInitialized
 	GameEvent_RoundPrepared
 	GameEvent_RoundClosed
-	GameEvent_PlayerDidAction
 
 	// Result
 	GameEvent_GameCompleted
@@ -51,7 +50,6 @@ var GameEventSymbols = map[GameEvent]string{
 	GameEvent_RoundInitialized:    "RoundInitialized",
 	GameEvent_RoundPrepared:       "RoundPrepared",
 	GameEvent_RoundClosed:         "RoundClosed",
-	GameEvent_PlayerDidAction:     "PlayerDidAction",
 	GameEvent_GameCompleted:       "GameCompleted",
 	GameEvent_SettlementRequested: "SettlementRequested",
 	GameEvent_SettlementCompleted: "SettlementCompleted",
@@ -72,7 +70,6 @@ var GameEventBySymbol = map[string]GameEvent{
 	"RoundInitialized":    GameEvent_RoundInitialized,
 	"RoundPrepared":       GameEvent_RoundPrepared,
 	"RoundClosed":         GameEvent_RoundClosed,
-	"PlayerDidAction":     GameEvent_PlayerDidAction,
 	"GameCompleted":       GameEvent_GameCompleted,
 	"SettlementRequested": GameEvent_SettlementRequested,
 	"SettlementCompleted": GameEvent_SettlementCompleted,
@@ -147,10 +144,6 @@ func (g *game) triggerEvent(event GameEvent) error {
 	case GameEvent_RoundClosed:
 		fmt.Println("Current round has closed.")
 		return g.onRoundClosed()
-
-	case GameEvent_PlayerDidAction:
-		fmt.Println("Player did action.")
-		return g.onPlayerDidAction()
 
 	case GameEvent_GameCompleted:
 		fmt.Println("Game has been completed.")

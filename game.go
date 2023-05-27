@@ -403,10 +403,8 @@ func (g *game) PlayerLoop() error {
 
 	if p.ActionCount == 0 {
 		g.SetCurrentPlayer(p)
-		// finally, it should trigger PlayerDidAction event
 	} else if p.Idx != g.gs.Status.CurrentRaiser {
 		g.SetCurrentPlayer(p)
-		// finally, it should trigger PlayerDidAction event
 	} else {
 		// No more player can move
 		return g.EmitEvent(GameEvent_RoundClosed, nil)
@@ -746,10 +744,6 @@ func (g *game) onRoundClosed() error {
 	}
 
 	return ErrUnknownRound
-}
-
-func (g *game) onPlayerDidAction() error {
-	return g.PlayerLoop()
 }
 
 func (g *game) onGameCompleted() error {
