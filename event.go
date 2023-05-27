@@ -15,7 +15,6 @@ const (
 	GameEvent_Initialized
 	GameEvent_Prepared
 	GameEvent_AnteRequested
-	GameEvent_AnteReceived
 
 	// States
 	GameEvent_Dealt
@@ -43,7 +42,6 @@ var GameEventSymbols = map[GameEvent]string{
 	GameEvent_Initialized:         "Initialized",
 	GameEvent_Prepared:            "Prepared",
 	GameEvent_AnteRequested:       "AnteRequested",
-	GameEvent_AnteReceived:        "AnteReceived",
 	GameEvent_Dealt:               "Dealt",
 	GameEvent_WagerRequested:      "WagerRequested",
 	GameEvent_PreflopRoundEntered: "PreflopRoundEntered",
@@ -65,7 +63,6 @@ var GameEventBySymbol = map[string]GameEvent{
 	"Initialized":         GameEvent_Initialized,
 	"Prepared":            GameEvent_Prepared,
 	"AnteRequested":       GameEvent_AnteRequested,
-	"AnteReceived":        GameEvent_AnteReceived,
 	"Dealt":               GameEvent_Dealt,
 	"WagerRequested":      GameEvent_WagerRequested,
 	"PreflopRoundEntered": GameEvent_PreflopRoundEntered,
@@ -115,10 +112,6 @@ func (g *game) triggerEvent(event GameEvent) error {
 	case GameEvent_AnteRequested:
 		fmt.Println("Ante has been requested.")
 		return g.onAnteRequested()
-
-	case GameEvent_AnteReceived:
-		fmt.Println("Ante is received.")
-		return g.onAnteReceived()
 
 	case GameEvent_Dealt:
 		fmt.Println("Cards have been dealt.")
@@ -232,23 +225,6 @@ func (g *game) onPrepared() error {
 }
 
 func (g *game) onAnteRequested() error {
-	/*
-		wg, err := g.WaitForAllPlayersPaidAnte()
-		if err != nil {
-			return err
-		}
-
-		if wg.IsCompleted() {
-			g.wg = nil
-			return g.EmitEvent(GameEvent_AnteReceived, nil)
-		}
-	*/
-	// Nothing to do, just waiting for all players paid
-
-	return nil
-}
-
-func (g *game) onAnteReceived() error {
 
 	// Update pots
 	err := g.updatePots()

@@ -33,6 +33,7 @@ type Game interface {
 	ResetAllPlayerStatus() error
 	StartAtDealer() (*PlayerState, error)
 	NextMovablePlayer() *PlayerState
+	GetPlayerCount() int
 	SetCurrentPlayer(p *PlayerState) error
 	GetCurrentPlayer() *PlayerState
 	GetAllowedActions(player *PlayerState) []string
@@ -126,7 +127,7 @@ func (g *game) AddPlayer(idx int, setting *PlayerSetting) error {
 
 func (g *game) Player(idx int) Player {
 
-	if idx < 0 || idx >= len(g.gs.Players) {
+	if idx < 0 || idx >= g.GetPlayerCount() {
 		return nil
 	}
 
@@ -255,14 +256,15 @@ func (g *game) GetCurrentPlayer() *PlayerState {
 func (g *game) NextPlayer() *PlayerState {
 
 	cur := g.gs.Status.CurrentPlayer
+	playerCount := g.GetPlayerCount()
 
-	for i := 1; i < len(g.gs.Players); i++ {
+	for i := 1; i < playerCount; i++ {
 
 		// Find the next player
 		cur++
 
 		// The end of player list
-		if cur == len(g.gs.Players) {
+		if cur == playerCount {
 			cur = 0
 		}
 
@@ -276,14 +278,15 @@ func (g *game) NextPlayer() *PlayerState {
 func (g *game) NextMovablePlayer() *PlayerState {
 
 	cur := g.gs.Status.CurrentPlayer
+	playerCount := g.GetPlayerCount()
 
-	for i := 1; i < len(g.gs.Players); i++ {
+	for i := 1; i < playerCount; i++ {
 
 		// Find the next player
 		cur++
 
 		// The end of player list
-		if cur == len(g.gs.Players) {
+		if cur == playerCount {
 			cur = 0
 		}
 
@@ -298,20 +301,25 @@ func (g *game) NextMovablePlayer() *PlayerState {
 	return nil
 }
 
+func (g *game) GetPlayerCount() int {
+	return len(g.gs.Players)
+}
+
 func (g *game) GetPlayers() []*PlayerState {
 
 	players := make([]*PlayerState, 0)
+	playerCount := g.GetPlayerCount()
 
 	// Getting player list that dealer is the first element of it
 	cur := g.Dealer().State().Idx
 
-	for i := 1; i < len(g.gs.Players); i++ {
+	for i := 1; i < playerCount; i++ {
 
 		// Find the next player
 		cur++
 
 		// The end of player list
-		if cur == len(g.gs.Players) {
+		if cur == playerCount {
 			cur = 0
 		}
 
@@ -359,7 +367,7 @@ func (g *game) SetCurrentPlayer(p *PlayerState) error {
 
 func (g *game) AlivePlayerCount() int {
 
-	aliveCount := len(g.gs.Players)
+	aliveCount := g.GetPlayerCount()
 
 	for _, p := range g.gs.Players {
 		if p.Fold {
@@ -477,7 +485,7 @@ func (g *game) Start() error {
 func (g *game) Initialize() error {
 
 	// Check the number of players
-	if len(g.gs.Players) < 2 {
+	if g.GetPlayerCount() < 2 {
 		return ErrInsufficientNumberOfPlayers
 	}
 
@@ -519,7 +527,13 @@ func (g *game) Prepare() error {
 }
 
 func (g *game) RequestAnte() error {
-	//TODO: preparing task for ante request
+
+	if !g.WaitForPayment("ante") {
+		return nil
+	}
+
+	g.ResetRoundStatus()
+
 	return g.EmitEvent(GameEvent_AnteRequested, nil)
 }
 
@@ -609,19 +623,31 @@ func (g *game) PreparePreflopRound() error {
 
 		// Task 1: request dealer blind
 		if g.gs.Meta.Blind.Dealer > 0 && event.Payload.Task.GetTask("db") == nil {
-			t := task.NewWaitPay("db")
+			t := task.NewWaitPay("db", g.gs.Meta.Blind.Dealer)
+
+			playerIdx := g.Dealer().State().Idx
+			t.PrepareStates([]int{playerIdx})
+
 			event.Payload.Task.AddTask(t)
 		}
 
 		// Task 2: request small blind
 		if g.gs.Meta.Blind.SB > 0 && event.Payload.Task.GetTask("sb") == nil {
-			t := task.NewWaitPay("sb")
+			t := task.NewWaitPay("sb", g.gs.Meta.Blind.SB)
+
+			playerIdx := g.SmallBlind().State().Idx
+			t.PrepareStates([]int{playerIdx})
+
 			event.Payload.Task.AddTask(t)
 		}
 
 		// Task 3: request big blind
 		if g.gs.Meta.Blind.BB > 0 && event.Payload.Task.GetTask("bb") == nil {
-			t := task.NewWaitPay("bb")
+			t := task.NewWaitPay("bb", g.gs.Meta.Blind.BB)
+
+			playerIdx := g.BigBlind().State().Idx
+			t.PrepareStates([]int{playerIdx})
+
 			event.Payload.Task.AddTask(t)
 		}
 

@@ -12,6 +12,7 @@ func Test_BasicCase(t *testing.T) {
 	pf := pokerface.NewPokerFace()
 
 	opts := pokerface.NewStardardGameOptions()
+	opts.Ante = 10
 
 	// Preparing deck
 	opts.Deck = pokerface.NewStandardDeckCards()
@@ -63,7 +64,22 @@ func Test_BasicCase(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	//TODO: ante
+	// ante
+	assert.Equal(t, "Prepared", g.GetState().Status.CurrentEvent.Name)
+
+	for _, p := range g.GetState().Players {
+		assert.Equal(t, 0, len(p.HoleCards))
+		assert.Equal(t, 0, p.ActionCount)
+		assert.Equal(t, false, p.Fold)
+		assert.Equal(t, int64(0), p.Wager)
+		assert.Equal(t, int64(0), p.Pot)
+		assert.Equal(t, int64(players[p.Idx].Bankroll), p.Bankroll)
+		assert.Equal(t, int64(players[p.Idx].Bankroll), p.InitialStackSize)
+		assert.Equal(t, int64(players[p.Idx].Bankroll), p.StackSize)
+		assert.Equal(t, "pay", p.AllowedActions[0])
+		err := g.Player(p.Idx).Pay(opts.Ante)
+		assert.Nil(t, err)
+	}
 
 	// Entering Preflop
 	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
@@ -76,10 +92,7 @@ func Test_BasicCase(t *testing.T) {
 		assert.Equal(t, 0, p.ActionCount)
 		assert.Equal(t, false, p.Fold)
 		assert.Equal(t, int64(0), p.Wager)
-		assert.Equal(t, int64(0), p.Pot)
-		assert.Equal(t, int64(players[p.Idx].Bankroll), p.Bankroll)
-		assert.Equal(t, int64(players[p.Idx].Bankroll), p.InitialStackSize)
-		assert.Equal(t, int64(players[p.Idx].Bankroll), p.StackSize)
+		assert.Equal(t, int64(10), p.Pot)
 
 		if p.Idx == 1 {
 			assert.Equal(t, "pay", p.AllowedActions[0])
@@ -148,8 +161,8 @@ func Test_BasicCase(t *testing.T) {
 	// Entering Flop
 	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
 	assert.Equal(t, "flop", g.GetState().Status.Round)
-	assert.Equal(t, int64(30), g.GetState().Status.Pots[0].Total)
-	assert.Equal(t, int64(10), g.GetState().Status.Pots[0].Wager)
+	assert.Equal(t, int64(30+3*g.GetState().Meta.Ante), g.GetState().Status.Pots[0].Total)
+	assert.Equal(t, int64(10+g.GetState().Meta.Ante), g.GetState().Status.Pots[0].Wager)
 	assert.Equal(t, 3, len(g.GetState().Status.Pots[0].Contributors))
 
 	// get ready
@@ -294,8 +307,8 @@ func Test_BasicCase(t *testing.T) {
 	// Entering River
 	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
 	assert.Equal(t, "river", g.GetState().Status.Round)
-	assert.Equal(t, int64(210), g.GetState().Status.Pots[0].Total)
-	assert.Equal(t, int64(70), g.GetState().Status.Pots[0].Wager)
+	assert.Equal(t, int64(210+3*g.GetState().Meta.Ante), g.GetState().Status.Pots[0].Total)
+	assert.Equal(t, int64(70+g.GetState().Meta.Ante), g.GetState().Status.Pots[0].Wager)
 	assert.Equal(t, 3, len(g.GetState().Status.Pots[0].Contributors))
 
 	// get ready

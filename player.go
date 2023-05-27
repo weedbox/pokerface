@@ -208,9 +208,9 @@ func (p *player) Pay(chips int64) error {
 		return err
 	}
 
-	// Update state to be ready
+	// Update task state
 	wp := t.(*task.WaitPay)
-	wp.Pay(chips)
+	wp.Pay(p.idx, chips)
 
 	// Keep going
 	p.game.Resume()
