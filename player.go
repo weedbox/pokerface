@@ -163,33 +163,6 @@ func (p *player) pay(chips int64) error {
 	return nil
 }
 
-func (p *player) PayAnte(chips int64) error {
-
-	if !p.CheckAction("pay_ante") {
-		return nil
-	}
-
-	fmt.Printf("[Player %d] pay ante %d\n", p.idx, chips)
-	/*
-		wg := p.game.GetWaitGroup()
-		if wg == nil {
-			return nil
-		}
-
-		// Check waitgroup type
-		if wg.Type != waitgroup.TypePayAnte {
-			return nil
-		}
-
-		p.pay(chips)
-
-		wg.GetStateByIdx(p.idx).State = true
-
-		p.game.Resume()
-	*/
-	return nil
-}
-
 func (p *player) Pay(chips int64) error {
 
 	if !p.CheckAction("pay") {
