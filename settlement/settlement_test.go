@@ -155,6 +155,10 @@ func TestMultipleWinners(t *testing.T) {
 	assert.Equal(t, int64(1500), r.Players[0].Changed)
 	assert.Equal(t, int64(1500), r.Players[1].Changed)
 	assert.Equal(t, int64(-3000), r.Players[2].Changed)
+
+	// pot result
+	assert.Equal(t, r.Pots[0].Total, r.Pots[0].Winners[0].Withdraw+r.Pots[0].Winners[1].Withdraw)
+	assert.Equal(t, r.Pots[1].Total, r.Pots[1].Winners[0].Withdraw+r.Pots[1].Winners[1].Withdraw)
 }
 
 func TestAllin(t *testing.T) {

@@ -14,13 +14,13 @@ type PlayerResult struct {
 type PotResult struct {
 	rank PotRank
 
-	Chips   int64     `json:"chips"`
+	Total   int64     `json:"total"`
 	Winners []*Winner `json:"winners"`
 }
 
 type Winner struct {
-	Idx   int   `json:"idx"`
-	Chips int64 `json:"chips"`
+	Idx      int   `json:"idx"`
+	Withdraw int64 `json:"withdraw"`
 }
 
 func NewResult() *Result {
@@ -44,7 +44,7 @@ func (r *Result) AddPlayer(playerIdx int, bankroll int64) {
 func (r *Result) AddPot(total int64) {
 
 	pr := &PotResult{
-		Chips:   total,
+		Total:   total,
 		Winners: make([]*Winner, 0),
 	}
 
@@ -60,7 +60,7 @@ func (r *Result) AddContributor(potIdx int, playerIdx int, score int) {
 	pot.rank.AddContributor(score, playerIdx)
 }
 
-func (r *Result) Update(potIdx int, playerIdx int, withdraw int64) {
+func (r *Result) Update(potIdx int, playerIdx int, wager int64, withdraw int64) {
 
 	pot := r.Pots[potIdx]
 
@@ -68,8 +68,8 @@ func (r *Result) Update(potIdx int, playerIdx int, withdraw int64) {
 	if withdraw >= 0 {
 
 		w := &Winner{
-			Idx:   playerIdx,
-			Chips: withdraw,
+			Idx:      playerIdx,
+			Withdraw: withdraw + wager,
 		}
 
 		pot.Winners = append(pot.Winners, w)
@@ -102,7 +102,7 @@ func (r *Result) CalculateWinnerRewards(potIdx int, wager int64, total int64, wi
 			reward += 1
 		}
 
-		r.Update(potIdx, wIdx, reward-wager)
+		r.Update(potIdx, wIdx, wager, reward-wager)
 	}
 }
 
@@ -111,19 +111,19 @@ func (r *Result) Calculate() {
 	for potIdx, pot := range r.Pots {
 
 		// Calculate contributions of players
-		wager := r.CalculateWagerOfPot(pot.Chips, pot.rank.ContributorCount())
+		wager := r.CalculateWagerOfPot(pot.Total, pot.rank.ContributorCount())
 
 		// Calculate contributer ranks of this pot by score
 		pot.rank.Calculate()
 
 		// Calculate chips for multiple winners of this pot
 		winners := pot.rank.GetWinners()
-		r.CalculateWinnerRewards(potIdx, wager, pot.Chips, winners)
+		r.CalculateWinnerRewards(potIdx, wager, pot.Total, winners)
 
 		// Update loser results (should be negtive)
 		losers := pot.rank.GetLoser()
 		for _, lIdx := range losers {
-			r.Update(potIdx, lIdx, -wager)
+			r.Update(potIdx, lIdx, wager, -wager)
 		}
 	}
 }
