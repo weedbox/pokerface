@@ -348,7 +348,7 @@ func (g *game) SetCurrentPlayer(p Player) error {
 
 	if g.gs.Status.CurrentPlayer != -1 {
 		// Clear allowed actions of current player
-		g.Player(g.gs.Status.CurrentPlayer).ResetAllowedActions()
+		g.GetCurrentPlayer().ResetAllowedActions()
 	}
 
 	err := g.setCurrentPlayer(p)

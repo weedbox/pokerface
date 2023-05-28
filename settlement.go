@@ -10,21 +10,21 @@ type RankInfo struct {
 	Power  *combination.PowerState
 }
 
+/*
 func (g *game) GetAlivePlayers() []*PlayerState {
 
-	players := make([]*PlayerState, 0)
-	for _, p := range g.gs.Players {
+		players := make([]*PlayerState, 0)
+		for _, p := range g.gs.Players {
 
-		// Find the player who did not fold
-		if !p.Fold {
-			players = append(players, p)
+			// Find the player who did not fold
+			if !p.Fold {
+				players = append(players, p)
+			}
 		}
+
+		return players
 	}
 
-	return players
-}
-
-/*
 func (g *game) CalculatePlayersRanking() []*RankInfo {
 
 		players := g.GetAlivePlayers()
