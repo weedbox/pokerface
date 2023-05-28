@@ -2,13 +2,13 @@ package pokerface
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/cfsghost/pokerface/task"
 )
 
 var (
 	ErrInvalidAction = errors.New("player: invalid action")
+	ErrIllegalRaise  = errors.New("player: illegal raise")
 )
 
 type Player interface {
@@ -24,8 +24,9 @@ type Player interface {
 	Fold() error
 	Check() error
 	Call() error
+	Allin() error
 	Bet(chips int64) error
-	Raise(chips int64) error
+	Raise(chipLevel int64) error
 }
 
 type player struct {
@@ -102,7 +103,7 @@ func (p *player) Ready() error {
 		return ErrInvalidAction
 	}
 
-	fmt.Printf("[Player %d] Get ready\n", p.idx)
+	//fmt.Printf("[Player %d] Get ready\n", p.idx)
 
 	event := p.game.GetEvent()
 
@@ -169,7 +170,7 @@ func (p *player) Pay(chips int64) error {
 		return ErrInvalidAction
 	}
 
-	fmt.Printf("[Player %d] Pay %d\n", p.idx, chips)
+	//fmt.Printf("[Player %d] Pay %d\n", p.idx, chips)
 
 	event := p.game.GetEvent()
 
@@ -219,7 +220,7 @@ func (p *player) Call() error {
 		return ErrInvalidAction
 	}
 
-	fmt.Printf("[Player %d] call\n", p.idx)
+	//fmt.Printf("[Player %d] call\n", p.idx)
 
 	gs := p.game.GetState()
 
@@ -241,7 +242,7 @@ func (p *player) Check() error {
 		return ErrInvalidAction
 	}
 
-	fmt.Printf("[Player %d] check\n", p.idx)
+	//fmt.Printf("[Player %d] check\n", p.idx)
 
 	p.state.DidAction = "check"
 	p.state.ActionCount++
@@ -257,30 +258,69 @@ func (p *player) Bet(chips int64) error {
 		return ErrInvalidAction
 	}
 
-	fmt.Printf("[Player %d] bet %d\n", p.idx, chips)
+	//fmt.Printf("[Player %d] bet %d\n", p.idx, chips)
 
 	p.state.DidAction = "bet"
 	p.state.ActionCount++
 
 	p.pay(chips)
 
+	p.game.GetState().Status.PreviousRaiseSize = chips
 	p.game.Resume()
 
 	return nil
 }
 
-func (p *player) Raise(chips int64) error {
+func (p *player) Raise(chipLevel int64) error {
 
 	if !p.CheckAction("raise") {
 		return ErrInvalidAction
 	}
 
-	fmt.Printf("[Player %d] raise\n", p.idx)
+	gs := p.game.GetState()
+	if chipLevel == 0 || chipLevel < gs.Status.CurrentWager {
+		return ErrIllegalRaise
+	}
+
+	if chipLevel == gs.Status.CurrentWager {
+		return p.Call()
+	}
+
+	// if chips is not enough to raise, player can do allin only
+	raised := chipLevel - gs.Status.CurrentWager
+	required := chipLevel - p.state.Wager
+	//fmt.Println(gs.Status.PreviousRaiseSize)
+	//fmt.Printf(" %d => initial=%d, raised=%d, required=%d\n", chipLevel, p.state.InitialStackSize, raised, required)
+	if chipLevel >= p.state.InitialStackSize || raised < gs.Status.PreviousRaiseSize {
+		return p.Allin()
+	}
+
+	//fmt.Printf("[Player %d] raise\n", p.idx)
 
 	p.state.DidAction = "raise"
 	p.state.ActionCount++
 
-	p.pay(chips)
+	// Update raise size
+	gs.Status.PreviousRaiseSize = chipLevel - gs.Status.CurrentWager
+
+	p.pay(required)
+
+	p.game.Resume()
+	return nil
+}
+
+func (p *player) Allin() error {
+
+	if !p.CheckAction("allin") {
+		return ErrInvalidAction
+	}
+
+	//fmt.Printf("[Player %d] allin\n", p.idx)
+
+	p.state.DidAction = "allin"
+	p.state.ActionCount++
+
+	p.pay(p.state.StackSize)
 
 	p.game.Resume()
 	return nil

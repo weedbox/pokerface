@@ -1,8 +1,6 @@
 package pokerface
 
 import (
-	"fmt"
-
 	"github.com/cfsghost/pokerface/task"
 )
 
@@ -65,7 +63,7 @@ func (g *game) WaitForAllPlayersReady(taskName string) bool {
 	}
 
 	if !t.Execute() {
-		fmt.Println("Waiting for ready")
+		//fmt.Println("Waiting for ready")
 		return false
 	}
 
@@ -138,7 +136,7 @@ func (g *game) WaitForPayment(taskName string) bool {
 	}
 
 	if !t.Execute() {
-		fmt.Println("Waiting for ante")
+		//fmt.Println("Waiting for ante")
 		return false
 	}
 

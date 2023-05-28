@@ -82,6 +82,7 @@ func Test_BasicCase(t *testing.T) {
 	}
 
 	// Entering Preflop
+	t.Log("Entering \"Prflop\" round")
 	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
 	assert.Equal(t, "preflop", g.GetState().Status.Round)
 
@@ -159,6 +160,7 @@ func Test_BasicCase(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Entering Flop
+	t.Log("Entering \"Flop\" round")
 	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
 	assert.Equal(t, "flop", g.GetState().Status.Round)
 	assert.Equal(t, int64(30+3*g.GetState().Meta.Ante), g.GetState().Status.Pots[0].Total)
@@ -218,6 +220,7 @@ func Test_BasicCase(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Entering Turn
+	t.Log("Entering \"Turn\" round")
 	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
 	assert.Equal(t, "turn", g.GetState().Status.Round)
 
@@ -229,6 +232,7 @@ func Test_BasicCase(t *testing.T) {
 	}
 
 	// Starting player loop
+	t.Log("Round is ready")
 	assert.Equal(t, "RoundPrepared", g.GetState().Status.CurrentEvent.Name)
 
 	// SB
@@ -261,6 +265,7 @@ func Test_BasicCase(t *testing.T) {
 
 	// Dealer
 	cp = g.GetCurrentPlayer()
+	assert.Equal(t, "dealer", cp.State().Positions[0])
 	assert.Equal(t, int64(0), cp.State().Wager)
 	assert.Equal(t, cp.State().InitialStackSize, cp.State().Bankroll-cp.State().Pot)
 	assert.Equal(t, cp.State().StackSize, cp.State().Bankroll-cp.State().Pot-cp.State().Wager)
@@ -270,12 +275,13 @@ func Test_BasicCase(t *testing.T) {
 	assert.Equal(t, "call", cp.State().AllowedActions[2])
 	assert.Equal(t, "raise", cp.State().AllowedActions[3])
 
-	// Dealer: raise 60
+	// Dealer: raise to 60 (+30)
 	err = g.Player(cp.SeatIndex()).Raise(60)
 	assert.Nil(t, err)
 
 	// SB
 	cp = g.GetCurrentPlayer()
+	assert.Equal(t, "sb", cp.State().Positions[0])
 	assert.Equal(t, int64(0), cp.State().Wager)
 	assert.Equal(t, cp.State().InitialStackSize, cp.State().Bankroll-cp.State().Pot)
 	assert.Equal(t, cp.State().StackSize, cp.State().Bankroll-cp.State().Pot-cp.State().Wager)
@@ -291,6 +297,7 @@ func Test_BasicCase(t *testing.T) {
 
 	// BB
 	cp = g.GetCurrentPlayer()
+	assert.Equal(t, "bb", cp.State().Positions[0])
 	assert.Equal(t, int64(30), cp.State().Wager)
 	assert.Equal(t, cp.State().InitialStackSize, cp.State().Bankroll-cp.State().Pot)
 	assert.Equal(t, cp.State().StackSize, cp.State().Bankroll-cp.State().Pot-cp.State().Wager)
@@ -305,6 +312,7 @@ func Test_BasicCase(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Entering River
+	t.Log("Entering \"River\" round")
 	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
 	assert.Equal(t, "river", g.GetState().Status.Round)
 	assert.Equal(t, int64(210+3*g.GetState().Meta.Ante), g.GetState().Status.Pots[0].Total)

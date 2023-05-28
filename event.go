@@ -1,8 +1,6 @@
 package pokerface
 
 import (
-	"fmt"
-
 	"github.com/cfsghost/pokerface/task"
 )
 
@@ -95,70 +93,70 @@ func (g *game) triggerEvent(event GameEvent) error {
 	switch event {
 
 	case GameEvent_Started:
-		fmt.Println("Game has started.")
+		//fmt.Println("Game has started.")
 		return g.onStarted()
 
 	case GameEvent_Initialized:
-		fmt.Println("Game has been initialized.")
+		//fmt.Println("Game has been initialized.")
 		return g.onInitialized()
 
 	case GameEvent_Prepared:
-		fmt.Println("Game has been prepared.")
+		//fmt.Println("Game has been prepared.")
 		return g.onPrepared()
 
 	case GameEvent_AnteRequested:
-		fmt.Println("Ante has been requested.")
+		//fmt.Println("Ante has been requested.")
 		return g.onAnteRequested()
 
 	case GameEvent_Dealt:
-		fmt.Println("Cards have been dealt.")
+		//fmt.Println("Cards have been dealt.")
 		//		return g.antePreparation()
 
 	case GameEvent_WagerRequested:
-		fmt.Println("Wager has been requested.")
+		//fmt.Println("Wager has been requested.")
 
 	case GameEvent_PreflopRoundEntered:
-		fmt.Println("Entered Preflop round.")
+		//fmt.Println("Entered Preflop round.")
 		return g.onPreflopRoundEntered()
 
 	case GameEvent_FlopRoundEntered:
-		fmt.Println("Entered Flop round.")
+		//fmt.Println("Entered Flop round.")
 		return g.onFlopRoundEntered()
 
 	case GameEvent_TurnRoundEntered:
-		fmt.Println("Entered Turn round.")
+		//fmt.Println("Entered Turn round.")
 		return g.onTurnRoundEntered()
 
 	case GameEvent_RiverRoundEntered:
-		fmt.Println("Entered River round.")
+		//fmt.Println("Entered River round.")
 		return g.onRiverRoundEntered()
 
 	case GameEvent_RoundInitialized:
-		fmt.Println("Current round has initialized.")
+		//fmt.Println("Current round has initialized.")
 		return g.onRoundInitialized()
 
 	case GameEvent_RoundPrepared:
-		fmt.Println("Current round has been prepared.")
+		//fmt.Println("Current round has been prepared.")
 		return g.onRoundPrepared()
 
 	case GameEvent_RoundClosed:
-		fmt.Println("Current round has closed.")
+		//fmt.Println("Current round has closed.")
 		return g.onRoundClosed()
 
 	case GameEvent_GameCompleted:
-		fmt.Println("Game has been completed.")
+		//fmt.Println("Game has been completed.")
 		return g.onGameCompleted()
 
 	case GameEvent_SettlementRequested:
-		fmt.Println("Settlement has been requested.")
+		//fmt.Println("Settlement has been requested.")
 		return g.onSettlementRequested()
 
 	case GameEvent_SettlementCompleted:
-		fmt.Println("Settlement has been completed.")
+		//fmt.Println("Settlement has been completed.")
 		return g.onSettlementCompleted()
 
 	case GameEvent_GameClosed:
-		fmt.Println("Game has closed.")
+		//fmt.Println("Game has closed.")
 	}
 
 	return nil

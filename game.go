@@ -94,7 +94,7 @@ func (g *game) Resume() error {
 	if g.gs.Status.CurrentEvent != nil {
 		event := GameEventBySymbol[g.gs.Status.CurrentEvent.Name]
 
-		fmt.Printf("Resume: %s\n", g.gs.Status.CurrentEvent.Name)
+		//fmt.Printf("Resume: %s\n", g.gs.Status.CurrentEvent.Name)
 
 		// Activate by the last event
 		g.EmitEvent(event, g.gs.Status.CurrentEvent.Payload)
@@ -226,6 +226,7 @@ func (g *game) ResetAllPlayerStatus() error {
 }
 
 func (g *game) ResetRoundStatus() error {
+	g.gs.Status.PreviousRaiseSize = 0
 	g.gs.Status.CurrentRoundPot = 0
 	g.gs.Status.CurrentWager = 0
 	g.gs.Status.CurrentRaiser = g.Dealer().State().Idx
@@ -396,7 +397,7 @@ func (g *game) PlayerLoop() error {
 	// next player
 	p := g.NextMovablePlayer()
 
-	//fmt.Printf("===================== cur=%d, actionCount=%d, raiser=%d\n", p.Idx, p.ActionCount, g.gs.Status.CurrentRaiser)
+	//fmt.Printf("===================== cur=%d, actionCount=%d, raiser=%d\n", p.SeatIndex(), p.State().ActionCount, g.gs.Status.CurrentRaiser)
 
 	if p.State().ActionCount == 0 {
 		g.SetCurrentPlayer(p)
@@ -595,7 +596,7 @@ func (g *game) InitializeRound() error {
 
 func (g *game) PrepareRound() error {
 
-	fmt.Printf("Preparing round: %s\n", g.gs.Status.Round)
+	//fmt.Printf("Preparing round: %s\n", g.gs.Status.Round)
 
 	if g.gs.Status.Round == "preflop" {
 		return g.PreparePreflopRound()
@@ -643,6 +644,10 @@ func (g *game) PreparePreflopRound() error {
 
 		// Task 3: request big blind
 		if g.gs.Meta.Blind.BB > 0 && event.Payload.Task.GetTask("bb") == nil {
+
+			// Minimal raise size
+			g.gs.Status.PreviousRaiseSize = g.gs.Meta.Blind.BB
+
 			t := task.NewWaitPay("bb", g.gs.Meta.Blind.BB)
 
 			playerIdx := g.BigBlind().State().Idx
@@ -659,7 +664,7 @@ func (g *game) PreparePreflopRound() error {
 
 		if !event.Payload.Task.IsCompleted() {
 
-			fmt.Printf("Check blinds: dealer=%d, sb=%d, bb=%d\n", g.gs.Meta.Blind.Dealer, g.gs.Meta.Blind.SB, g.gs.Meta.Blind.BB)
+			//fmt.Printf("Check blinds: dealer=%d, sb=%d, bb=%d\n", g.gs.Meta.Blind.Dealer, g.gs.Meta.Blind.SB, g.gs.Meta.Blind.BB)
 
 			// Getting available task for the next action
 			t := event.Payload.Task.GetAvailableTask()
@@ -690,7 +695,7 @@ func (g *game) PreparePreflopRound() error {
 				return ErrUnknownTask
 			}
 
-			fmt.Println("Waiting for blinds...")
+			//fmt.Println("Waiting for blinds...")
 
 			return nil
 		}
