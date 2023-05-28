@@ -13,7 +13,7 @@ var (
 
 type Player interface {
 	State() *PlayerState
-
+	SeatIndex() int
 	CheckPosition(pos string) bool
 	AllowActions(actions []string) error
 	ResetAllowedActions() error
@@ -43,6 +43,10 @@ func (p *player) State() *PlayerState {
 	}
 
 	return state.Players[p.idx]
+}
+
+func (p *player) SeatIndex() int {
+	return p.idx
 }
 
 func (p *player) Reset() error {

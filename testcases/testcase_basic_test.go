@@ -40,44 +40,44 @@ func Test_BasicCase(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Waiting for ready
-	for _, p := range g.GetState().Players {
+	for _, p := range g.GetPlayers() {
 		assert.Equal(t, "Initialized", g.GetState().Status.CurrentEvent.Name)
-		assert.Equal(t, 0, len(p.HoleCards))
-		assert.Equal(t, false, p.Fold)
-		assert.Equal(t, int64(0), p.Wager)
-		assert.Equal(t, int64(0), p.Pot)
-		assert.Equal(t, int64(players[p.Idx].Bankroll), p.Bankroll)
-		assert.Equal(t, int64(players[p.Idx].Bankroll), p.InitialStackSize)
-		assert.Equal(t, int64(players[p.Idx].Bankroll), p.StackSize)
-		assert.Equal(t, "ready", p.AllowedActions[0])
+		assert.Equal(t, 0, len(p.State().HoleCards))
+		assert.Equal(t, false, p.State().Fold)
+		assert.Equal(t, int64(0), p.State().Wager)
+		assert.Equal(t, int64(0), p.State().Pot)
+		assert.Equal(t, int64(players[p.SeatIndex()].Bankroll), p.State().Bankroll)
+		assert.Equal(t, int64(players[p.SeatIndex()].Bankroll), p.State().InitialStackSize)
+		assert.Equal(t, int64(players[p.SeatIndex()].Bankroll), p.State().StackSize)
+		assert.Equal(t, "ready", p.State().AllowedActions[0])
 
 		// Position checks
-		if p.Idx == 0 {
-			assert.Equal(t, "dealer", p.Positions[0])
-		} else if p.Idx == 1 {
-			assert.Equal(t, "sb", p.Positions[0])
-		} else if p.Idx == 2 {
-			assert.Equal(t, "bb", p.Positions[0])
+		if p.SeatIndex() == 0 {
+			assert.True(t, p.CheckPosition("dealer"))
+		} else if p.SeatIndex() == 1 {
+			assert.True(t, p.CheckPosition("sb"))
+		} else if p.SeatIndex() == 2 {
+			assert.True(t, p.CheckPosition("bb"))
 		}
 
-		err := g.Player(p.Idx).Ready()
+		err := p.Ready()
 		assert.Nil(t, err)
 	}
 
 	// ante
 	assert.Equal(t, "Prepared", g.GetState().Status.CurrentEvent.Name)
 
-	for _, p := range g.GetState().Players {
-		assert.Equal(t, 0, len(p.HoleCards))
-		assert.Equal(t, 0, p.ActionCount)
-		assert.Equal(t, false, p.Fold)
-		assert.Equal(t, int64(0), p.Wager)
-		assert.Equal(t, int64(0), p.Pot)
-		assert.Equal(t, int64(players[p.Idx].Bankroll), p.Bankroll)
-		assert.Equal(t, int64(players[p.Idx].Bankroll), p.InitialStackSize)
-		assert.Equal(t, int64(players[p.Idx].Bankroll), p.StackSize)
-		assert.Equal(t, "pay", p.AllowedActions[0])
-		err := g.Player(p.Idx).Pay(opts.Ante)
+	for _, p := range g.GetPlayers() {
+		assert.Equal(t, 0, len(p.State().HoleCards))
+		assert.Equal(t, 0, p.State().ActionCount)
+		assert.Equal(t, false, p.State().Fold)
+		assert.Equal(t, int64(0), p.State().Wager)
+		assert.Equal(t, int64(0), p.State().Pot)
+		assert.Equal(t, int64(players[p.SeatIndex()].Bankroll), p.State().Bankroll)
+		assert.Equal(t, int64(players[p.SeatIndex()].Bankroll), p.State().InitialStackSize)
+		assert.Equal(t, int64(players[p.SeatIndex()].Bankroll), p.State().StackSize)
+		assert.Equal(t, "pay", p.State().AllowedActions[0])
+		err := p.Pay(opts.Ante)
 		assert.Nil(t, err)
 	}
 
@@ -86,25 +86,25 @@ func Test_BasicCase(t *testing.T) {
 	assert.Equal(t, "preflop", g.GetState().Status.Round)
 
 	// Blinds
-	for _, p := range g.GetState().Players {
+	for _, p := range g.GetPlayers() {
 		assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
-		assert.Equal(t, 2, len(p.HoleCards))
-		assert.Equal(t, 0, p.ActionCount)
-		assert.Equal(t, false, p.Fold)
-		assert.Equal(t, int64(0), p.Wager)
-		assert.Equal(t, int64(10), p.Pot)
+		assert.Equal(t, 2, len(p.State().HoleCards))
+		assert.Equal(t, 0, p.State().ActionCount)
+		assert.Equal(t, false, p.State().Fold)
+		assert.Equal(t, int64(0), p.State().Wager)
+		assert.Equal(t, int64(10), p.State().Pot)
 
-		if p.Idx == 1 {
-			assert.Equal(t, "pay", p.AllowedActions[0])
+		if p.SeatIndex() == 1 {
+			assert.Equal(t, "pay", p.State().AllowedActions[0])
 
 			// Small blind
-			err := g.Player(p.Idx).Pay(5)
+			err := p.Pay(5)
 			assert.Nil(t, err)
-		} else if p.Idx == 2 {
-			assert.Equal(t, "pay", p.AllowedActions[0])
+		} else if p.SeatIndex() == 2 {
+			assert.Equal(t, "pay", p.State().AllowedActions[0])
 
 			// Big blind
-			err := g.Player(p.Idx).Pay(10)
+			err := p.Pay(10)
 			assert.Nil(t, err)
 		}
 	}
@@ -114,9 +114,9 @@ func Test_BasicCase(t *testing.T) {
 	assert.Equal(t, 2, g.GetState().Status.CurrentRaiser)
 
 	// get ready
-	for _, p := range g.GetState().Players {
-		assert.Equal(t, "ready", p.AllowedActions[0])
-		err := g.Player(p.Idx).Ready()
+	for _, p := range g.GetPlayers() {
+		assert.Equal(t, "ready", p.State().AllowedActions[0])
+		err := p.Ready()
 		assert.Nil(t, err)
 	}
 
@@ -125,37 +125,37 @@ func Test_BasicCase(t *testing.T) {
 
 	// Dealer
 	cp := g.GetCurrentPlayer()
-	assert.Equal(t, 4, len(cp.AllowedActions))
-	assert.Equal(t, "allin", cp.AllowedActions[0])
-	assert.Equal(t, "fold", cp.AllowedActions[1])
-	assert.Equal(t, "call", cp.AllowedActions[2])
-	assert.Equal(t, "raise", cp.AllowedActions[3])
+	assert.Equal(t, 4, len(cp.State().AllowedActions))
+	assert.Equal(t, "allin", cp.State().AllowedActions[0])
+	assert.Equal(t, "fold", cp.State().AllowedActions[1])
+	assert.Equal(t, "call", cp.State().AllowedActions[2])
+	assert.Equal(t, "raise", cp.State().AllowedActions[3])
 
 	// Dealer: call
-	err = g.Player(cp.Idx).Call()
+	err = g.Player(cp.SeatIndex()).Call()
 	assert.Nil(t, err)
 
 	// SB
 	cp = g.GetCurrentPlayer()
-	assert.Equal(t, 4, len(cp.AllowedActions))
-	assert.Equal(t, "allin", cp.AllowedActions[0])
-	assert.Equal(t, "fold", cp.AllowedActions[1])
-	assert.Equal(t, "call", cp.AllowedActions[2])
-	assert.Equal(t, "raise", cp.AllowedActions[3])
+	assert.Equal(t, 4, len(cp.State().AllowedActions))
+	assert.Equal(t, "allin", cp.State().AllowedActions[0])
+	assert.Equal(t, "fold", cp.State().AllowedActions[1])
+	assert.Equal(t, "call", cp.State().AllowedActions[2])
+	assert.Equal(t, "raise", cp.State().AllowedActions[3])
 
 	// SB: call
-	err = g.Player(cp.Idx).Call()
+	err = g.Player(cp.SeatIndex()).Call()
 	assert.Nil(t, err)
 
 	// BB
 	cp = g.GetCurrentPlayer()
-	assert.Equal(t, 3, len(cp.AllowedActions))
-	assert.Equal(t, "allin", cp.AllowedActions[0])
-	assert.Equal(t, "check", cp.AllowedActions[1])
-	assert.Equal(t, "raise", cp.AllowedActions[2])
+	assert.Equal(t, 3, len(cp.State().AllowedActions))
+	assert.Equal(t, "allin", cp.State().AllowedActions[0])
+	assert.Equal(t, "check", cp.State().AllowedActions[1])
+	assert.Equal(t, "raise", cp.State().AllowedActions[2])
 
 	// SB: check
-	err = g.Player(cp.Idx).Check()
+	err = g.Player(cp.SeatIndex()).Check()
 	assert.Nil(t, err)
 
 	// Entering Flop
@@ -166,9 +166,9 @@ func Test_BasicCase(t *testing.T) {
 	assert.Equal(t, 3, len(g.GetState().Status.Pots[0].Contributors))
 
 	// get ready
-	for _, p := range g.GetState().Players {
-		assert.Equal(t, "ready", p.AllowedActions[0])
-		err := g.Player(p.Idx).Ready()
+	for _, p := range g.GetPlayers() {
+		assert.Equal(t, "ready", p.State().AllowedActions[0])
+		err := p.Ready()
 		assert.Nil(t, err)
 	}
 
@@ -177,44 +177,44 @@ func Test_BasicCase(t *testing.T) {
 
 	// SB
 	cp = g.GetCurrentPlayer()
-	assert.Equal(t, int64(0), cp.Wager)
-	assert.Equal(t, cp.InitialStackSize, cp.Bankroll-cp.Pot)
-	assert.Equal(t, cp.StackSize, cp.Bankroll-cp.Pot-cp.Wager)
-	assert.Equal(t, 3, len(cp.AllowedActions))
-	assert.Equal(t, "allin", cp.AllowedActions[0])
-	assert.Equal(t, "check", cp.AllowedActions[1])
-	assert.Equal(t, "bet", cp.AllowedActions[2])
+	assert.Equal(t, int64(0), cp.State().Wager)
+	assert.Equal(t, cp.State().InitialStackSize, cp.State().Bankroll-cp.State().Pot)
+	assert.Equal(t, cp.State().StackSize, cp.State().Bankroll-cp.State().Pot-cp.State().Wager)
+	assert.Equal(t, 3, len(cp.State().AllowedActions))
+	assert.Equal(t, "allin", cp.State().AllowedActions[0])
+	assert.Equal(t, "check", cp.State().AllowedActions[1])
+	assert.Equal(t, "bet", cp.State().AllowedActions[2])
 
 	// SB: check
-	err = g.Player(cp.Idx).Check()
+	err = g.Player(cp.SeatIndex()).Check()
 	assert.Nil(t, err)
 
 	// BB
 	cp = g.GetCurrentPlayer()
-	assert.Equal(t, int64(0), cp.Wager)
-	assert.Equal(t, cp.InitialStackSize, cp.Bankroll-cp.Pot)
-	assert.Equal(t, cp.StackSize, cp.Bankroll-cp.Pot-cp.Wager)
-	assert.Equal(t, 3, len(cp.AllowedActions))
-	assert.Equal(t, "allin", cp.AllowedActions[0])
-	assert.Equal(t, "check", cp.AllowedActions[1])
-	assert.Equal(t, "bet", cp.AllowedActions[2])
+	assert.Equal(t, int64(0), cp.State().Wager)
+	assert.Equal(t, cp.State().InitialStackSize, cp.State().Bankroll-cp.State().Pot)
+	assert.Equal(t, cp.State().StackSize, cp.State().Bankroll-cp.State().Pot-cp.State().Wager)
+	assert.Equal(t, 3, len(cp.State().AllowedActions))
+	assert.Equal(t, "allin", cp.State().AllowedActions[0])
+	assert.Equal(t, "check", cp.State().AllowedActions[1])
+	assert.Equal(t, "bet", cp.State().AllowedActions[2])
 
 	// BB: check
-	err = g.Player(cp.Idx).Check()
+	err = g.Player(cp.SeatIndex()).Check()
 	assert.Nil(t, err)
 
 	// Dealer
 	cp = g.GetCurrentPlayer()
-	assert.Equal(t, int64(0), cp.Wager)
-	assert.Equal(t, cp.InitialStackSize, cp.Bankroll-cp.Pot)
-	assert.Equal(t, cp.StackSize, cp.Bankroll-cp.Pot-cp.Wager)
-	assert.Equal(t, 3, len(cp.AllowedActions))
-	assert.Equal(t, "allin", cp.AllowedActions[0])
-	assert.Equal(t, "check", cp.AllowedActions[1])
-	assert.Equal(t, "bet", cp.AllowedActions[2])
+	assert.Equal(t, int64(0), cp.State().Wager)
+	assert.Equal(t, cp.State().InitialStackSize, cp.State().Bankroll-cp.State().Pot)
+	assert.Equal(t, cp.State().StackSize, cp.State().Bankroll-cp.State().Pot-cp.State().Wager)
+	assert.Equal(t, 3, len(cp.State().AllowedActions))
+	assert.Equal(t, "allin", cp.State().AllowedActions[0])
+	assert.Equal(t, "check", cp.State().AllowedActions[1])
+	assert.Equal(t, "bet", cp.State().AllowedActions[2])
 
 	// Dealer: check
-	err = g.Player(cp.Idx).Check()
+	err = g.Player(cp.SeatIndex()).Check()
 	assert.Nil(t, err)
 
 	// Entering Turn
@@ -222,9 +222,9 @@ func Test_BasicCase(t *testing.T) {
 	assert.Equal(t, "turn", g.GetState().Status.Round)
 
 	// get ready
-	for _, p := range g.GetState().Players {
-		assert.Equal(t, "ready", p.AllowedActions[0])
-		err := g.Player(p.Idx).Ready()
+	for _, p := range g.GetPlayers() {
+		assert.Equal(t, "ready", p.State().AllowedActions[0])
+		err := p.Ready()
 		assert.Nil(t, err)
 	}
 
@@ -233,75 +233,75 @@ func Test_BasicCase(t *testing.T) {
 
 	// SB
 	cp = g.GetCurrentPlayer()
-	assert.Equal(t, int64(0), cp.Wager)
-	assert.Equal(t, cp.InitialStackSize, cp.Bankroll-cp.Pot)
-	assert.Equal(t, cp.StackSize, cp.Bankroll-cp.Pot-cp.Wager)
-	assert.Equal(t, 3, len(cp.AllowedActions))
-	assert.Equal(t, "allin", cp.AllowedActions[0])
-	assert.Equal(t, "check", cp.AllowedActions[1])
-	assert.Equal(t, "bet", cp.AllowedActions[2])
+	assert.Equal(t, int64(0), cp.State().Wager)
+	assert.Equal(t, cp.State().InitialStackSize, cp.State().Bankroll-cp.State().Pot)
+	assert.Equal(t, cp.State().StackSize, cp.State().Bankroll-cp.State().Pot-cp.State().Wager)
+	assert.Equal(t, 3, len(cp.State().AllowedActions))
+	assert.Equal(t, "allin", cp.State().AllowedActions[0])
+	assert.Equal(t, "check", cp.State().AllowedActions[1])
+	assert.Equal(t, "bet", cp.State().AllowedActions[2])
 
 	// SB: check
-	err = g.Player(cp.Idx).Check()
+	err = g.Player(cp.SeatIndex()).Check()
 	assert.Nil(t, err)
 
 	// BB
 	cp = g.GetCurrentPlayer()
-	assert.Equal(t, int64(0), cp.Wager)
-	assert.Equal(t, cp.InitialStackSize, cp.Bankroll-cp.Pot)
-	assert.Equal(t, cp.StackSize, cp.Bankroll-cp.Pot-cp.Wager)
-	assert.Equal(t, 3, len(cp.AllowedActions))
-	assert.Equal(t, "allin", cp.AllowedActions[0])
-	assert.Equal(t, "check", cp.AllowedActions[1])
-	assert.Equal(t, "bet", cp.AllowedActions[2])
+	assert.Equal(t, int64(0), cp.State().Wager)
+	assert.Equal(t, cp.State().InitialStackSize, cp.State().Bankroll-cp.State().Pot)
+	assert.Equal(t, cp.State().StackSize, cp.State().Bankroll-cp.State().Pot-cp.State().Wager)
+	assert.Equal(t, 3, len(cp.State().AllowedActions))
+	assert.Equal(t, "allin", cp.State().AllowedActions[0])
+	assert.Equal(t, "check", cp.State().AllowedActions[1])
+	assert.Equal(t, "bet", cp.State().AllowedActions[2])
 
 	// BB: bet 30
-	err = g.Player(cp.Idx).Bet(30)
+	err = g.Player(cp.SeatIndex()).Bet(30)
 	assert.Nil(t, err)
 
 	// Dealer
 	cp = g.GetCurrentPlayer()
-	assert.Equal(t, int64(0), cp.Wager)
-	assert.Equal(t, cp.InitialStackSize, cp.Bankroll-cp.Pot)
-	assert.Equal(t, cp.StackSize, cp.Bankroll-cp.Pot-cp.Wager)
-	assert.Equal(t, 4, len(cp.AllowedActions))
-	assert.Equal(t, "allin", cp.AllowedActions[0])
-	assert.Equal(t, "fold", cp.AllowedActions[1])
-	assert.Equal(t, "call", cp.AllowedActions[2])
-	assert.Equal(t, "raise", cp.AllowedActions[3])
+	assert.Equal(t, int64(0), cp.State().Wager)
+	assert.Equal(t, cp.State().InitialStackSize, cp.State().Bankroll-cp.State().Pot)
+	assert.Equal(t, cp.State().StackSize, cp.State().Bankroll-cp.State().Pot-cp.State().Wager)
+	assert.Equal(t, 4, len(cp.State().AllowedActions))
+	assert.Equal(t, "allin", cp.State().AllowedActions[0])
+	assert.Equal(t, "fold", cp.State().AllowedActions[1])
+	assert.Equal(t, "call", cp.State().AllowedActions[2])
+	assert.Equal(t, "raise", cp.State().AllowedActions[3])
 
 	// Dealer: raise 60
-	err = g.Player(cp.Idx).Raise(60)
+	err = g.Player(cp.SeatIndex()).Raise(60)
 	assert.Nil(t, err)
 
 	// SB
 	cp = g.GetCurrentPlayer()
-	assert.Equal(t, int64(0), cp.Wager)
-	assert.Equal(t, cp.InitialStackSize, cp.Bankroll-cp.Pot)
-	assert.Equal(t, cp.StackSize, cp.Bankroll-cp.Pot-cp.Wager)
-	assert.Equal(t, 4, len(cp.AllowedActions))
-	assert.Equal(t, "allin", cp.AllowedActions[0])
-	assert.Equal(t, "fold", cp.AllowedActions[1])
-	assert.Equal(t, "call", cp.AllowedActions[2])
-	assert.Equal(t, "raise", cp.AllowedActions[3])
+	assert.Equal(t, int64(0), cp.State().Wager)
+	assert.Equal(t, cp.State().InitialStackSize, cp.State().Bankroll-cp.State().Pot)
+	assert.Equal(t, cp.State().StackSize, cp.State().Bankroll-cp.State().Pot-cp.State().Wager)
+	assert.Equal(t, 4, len(cp.State().AllowedActions))
+	assert.Equal(t, "allin", cp.State().AllowedActions[0])
+	assert.Equal(t, "fold", cp.State().AllowedActions[1])
+	assert.Equal(t, "call", cp.State().AllowedActions[2])
+	assert.Equal(t, "raise", cp.State().AllowedActions[3])
 
 	// SB: call
-	err = g.Player(cp.Idx).Call()
+	err = g.Player(cp.SeatIndex()).Call()
 	assert.Nil(t, err)
 
 	// BB
 	cp = g.GetCurrentPlayer()
-	assert.Equal(t, int64(30), cp.Wager)
-	assert.Equal(t, cp.InitialStackSize, cp.Bankroll-cp.Pot)
-	assert.Equal(t, cp.StackSize, cp.Bankroll-cp.Pot-cp.Wager)
-	assert.Equal(t, 4, len(cp.AllowedActions))
-	assert.Equal(t, "allin", cp.AllowedActions[0])
-	assert.Equal(t, "fold", cp.AllowedActions[1])
-	assert.Equal(t, "call", cp.AllowedActions[2])
-	assert.Equal(t, "raise", cp.AllowedActions[3])
+	assert.Equal(t, int64(30), cp.State().Wager)
+	assert.Equal(t, cp.State().InitialStackSize, cp.State().Bankroll-cp.State().Pot)
+	assert.Equal(t, cp.State().StackSize, cp.State().Bankroll-cp.State().Pot-cp.State().Wager)
+	assert.Equal(t, 4, len(cp.State().AllowedActions))
+	assert.Equal(t, "allin", cp.State().AllowedActions[0])
+	assert.Equal(t, "fold", cp.State().AllowedActions[1])
+	assert.Equal(t, "call", cp.State().AllowedActions[2])
+	assert.Equal(t, "raise", cp.State().AllowedActions[3])
 
 	// BB: call
-	err = g.Player(cp.Idx).Call()
+	err = g.Player(cp.SeatIndex()).Call()
 	assert.Nil(t, err)
 
 	// Entering River
@@ -312,25 +312,25 @@ func Test_BasicCase(t *testing.T) {
 	assert.Equal(t, 3, len(g.GetState().Status.Pots[0].Contributors))
 
 	// get ready
-	for _, p := range g.GetState().Players {
-		assert.Equal(t, "ready", p.AllowedActions[0])
-		err := g.Player(p.Idx).Ready()
+	for _, p := range g.GetPlayers() {
+		assert.Equal(t, "ready", p.State().AllowedActions[0])
+		err := p.Ready()
 		assert.Nil(t, err)
 	}
 
 	// SB
 	cp = g.GetCurrentPlayer()
-	err = g.Player(cp.Idx).Check()
+	err = g.Player(cp.SeatIndex()).Check()
 	assert.Nil(t, err)
 
 	// BB
 	cp = g.GetCurrentPlayer()
-	err = g.Player(cp.Idx).Check()
+	err = g.Player(cp.SeatIndex()).Check()
 	assert.Nil(t, err)
 
 	// Dealer
 	cp = g.GetCurrentPlayer()
-	err = g.Player(cp.Idx).Check()
+	err = g.Player(cp.SeatIndex()).Check()
 	assert.Nil(t, err)
 
 	g.PrintState()

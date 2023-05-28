@@ -32,31 +32,39 @@ type Game interface {
 	BigBlind() Player
 	Deal(count int) []string
 	Burn(count int) error
-	FindDealer() *PlayerState
 	ResetAllPlayerStatus() error
-	StartAtDealer() (*PlayerState, error)
-	NextMovablePlayer() *PlayerState
+	StartAtDealer() (Player, error)
+	NextMovablePlayer() Player
 	GetPlayerCount() int
-	SetCurrentPlayer(p *PlayerState) error
-	GetCurrentPlayer() *PlayerState
-	GetAllowedActions(player *PlayerState) []string
-	GetAllowedBetActions(player *PlayerState) []string
+	GetPlayers() []Player
+	SetCurrentPlayer(Player) error
+	GetCurrentPlayer() Player
+	GetAllowedActions(Player) []string
+	GetAllowedBetActions(Player) []string
 	EmitEvent(event GameEvent, payload *EventPayload) error
 	PrintState() error
 }
 
 type game struct {
-	gs *GameState
+	gs         *GameState
+	players    map[int]Player
+	dealer     Player
+	smallBlind Player
+	bigBlind   Player
 }
 
 func NewGame(opts *GameOptions) *game {
-	g := &game{}
+	g := &game{
+		players: make(map[int]Player),
+	}
 	g.ApplyOptions(opts)
 	return g
 }
 
 func NewGameFromState(gs *GameState) *game {
-	g := &game{}
+	g := &game{
+		players: make(map[int]Player),
+	}
 	g.LoadState(gs)
 	return g
 }
@@ -71,6 +79,12 @@ func (g *game) GetStateJSON() ([]byte, error) {
 
 func (g *game) LoadState(gs *GameState) error {
 	g.gs = gs
+
+	// Initializing players
+	for _, ps := range g.gs.Players {
+		g.addPlayer(ps)
+	}
+
 	return g.Resume()
 }
 
@@ -113,8 +127,31 @@ func (g *game) ApplyOptions(opts *GameOptions) error {
 	return nil
 }
 
+func (g *game) addPlayer(state *PlayerState) error {
+
+	// Create player instance
+	p := &player{
+		idx:   state.Idx,
+		game:  g,
+		state: state,
+	}
+
+	if p.CheckPosition("dealer") {
+		g.dealer = p
+	} else if p.CheckPosition("sb") {
+		g.smallBlind = p
+	} else if p.CheckPosition("bb") {
+		g.bigBlind = p
+	}
+
+	g.players[state.Idx] = p
+
+	return nil
+}
+
 func (g *game) AddPlayer(idx int, setting *PlayerSetting) error {
 
+	// Create player state
 	ps := &PlayerState{
 		Idx:              idx,
 		Positions:        setting.Positions,
@@ -125,7 +162,7 @@ func (g *game) AddPlayer(idx int, setting *PlayerSetting) error {
 
 	g.gs.Players = append(g.gs.Players, ps)
 
-	return nil
+	return g.addPlayer(ps)
 }
 
 func (g *game) Player(idx int) Player {
@@ -134,46 +171,19 @@ func (g *game) Player(idx int) Player {
 		return nil
 	}
 
-	p := g.gs.Players[idx]
-
-	return &player{
-		idx:   idx,
-		game:  g,
-		state: p,
-	}
+	return g.players[idx]
 }
 
 func (g *game) Dealer() Player {
-	for _, ps := range g.gs.Players {
-		p := g.Player(ps.Idx)
-		if p.CheckPosition("dealer") {
-			return p
-		}
-	}
-
-	return nil
+	return g.dealer
 }
 
 func (g *game) SmallBlind() Player {
-	for _, ps := range g.gs.Players {
-		p := g.Player(ps.Idx)
-		if p.CheckPosition("sb") {
-			return p
-		}
-	}
-
-	return nil
+	return g.smallBlind
 }
 
 func (g *game) BigBlind() Player {
-	for _, ps := range g.gs.Players {
-		p := g.Player(ps.Idx)
-		if p.CheckPosition("bb") {
-			return p
-		}
-	}
-
-	return nil
+	return g.bigBlind
 }
 
 func (g *game) Deal(count int) []string {
@@ -194,34 +204,22 @@ func (g *game) Burn(count int) error {
 	return nil
 }
 
-func (g *game) FindDealer() *PlayerState {
-
-	for _, p := range g.gs.Players {
-		for _, pos := range p.Positions {
-			if pos == "dealer" {
-				return p
-			}
-		}
-	}
-
-	return nil
-}
-
 func (g *game) ResetAllPlayerAllowedActions() error {
-	for _, p := range g.gs.Players {
-		g.Player(p.Idx).Reset()
+	for _, p := range g.GetPlayers() {
+		p.Reset()
 	}
 
 	return nil
 }
 
 func (g *game) ResetAllPlayerStatus() error {
-	for _, p := range g.gs.Players {
-		p.DidAction = ""
-		p.AllowedActions = make([]string, 0)
-		p.Pot += p.Wager
-		p.Wager = 0
-		p.InitialStackSize = p.StackSize
+	for _, p := range g.GetPlayers() {
+		ps := p.State()
+		ps.DidAction = ""
+		ps.AllowedActions = make([]string, 0)
+		ps.Pot += ps.Wager
+		ps.Wager = 0
+		ps.InitialStackSize = ps.StackSize
 	}
 
 	return nil
@@ -235,10 +233,10 @@ func (g *game) ResetRoundStatus() error {
 	return nil
 }
 
-func (g *game) StartAtDealer() (*PlayerState, error) {
+func (g *game) StartAtDealer() (Player, error) {
 
 	// Start at dealer
-	dealer := g.FindDealer()
+	dealer := g.Dealer()
 	if dealer == nil {
 		return nil, ErrNotFoundDealer
 	}
@@ -252,11 +250,11 @@ func (g *game) StartAtDealer() (*PlayerState, error) {
 	return dealer, nil
 }
 
-func (g *game) GetCurrentPlayer() *PlayerState {
-	return g.Player(g.gs.Status.CurrentPlayer).State()
+func (g *game) GetCurrentPlayer() Player {
+	return g.Player(g.gs.Status.CurrentPlayer)
 }
 
-func (g *game) NextPlayer() *PlayerState {
+func (g *game) NextPlayer() Player {
 
 	cur := g.gs.Status.CurrentPlayer
 	playerCount := g.GetPlayerCount()
@@ -272,13 +270,13 @@ func (g *game) NextPlayer() *PlayerState {
 		}
 
 		p := g.gs.Players[cur]
-		return p
+		return g.Player(p.Idx)
 	}
 
 	return nil
 }
 
-func (g *game) NextMovablePlayer() *PlayerState {
+func (g *game) NextMovablePlayer() Player {
 
 	cur := g.gs.Status.CurrentPlayer
 	playerCount := g.GetPlayerCount()
@@ -297,7 +295,7 @@ func (g *game) NextMovablePlayer() *PlayerState {
 
 		// Find the player who did not fold
 		if !p.Fold {
-			return p
+			return g.Player(p.Idx)
 		}
 	}
 
@@ -308,15 +306,15 @@ func (g *game) GetPlayerCount() int {
 	return len(g.gs.Players)
 }
 
-func (g *game) GetPlayers() []*PlayerState {
+func (g *game) GetPlayers() []Player {
 
-	players := make([]*PlayerState, 0)
+	players := make([]Player, 0)
 	playerCount := g.GetPlayerCount()
 
-	// Getting player list that dealer is the first element of it
-	cur := g.Dealer().State().Idx
+	// Getting player list that dealer should be the first element of it
+	cur := g.Dealer().SeatIndex()
 
-	for i := 1; i < playerCount; i++ {
+	for i := 0; i < playerCount; i++ {
 
 		// Find the next player
 		cur++
@@ -326,15 +324,13 @@ func (g *game) GetPlayers() []*PlayerState {
 			cur = 0
 		}
 
-		p := g.gs.Players[cur]
-
-		players = append(players, p)
+		players = append(players, g.players[cur])
 	}
 
 	return players
 }
 
-func (g *game) setCurrentPlayer(p *PlayerState) error {
+func (g *game) setCurrentPlayer(p Player) error {
 
 	// Clear status
 	if p == nil {
@@ -343,12 +339,12 @@ func (g *game) setCurrentPlayer(p *PlayerState) error {
 	}
 
 	// Deside player who can move
-	g.gs.Status.CurrentPlayer = p.Idx
+	g.gs.Status.CurrentPlayer = p.SeatIndex()
 
 	return nil
 }
 
-func (g *game) SetCurrentPlayer(p *PlayerState) error {
+func (g *game) SetCurrentPlayer(p Player) error {
 
 	if g.gs.Status.CurrentPlayer != -1 {
 		// Clear allowed actions of current player
@@ -362,7 +358,8 @@ func (g *game) SetCurrentPlayer(p *PlayerState) error {
 
 	if p != nil {
 		// Figure out actions that player can be allowed to take
-		g.Player(p.Idx).AllowActions(g.GetAllowedActions(p))
+		actions := g.GetAllowedActions(p)
+		p.AllowActions(actions)
 	}
 
 	return nil
@@ -392,7 +389,7 @@ func (g *game) PlayerLoop() error {
 
 	// check for last check of first player on this round
 	cp := g.GetCurrentPlayer()
-	if g.gs.Status.CurrentRaiser == cp.Idx && cp.DidAction == "check" {
+	if g.gs.Status.CurrentRaiser == cp.SeatIndex() && cp.State().DidAction == "check" {
 		return g.EmitEvent(GameEvent_RoundClosed, nil)
 	}
 
@@ -401,9 +398,9 @@ func (g *game) PlayerLoop() error {
 
 	//fmt.Printf("===================== cur=%d, actionCount=%d, raiser=%d\n", p.Idx, p.ActionCount, g.gs.Status.CurrentRaiser)
 
-	if p.ActionCount == 0 {
+	if p.State().ActionCount == 0 {
 		g.SetCurrentPlayer(p)
-	} else if p.Idx != g.gs.Status.CurrentRaiser {
+	} else if p.SeatIndex() != g.gs.Status.CurrentRaiser {
 		g.SetCurrentPlayer(p)
 	} else {
 		// No more player can move
@@ -413,48 +410,50 @@ func (g *game) PlayerLoop() error {
 	return nil
 }
 
-func (g *game) GetAllowedActions(player *PlayerState) []string {
+func (g *game) GetAllowedActions(p Player) []string {
 
 	// player is movable for this round
-	if g.gs.Status.CurrentPlayer == player.Idx {
-		return g.GetAllowedBetActions(player)
+	if g.gs.Status.CurrentPlayer == p.SeatIndex() {
+		return g.GetAllowedBetActions(p)
 	}
 
 	return make([]string, 0)
 }
 
-func (g *game) GetAllowedBetActions(player *PlayerState) []string {
+func (g *game) GetAllowedBetActions(p Player) []string {
 
 	actions := make([]string, 0)
 
-	// Invalid player state
-	if player == nil {
+	// Invalid
+	if p == nil {
 		return actions
 	}
 
-	if player.Fold {
+	ps := p.State()
+
+	if ps.Fold {
 		actions = append(actions, "pass")
 		return actions
 	}
 
 	// chips left
-	if player.StackSize == 0 {
+	if ps.StackSize == 0 {
 		actions = append(actions, "pass")
 		return actions
 	} else {
 		actions = append(actions, "allin")
 	}
 
-	if player.Wager < g.gs.Status.CurrentWager {
+	if ps.Wager < g.gs.Status.CurrentWager {
 		actions = append(actions, "fold")
 
 		// call
-		if player.InitialStackSize > g.gs.Status.CurrentWager {
+		if ps.InitialStackSize > g.gs.Status.CurrentWager {
 
 			actions = append(actions, "call")
 
 			// raise
-			if player.InitialStackSize >= g.gs.Status.CurrentWager*2 {
+			if ps.InitialStackSize >= g.gs.Status.CurrentWager*2 {
 				actions = append(actions, "raise")
 			}
 		}
@@ -462,7 +461,7 @@ func (g *game) GetAllowedBetActions(player *PlayerState) []string {
 	} else {
 		actions = append(actions, "check")
 
-		if player.InitialStackSize >= g.gs.Status.MiniBet {
+		if ps.InitialStackSize >= g.gs.Status.MiniBet {
 			if g.gs.Status.CurrentWager == 0 {
 				actions = append(actions, "bet")
 			} else {
@@ -674,19 +673,19 @@ func (g *game) PreparePreflopRound() error {
 				p.AllowActions([]string{
 					"pay",
 				})
-				g.setCurrentPlayer(p.State())
+				g.setCurrentPlayer(p)
 			case "sb":
 				p := g.SmallBlind()
 				p.AllowActions([]string{
 					"pay",
 				})
-				g.setCurrentPlayer(p.State())
+				g.setCurrentPlayer(p)
 			case "bb":
 				p := g.BigBlind()
 				p.AllowActions([]string{
 					"pay",
 				})
-				g.setCurrentPlayer(p.State())
+				g.setCurrentPlayer(p)
 			default:
 				return ErrUnknownTask
 			}
@@ -699,10 +698,9 @@ func (g *game) PreparePreflopRound() error {
 		g.ResetAllPlayerAllowedActions()
 
 		// Find the last player who has paid
-		var lp *PlayerState
-		players := g.GetPlayers()
-		for _, p := range players {
-			if p.Wager > 0 {
+		var lp Player
+		for _, p := range g.GetPlayers() {
+			if p.State().Wager > 0 {
 				lp = p
 			}
 		}
