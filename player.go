@@ -230,6 +230,8 @@ func (p *player) Fold() error {
 		return ErrInvalidAction
 	}
 
+	p.state.Fold = true
+
 	p.state.DidAction = "fold"
 	p.state.ActionCount++
 
