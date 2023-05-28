@@ -1,2 +1,3 @@
 # pokerface
-Poker game engine
+
+pokerface is poker game engine written in golang.
