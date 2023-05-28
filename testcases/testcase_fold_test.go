@@ -120,8 +120,6 @@ func Test_Fold(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	g.PrintState()
-
 	// Starting player loop
 	assert.Equal(t, "RoundPrepared", g.GetState().Status.CurrentEvent.Name)
 
@@ -152,5 +150,5 @@ func Test_Fold(t *testing.T) {
 	// This game should be closed immediately
 	assert.Equal(t, "GameClosed", g.GetState().Status.CurrentEvent.Name)
 
-	g.PrintState()
+	//g.PrintState()
 }

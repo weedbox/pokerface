@@ -341,5 +341,5 @@ func Test_BasicCase(t *testing.T) {
 	err = g.Player(cp.SeatIndex()).Check()
 	assert.Nil(t, err)
 
-	g.PrintState()
+	//g.PrintState()
 }
