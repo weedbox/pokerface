@@ -15,7 +15,7 @@ var (
 	ErrInsufficientNumberOfPlayers = errors.New("game: insufficient number of players")
 	ErrUnknownRound                = errors.New("game: unknown round")
 	ErrNotFoundDealer              = errors.New("game: not found dealer")
-	ErrUnknownTask                 = errors.New("game: Unknown task")
+	ErrUnknownTask                 = errors.New("game: unknown task")
 )
 
 type Game interface {
@@ -718,6 +718,8 @@ func (g *game) PreparePreflopRound() error {
 				"pay",
 			})
 			g.setCurrentPlayer(p)
+		case "ready":
+			// Do nothing
 		default:
 			return ErrUnknownTask
 		}
