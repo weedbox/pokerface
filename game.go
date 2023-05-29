@@ -496,6 +496,8 @@ func (g *game) Start() error {
 
 	// Initializing game status
 	g.gs.Status.Pots = make([]*pot.Pot, 0)
+	g.gs.Status.Board = make([]string, 0)
+	g.gs.Status.Burned = make([]string, 0)
 	g.gs.Status.CurrentEvent = &Event{}
 
 	return g.EmitEvent(GameEvent_Started, nil)
