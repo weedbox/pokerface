@@ -15,7 +15,6 @@ const (
 	GameEvent_AnteRequested
 
 	// States
-	GameEvent_Dealt
 	GameEvent_WagerRequested
 
 	// Rounds
@@ -40,7 +39,6 @@ var GameEventSymbols = map[GameEvent]string{
 	GameEvent_Initialized:         "Initialized",
 	GameEvent_Prepared:            "Prepared",
 	GameEvent_AnteRequested:       "AnteRequested",
-	GameEvent_Dealt:               "Dealt",
 	GameEvent_WagerRequested:      "WagerRequested",
 	GameEvent_PreflopRoundEntered: "PreflopRoundEntered",
 	GameEvent_FlopRoundEntered:    "FlopRoundEntered",
@@ -61,7 +59,6 @@ var GameEventBySymbol = map[string]GameEvent{
 	"Initialized":         GameEvent_Initialized,
 	"Prepared":            GameEvent_Prepared,
 	"AnteRequested":       GameEvent_AnteRequested,
-	"Dealt":               GameEvent_Dealt,
 	"WagerRequested":      GameEvent_WagerRequested,
 	"PreflopRoundEntered": GameEvent_PreflopRoundEntered,
 	"FlopRoundEntered":    GameEvent_FlopRoundEntered,
@@ -110,10 +107,6 @@ func (g *game) triggerEvent(event GameEvent) error {
 	case GameEvent_AnteRequested:
 		//fmt.Println("Ante has been requested.")
 		return g.onAnteRequested()
-
-	case GameEvent_Dealt:
-		//fmt.Println("Cards have been dealt.")
-		//		return g.antePreparation()
 
 	case GameEvent_WagerRequested:
 		//fmt.Println("Wager has been requested.")
