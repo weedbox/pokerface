@@ -25,6 +25,7 @@ const (
 	GameEvent_RiverRoundEntered
 	GameEvent_RoundInitialized
 	GameEvent_RoundPrepared
+	GameEvent_RoundReady
 	GameEvent_RoundClosed
 
 	// Result
@@ -47,6 +48,7 @@ var GameEventSymbols = map[GameEvent]string{
 	GameEvent_RiverRoundEntered:   "RiverRoundEntered",
 	GameEvent_RoundInitialized:    "RoundInitialized",
 	GameEvent_RoundPrepared:       "RoundPrepared",
+	GameEvent_RoundReady:          "RoundReady",
 	GameEvent_RoundClosed:         "RoundClosed",
 	GameEvent_GameCompleted:       "GameCompleted",
 	GameEvent_SettlementRequested: "SettlementRequested",
@@ -67,6 +69,7 @@ var GameEventBySymbol = map[string]GameEvent{
 	"RiverRoundEntered":   GameEvent_RiverRoundEntered,
 	"RoundInitialized":    GameEvent_RoundInitialized,
 	"RoundPrepared":       GameEvent_RoundPrepared,
+	"RoundReady":          GameEvent_RoundReady,
 	"RoundClosed":         GameEvent_RoundClosed,
 	"GameCompleted":       GameEvent_GameCompleted,
 	"SettlementRequested": GameEvent_SettlementRequested,
@@ -138,6 +141,10 @@ func (g *game) triggerEvent(event GameEvent) error {
 	case GameEvent_RoundPrepared:
 		//fmt.Println("Current round has been prepared.")
 		return g.onRoundPrepared()
+
+	case GameEvent_RoundReady:
+		//fmt.Println("Current round is ready.")
+		return g.onRoundReady()
 
 	case GameEvent_RoundClosed:
 		//fmt.Println("Current round has closed.")
@@ -216,7 +223,11 @@ func (g *game) onRoundInitialized() error {
 }
 
 func (g *game) onRoundPrepared() error {
-	return g.PlayerLoop()
+	return g.EmitEvent(GameEvent_RoundReady, nil)
+}
+
+func (g *game) onRoundReady() error {
+	return g.RoundReady()
 }
 
 func (g *game) onRoundClosed() error {

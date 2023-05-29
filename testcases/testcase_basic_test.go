@@ -64,7 +64,7 @@ func Test_Basic(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	g.PrintState()
+	//g.PrintState()
 
 	// ante
 	assert.Equal(t, "Prepared", g.GetState().Status.CurrentEvent.Name)
@@ -124,7 +124,7 @@ func Test_Basic(t *testing.T) {
 	}
 
 	// Starting player loop
-	assert.Equal(t, "RoundPrepared", g.GetState().Status.CurrentEvent.Name)
+	assert.Equal(t, "RoundReady", g.GetState().Status.CurrentEvent.Name)
 
 	// Dealer
 	cp := g.GetCurrentPlayer()
@@ -177,7 +177,7 @@ func Test_Basic(t *testing.T) {
 	}
 
 	// Starting player loop
-	assert.Equal(t, "RoundPrepared", g.GetState().Status.CurrentEvent.Name)
+	assert.Equal(t, "RoundReady", g.GetState().Status.CurrentEvent.Name)
 
 	// SB
 	cp = g.GetCurrentPlayer()
@@ -235,7 +235,7 @@ func Test_Basic(t *testing.T) {
 
 	// Starting player loop
 	t.Log("Round is ready")
-	assert.Equal(t, "RoundPrepared", g.GetState().Status.CurrentEvent.Name)
+	assert.Equal(t, "RoundReady", g.GetState().Status.CurrentEvent.Name)
 
 	// SB
 	cp = g.GetCurrentPlayer()
@@ -343,5 +343,7 @@ func Test_Basic(t *testing.T) {
 	err = cp.Check()
 	assert.Nil(t, err)
 
-	g.PrintState()
+	assert.Equal(t, "GameClosed", g.GetState().Status.CurrentEvent.Name)
+
+	//g.PrintState()
 }

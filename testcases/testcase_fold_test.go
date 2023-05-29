@@ -121,7 +121,7 @@ func Test_Fold(t *testing.T) {
 	}
 
 	// Starting player loop
-	assert.Equal(t, "RoundPrepared", g.GetState().Status.CurrentEvent.Name)
+	assert.Equal(t, "RoundReady", g.GetState().Status.CurrentEvent.Name)
 
 	// Dealer
 	cp := g.GetCurrentPlayer()

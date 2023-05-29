@@ -745,6 +745,10 @@ func (g *game) PreparePreflopRound() error {
 	return g.EmitEvent(GameEvent_RoundPrepared, nil)
 }
 
+func (g *game) RoundReady() error {
+	return g.PlayerLoop()
+}
+
 func (g *game) PrintState() error {
 
 	data, err := g.GetStateJSON()
