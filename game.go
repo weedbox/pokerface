@@ -47,6 +47,18 @@ type Game interface {
 	Next() error
 	EmitEvent(event GameEvent, payload *EventPayload) error
 	PrintState() error
+
+	// Actions
+	ReadyForAll() error
+	Ready(playerIdx int) error
+	PayAnte() error
+	Pay(chips int64) error
+	Fold() error
+	Check() error
+	Call() error
+	Allin() error
+	Bet(chips int64) error
+	Raise(chipLevel int64) error
 }
 
 type game struct {
