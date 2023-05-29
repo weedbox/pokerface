@@ -118,9 +118,7 @@ func (p *player) Ready() error {
 	wr.Ready(p.idx)
 
 	// Keep going
-	p.game.Resume()
-
-	return nil
+	return p.game.Resume()
 }
 
 func (p *player) Pass() error {
@@ -214,9 +212,7 @@ func (p *player) Fold() error {
 	p.state.DidAction = "fold"
 	p.state.ActionCount++
 
-	p.game.Resume()
-
-	return nil
+	return p.game.Resume()
 }
 
 func (p *player) Call() error {
@@ -236,9 +232,7 @@ func (p *player) Call() error {
 
 	p.pay(delta)
 
-	p.game.Resume()
-
-	return nil
+	return p.game.Resume()
 }
 
 func (p *player) Check() error {
@@ -252,9 +246,7 @@ func (p *player) Check() error {
 	p.state.DidAction = "check"
 	p.state.ActionCount++
 
-	p.game.Resume()
-
-	return nil
+	return p.game.Resume()
 }
 
 func (p *player) Bet(chips int64) error {
@@ -271,9 +263,8 @@ func (p *player) Bet(chips int64) error {
 	p.pay(chips)
 
 	p.game.GetState().Status.PreviousRaiseSize = chips
-	p.game.Resume()
 
-	return nil
+	return p.game.Resume()
 }
 
 func (p *player) Raise(chipLevel int64) error {
@@ -310,8 +301,7 @@ func (p *player) Raise(chipLevel int64) error {
 
 	p.pay(required)
 
-	p.game.Resume()
-	return nil
+	return p.game.Resume()
 }
 
 func (p *player) Allin() error {
@@ -327,6 +317,5 @@ func (p *player) Allin() error {
 
 	p.pay(p.state.StackSize)
 
-	p.game.Resume()
-	return nil
+	return p.game.Resume()
 }
