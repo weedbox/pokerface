@@ -143,6 +143,7 @@ func (p *player) pay(chips int64) error {
 
 		if p.state.InitialStackSize > gs.Status.CurrentWager {
 			gs.Status.CurrentWager = p.state.InitialStackSize
+			gs.Status.CurrentRaiser = p.idx
 		}
 
 		p.state.DidAction = "allin"
