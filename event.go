@@ -225,26 +225,7 @@ func (g *game) onRoundClosed() error {
 		return err
 	}
 
-	g.ResetRoundStatus()
-	g.ResetAllPlayerStatus()
-
-	if g.GetAlivePlayerCount() == 1 {
-		// Game is completed
-		return g.EmitEvent(GameEvent_GameCompleted, nil)
-	}
-
-	switch g.gs.Status.Round {
-	case "preflop":
-		return g.EmitEvent(GameEvent_FlopRoundEntered, nil)
-	case "flop":
-		return g.EmitEvent(GameEvent_TurnRoundEntered, nil)
-	case "turn":
-		return g.EmitEvent(GameEvent_RiverRoundEntered, nil)
-	case "river":
-		return g.EmitEvent(GameEvent_GameCompleted, nil)
-	}
-
-	return ErrUnknownRound
+	return nil
 }
 
 func (g *game) onPreflopRoundEntered() error {

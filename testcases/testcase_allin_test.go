@@ -155,7 +155,21 @@ func Test_Allin_Basic(t *testing.T) {
 	err = cp.Allin()
 	assert.Nil(t, err)
 
-	// This game should be closed immediately
+	// flop
+	err = g.Next()
+	assert.Nil(t, err)
+
+	// turn
+	err = g.Next()
+	assert.Nil(t, err)
+
+	// river
+	err = g.Next()
+	assert.Nil(t, err)
+
+	// close game
+	err = g.Next()
+	assert.Nil(t, err)
 	assert.Equal(t, "GameClosed", g.GetState().Status.CurrentEvent.Name)
 
 	//g.PrintState()
@@ -274,7 +288,21 @@ func Test_Allin_NoOneCanMove(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	// This game should be closed immediately
+	// flop
+	err = g.Next()
+	assert.Nil(t, err)
+
+	// turn
+	err = g.Next()
+	assert.Nil(t, err)
+
+	// river
+	err = g.Next()
+	assert.Nil(t, err)
+
+	// close game
+	err = g.Next()
+	assert.Nil(t, err)
 	assert.Equal(t, "GameClosed", g.GetState().Status.CurrentEvent.Name)
 
 	//g.PrintState()

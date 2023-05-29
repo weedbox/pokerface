@@ -16,6 +16,7 @@ var (
 	ErrUnknownRound                = errors.New("game: unknown round")
 	ErrNotFoundDealer              = errors.New("game: not found dealer")
 	ErrUnknownTask                 = errors.New("game: unknown task")
+	ErrNotClosedRound              = errors.New("game: round is not closed")
 )
 
 type Game interface {
@@ -43,6 +44,7 @@ type Game interface {
 	GetAllowedBetActions(Player) []string
 	GetAlivePlayerCount() int
 	GetMovablePlayerCount() int
+	Next() error
 	EmitEvent(event GameEvent, payload *EventPayload) error
 	PrintState() error
 }
@@ -556,6 +558,51 @@ func (g *game) RequestAnte() error {
 	g.ResetRoundStatus()
 
 	return g.EmitEvent(GameEvent_AnteRequested, nil)
+
+}
+
+func (g *game) Next() error {
+
+	switch g.gs.Status.Round {
+	case "preflop":
+		fallthrough
+	case "flop":
+		fallthrough
+	case "turn":
+		fallthrough
+	case "river":
+		return g.nextRound()
+	}
+
+	return nil
+}
+
+func (g *game) nextRound() error {
+
+	if g.gs.Status.CurrentEvent.Name != "RoundClosed" {
+		return ErrNotClosedRound
+	}
+
+	g.ResetRoundStatus()
+	g.ResetAllPlayerStatus()
+
+	if g.GetAlivePlayerCount() == 1 {
+		// Game is completed
+		return g.EmitEvent(GameEvent_GameCompleted, nil)
+	}
+
+	switch g.gs.Status.Round {
+	case "preflop":
+		return g.EmitEvent(GameEvent_FlopRoundEntered, nil)
+	case "flop":
+		return g.EmitEvent(GameEvent_TurnRoundEntered, nil)
+	case "turn":
+		return g.EmitEvent(GameEvent_RiverRoundEntered, nil)
+	case "river":
+		return g.EmitEvent(GameEvent_GameCompleted, nil)
+	}
+
+	return ErrUnknownRound
 }
 
 func (g *game) EnterPreflopRound() error {

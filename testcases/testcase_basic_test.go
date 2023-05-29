@@ -162,6 +162,9 @@ func Test_Basic(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Entering Flop
+	err = g.Next()
+	assert.Nil(t, err)
+
 	t.Log("Entering \"Flop\" round")
 	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
 	assert.Equal(t, "flop", g.GetState().Status.Round)
@@ -222,6 +225,9 @@ func Test_Basic(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Entering Turn
+	err = g.Next()
+	assert.Nil(t, err)
+
 	t.Log("Entering \"Turn\" round")
 	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
 	assert.Equal(t, "turn", g.GetState().Status.Round)
@@ -314,6 +320,9 @@ func Test_Basic(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Entering River
+	err = g.Next()
+	assert.Nil(t, err)
+
 	t.Log("Entering \"River\" round")
 	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
 	assert.Equal(t, "river", g.GetState().Status.Round)
@@ -343,6 +352,9 @@ func Test_Basic(t *testing.T) {
 	err = cp.Check()
 	assert.Nil(t, err)
 
+	// Next
+	err = g.Next()
+	assert.Nil(t, err)
 	assert.Equal(t, "GameClosed", g.GetState().Status.CurrentEvent.Name)
 
 	//g.PrintState()

@@ -148,6 +148,8 @@ func Test_Fold(t *testing.T) {
 	assert.Nil(t, err)
 
 	// This game should be closed immediately
+	err = g.Next()
+	assert.Nil(t, err)
 	assert.Equal(t, "GameClosed", g.GetState().Status.CurrentEvent.Name)
 
 	//g.PrintState()
