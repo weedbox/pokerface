@@ -58,29 +58,5 @@ func (g *game) CalculateCombinationPower(cards []string) *combination.PowerState
 }
 
 func (g *game) GetAllPossibileCombinations(p *PlayerState, holeCardsCount int) [][]string {
-
-	combinations := make([][]string, 0)
-
-	if holeCardsCount == 0 {
-		allCards := make([]string, 0)
-		allCards = append(allCards, p.HoleCards...)
-		allCards = append(allCards, g.gs.Status.Board...)
-		return combination.GetAllPossibleCombinations(allCards, 5)
-	}
-
-	holeCardCombinations := combination.GetAllPossibleCombinations(p.HoleCards, holeCardsCount)
-	boardCardCombinations := combination.GetAllPossibleCombinations(g.gs.Status.Board, 5-holeCardsCount)
-
-	for _, cards := range holeCardCombinations {
-		allCards := make([]string, 0)
-		allCards = append(allCards, cards...)
-
-		for _, bCards := range boardCardCombinations {
-			allCards = append(allCards, bCards...)
-		}
-
-		combinations = append(combinations, allCards)
-	}
-
-	return combinations
+	return combination.GetAllPossibleCombinations(g.gs.Status.Board, p.HoleCards, holeCardsCount)
 }

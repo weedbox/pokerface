@@ -106,7 +106,7 @@ func binaryOnesPositions(value int, n int) []int {
 	return positions
 }
 
-func GetAllPossibleCombinations(cards []string, n int) [][]string {
+func GetPossibleCombinations(cards []string, n int) [][]string {
 
 	combinations := make([][]string, 0)
 
@@ -126,6 +126,34 @@ func GetAllPossibleCombinations(cards []string, n int) [][]string {
 		}
 
 		combinations = append(combinations, combination)
+	}
+
+	return combinations
+}
+
+func GetAllPossibleCombinations(boardCards []string, holeCards []string, holeCardsCount int) [][]string {
+
+	combinations := make([][]string, 0)
+
+	if holeCardsCount == 0 {
+		allCards := make([]string, 0)
+		allCards = append(allCards, holeCards...)
+		allCards = append(allCards, boardCards...)
+		return GetPossibleCombinations(allCards, 5)
+	}
+
+	holeCardCombinations := GetPossibleCombinations(holeCards, holeCardsCount)
+	boardCardCombinations := GetPossibleCombinations(boardCards, 5-holeCardsCount)
+
+	for _, cards := range holeCardCombinations {
+		allCards := make([]string, 0)
+		allCards = append(allCards, cards...)
+
+		for _, bCards := range boardCardCombinations {
+			allCards = append(allCards, bCards...)
+		}
+
+		combinations = append(combinations, allCards)
 	}
 
 	return combinations
