@@ -133,7 +133,7 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "raise", cp.State().AllowedActions[3])
 
 	// Dealer: call
-	err = g.Player(cp.SeatIndex()).Call()
+	err = cp.Call()
 	assert.Nil(t, err)
 
 	// SB
@@ -145,7 +145,7 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "raise", cp.State().AllowedActions[3])
 
 	// SB: call
-	err = g.Player(cp.SeatIndex()).Call()
+	err = cp.Call()
 	assert.Nil(t, err)
 
 	// BB
@@ -156,7 +156,7 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "raise", cp.State().AllowedActions[2])
 
 	// SB: check
-	err = g.Player(cp.SeatIndex()).Check()
+	err = cp.Check()
 	assert.Nil(t, err)
 
 	// Entering Flop
@@ -188,7 +188,7 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "bet", cp.State().AllowedActions[2])
 
 	// SB: check
-	err = g.Player(cp.SeatIndex()).Check()
+	err = cp.Check()
 	assert.Nil(t, err)
 
 	// BB
@@ -202,7 +202,7 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "bet", cp.State().AllowedActions[2])
 
 	// BB: check
-	err = g.Player(cp.SeatIndex()).Check()
+	err = cp.Check()
 	assert.Nil(t, err)
 
 	// Dealer
@@ -216,7 +216,7 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "bet", cp.State().AllowedActions[2])
 
 	// Dealer: check
-	err = g.Player(cp.SeatIndex()).Check()
+	err = cp.Check()
 	assert.Nil(t, err)
 
 	// Entering Turn
@@ -246,7 +246,7 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "bet", cp.State().AllowedActions[2])
 
 	// SB: check
-	err = g.Player(cp.SeatIndex()).Check()
+	err = cp.Check()
 	assert.Nil(t, err)
 
 	// BB
@@ -260,7 +260,7 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "bet", cp.State().AllowedActions[2])
 
 	// BB: bet 30
-	err = g.Player(cp.SeatIndex()).Bet(30)
+	err = cp.Bet(30)
 	assert.Nil(t, err)
 
 	// Dealer
@@ -276,7 +276,7 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "raise", cp.State().AllowedActions[3])
 
 	// Dealer: raise to 60 (+30)
-	err = g.Player(cp.SeatIndex()).Raise(60)
+	err = cp.Raise(60)
 	assert.Nil(t, err)
 
 	// SB
@@ -292,7 +292,7 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "raise", cp.State().AllowedActions[3])
 
 	// SB: call
-	err = g.Player(cp.SeatIndex()).Call()
+	err = cp.Call()
 	assert.Nil(t, err)
 
 	// BB
@@ -308,7 +308,7 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "raise", cp.State().AllowedActions[3])
 
 	// BB: call
-	err = g.Player(cp.SeatIndex()).Call()
+	err = cp.Call()
 	assert.Nil(t, err)
 
 	// Entering River
@@ -328,17 +328,17 @@ func Test_Basic(t *testing.T) {
 
 	// SB
 	cp = g.GetCurrentPlayer()
-	err = g.Player(cp.SeatIndex()).Check()
+	err = cp.Check()
 	assert.Nil(t, err)
 
 	// BB
 	cp = g.GetCurrentPlayer()
-	err = g.Player(cp.SeatIndex()).Check()
+	err = cp.Check()
 	assert.Nil(t, err)
 
 	// Dealer
 	cp = g.GetCurrentPlayer()
-	err = g.Player(cp.SeatIndex()).Check()
+	err = cp.Check()
 	assert.Nil(t, err)
 
 	//g.PrintState()

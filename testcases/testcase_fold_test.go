@@ -132,7 +132,7 @@ func Test_Fold(t *testing.T) {
 	assert.Equal(t, "raise", cp.State().AllowedActions[3])
 
 	// Dealer: fold
-	err = g.Player(cp.SeatIndex()).Fold()
+	err = cp.Fold()
 	assert.Nil(t, err)
 
 	// SB
@@ -144,7 +144,7 @@ func Test_Fold(t *testing.T) {
 	assert.Equal(t, "raise", cp.State().AllowedActions[3])
 
 	// SB: fold
-	err = g.Player(cp.SeatIndex()).Fold()
+	err = cp.Fold()
 	assert.Nil(t, err)
 
 	// This game should be closed immediately
