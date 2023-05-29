@@ -7,6 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func PrepareAnte(t *testing.T, g pokerface.Game) {
+	for _, p := range g.GetPlayers() {
+		err := p.Pay(g.GetState().Meta.Ante)
+		assert.Nil(t, err)
+	}
+}
+
 func AllPlayersReady(t *testing.T, g pokerface.Game) {
 	for _, p := range g.GetPlayers() {
 		err := p.Ready()
@@ -370,7 +377,10 @@ func Test_Basic(t *testing.T) {
 func Test_Basic_NinePlayers(t *testing.T) {
 
 	pf := pokerface.NewPokerFace()
+
+	// Options
 	opts := pokerface.NewStardardGameOptions()
+	opts.Ante = 10
 
 	// Preparing deck
 	opts.Deck = pokerface.NewStandardDeckCards()
@@ -417,6 +427,9 @@ func Test_Basic_NinePlayers(t *testing.T) {
 
 	// Waiting for ready
 	AllPlayersReady(t, g)
+
+	// Ante
+	PrepareAnte(t, g)
 
 	// Blinds
 	g.GetCurrentPlayer().Pay(5)
