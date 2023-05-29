@@ -494,7 +494,7 @@ func Test_Basic_NinePlayers(t *testing.T) {
 	g.GetCurrentPlayer().Check()
 	g.GetCurrentPlayer().Check()
 	g.GetCurrentPlayer().Check()
-	g.GetCurrentPlayer().Check() // Check
+	g.GetCurrentPlayer().Check() // Dealer
 
 	// Game closed
 	err = g.Next()
