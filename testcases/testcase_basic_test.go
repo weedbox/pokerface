@@ -7,6 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func AllPlayersReady(t *testing.T, g pokerface.Game) {
+	for _, p := range g.GetPlayers() {
+		err := p.Ready()
+		assert.Nil(t, err)
+	}
+}
+
 func Test_Basic(t *testing.T) {
 
 	pf := pokerface.NewPokerFace()
@@ -358,4 +365,125 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "GameClosed", g.GetState().Status.CurrentEvent.Name)
 
 	//g.PrintState()
+}
+
+func Test_Basic_NinePlayers(t *testing.T) {
+
+	pf := pokerface.NewPokerFace()
+	opts := pokerface.NewStardardGameOptions()
+
+	// Preparing deck
+	opts.Deck = pokerface.NewStandardDeckCards()
+
+	// Preparing players
+	players := []*pokerface.PlayerSetting{
+		&pokerface.PlayerSetting{
+			Bankroll:  10000,
+			Positions: []string{"dealer"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  10000,
+			Positions: []string{"sb"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  10000,
+			Positions: []string{"bb"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll: 10000,
+		},
+		&pokerface.PlayerSetting{
+			Bankroll: 10000,
+		},
+		&pokerface.PlayerSetting{
+			Bankroll: 10000,
+		},
+		&pokerface.PlayerSetting{
+			Bankroll: 10000,
+		},
+		&pokerface.PlayerSetting{
+			Bankroll: 10000,
+		},
+		&pokerface.PlayerSetting{
+			Bankroll: 10000,
+		},
+	}
+	opts.Players = append(opts.Players, players...)
+
+	// Initializing game
+	g := pf.NewGame(opts)
+	err := g.Start()
+	assert.Nil(t, err)
+
+	// Waiting for ready
+	AllPlayersReady(t, g)
+
+	// Blinds
+	g.GetCurrentPlayer().Pay(5)
+	g.GetCurrentPlayer().Pay(10)
+
+	// Get ready for preflop
+	AllPlayersReady(t, g)
+
+	// Preflop
+	g.GetCurrentPlayer().Call()
+	g.GetCurrentPlayer().Call()
+	g.GetCurrentPlayer().Call()
+	g.GetCurrentPlayer().Call()
+	g.GetCurrentPlayer().Call()
+	g.GetCurrentPlayer().Call()
+	g.GetCurrentPlayer().Call()  // Dealer
+	g.GetCurrentPlayer().Call()  // SB
+	g.GetCurrentPlayer().Check() // BB
+
+	// Flop
+	err = g.Next()
+	assert.Nil(t, err)
+	AllPlayersReady(t, g)
+	g.GetCurrentPlayer().Check() // SB
+	g.GetCurrentPlayer().Check() // BB
+	g.GetCurrentPlayer().Bet(100)
+	g.GetCurrentPlayer().Call()
+	g.GetCurrentPlayer().Call()
+	g.GetCurrentPlayer().Call()
+	g.GetCurrentPlayer().Call()
+	g.GetCurrentPlayer().Call()
+	g.GetCurrentPlayer().Call() // Dealer
+	g.GetCurrentPlayer().Call() // SB
+	g.GetCurrentPlayer().Call() // BB
+
+	// Turn
+	err = g.Next()
+	assert.Nil(t, err)
+	AllPlayersReady(t, g)
+	g.GetCurrentPlayer().Check()  // SB
+	g.GetCurrentPlayer().Bet(100) // BB
+	g.GetCurrentPlayer().Raise(200)
+	g.GetCurrentPlayer().Raise(300)
+	g.GetCurrentPlayer().Call()
+	g.GetCurrentPlayer().Call()
+	g.GetCurrentPlayer().Call()
+	g.GetCurrentPlayer().Call()
+	g.GetCurrentPlayer().Call() // Dealer
+	g.GetCurrentPlayer().Call() // SB
+	g.GetCurrentPlayer().Call() // BB
+	g.GetCurrentPlayer().Call()
+
+	// River
+	err = g.Next()
+	assert.Nil(t, err)
+	AllPlayersReady(t, g)
+	g.GetCurrentPlayer().Check() // SB
+	g.GetCurrentPlayer().Check() // BB
+	g.GetCurrentPlayer().Check()
+	g.GetCurrentPlayer().Check()
+	g.GetCurrentPlayer().Check()
+	g.GetCurrentPlayer().Check()
+	g.GetCurrentPlayer().Check()
+	g.GetCurrentPlayer().Check()
+	g.GetCurrentPlayer().Check() // Check
+
+	// Game closed
+	err = g.Next()
+	assert.Nil(t, err)
 }
