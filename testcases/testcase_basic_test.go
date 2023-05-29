@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_BasicCase(t *testing.T) {
+func Test_Basic(t *testing.T) {
 
 	pf := pokerface.NewPokerFace()
 

@@ -141,6 +141,10 @@ func (p *player) pay(chips int64) error {
 		gs := p.game.GetState()
 		gs.Status.CurrentRoundPot += p.state.InitialStackSize - p.state.Wager
 
+		if p.state.InitialStackSize > gs.Status.CurrentWager {
+			gs.Status.CurrentWager = p.state.InitialStackSize
+		}
+
 		p.state.DidAction = "allin"
 		p.state.Wager = p.state.InitialStackSize
 		p.state.StackSize = 0

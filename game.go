@@ -41,6 +41,8 @@ type Game interface {
 	GetCurrentPlayer() Player
 	GetAllowedActions(Player) []string
 	GetAllowedBetActions(Player) []string
+	GetAlivePlayerCount() int
+	GetMovablePlayerCount() int
 	EmitEvent(event GameEvent, payload *EventPayload) error
 	PrintState() error
 }
@@ -97,7 +99,7 @@ func (g *game) Resume() error {
 		//fmt.Printf("Resume: %s\n", g.gs.Status.CurrentEvent.Name)
 
 		// Activate by the last event
-		g.EmitEvent(event, g.gs.Status.CurrentEvent.Payload)
+		return g.EmitEvent(event, g.gs.Status.CurrentEvent.Payload)
 	}
 
 	return nil
@@ -366,7 +368,7 @@ func (g *game) SetCurrentPlayer(p Player) error {
 	return nil
 }
 
-func (g *game) AlivePlayerCount() int {
+func (g *game) GetAlivePlayerCount() int {
 
 	aliveCount := g.GetPlayerCount()
 
@@ -379,12 +381,28 @@ func (g *game) AlivePlayerCount() int {
 	return aliveCount
 }
 
+func (g *game) GetMovablePlayerCount() int {
+
+	mCount := g.GetPlayerCount()
+
+	for _, p := range g.gs.Players {
+		if p.Fold || p.StackSize == 0 {
+			mCount--
+		}
+	}
+
+	return mCount
+}
+
 func (g *game) PlayerLoop() error {
 
-	aliveCount := g.AlivePlayerCount()
-
 	// only one player left
-	if aliveCount == 1 {
+	if g.GetAlivePlayerCount() == 1 {
+		return g.EmitEvent(GameEvent_RoundClosed, nil)
+	}
+
+	// no player can move because everybody did all-in already for this game
+	if g.GetMovablePlayerCount() == 0 {
 		return g.EmitEvent(GameEvent_RoundClosed, nil)
 	}
 
@@ -571,7 +589,7 @@ func (g *game) InitializeRound() error {
 
 	case "turn":
 		fallthrough
-	case "riber":
+	case "river":
 
 		g.Burn(1)
 
@@ -602,6 +620,11 @@ func (g *game) PrepareRound() error {
 		return g.PreparePreflopRound()
 	}
 
+	// Everybody did all-in, no need to keep going with normal way
+	if g.GetMovablePlayerCount() == 0 {
+		return g.EmitEvent(GameEvent_RoundClosed, nil)
+	}
+
 	// Other stage: start at dealer
 	if !g.WaitForAllPlayersReady("ready") {
 		return nil
@@ -617,105 +640,109 @@ func (g *game) PrepareRound() error {
 
 func (g *game) PreparePreflopRound() error {
 
-	if g.gs.Meta.Blind.Dealer > 0 || g.gs.Meta.Blind.SB > 0 || g.gs.Meta.Blind.BB > 0 {
-
-		// Initializing for current event
-		event := g.GetEvent()
-
-		// Task 1: request dealer blind
-		if g.gs.Meta.Blind.Dealer > 0 && event.Payload.Task.GetTask("db") == nil {
-			t := task.NewWaitPay("db", g.gs.Meta.Blind.Dealer)
-
-			playerIdx := g.Dealer().State().Idx
-			t.PrepareStates([]int{playerIdx})
-
-			event.Payload.Task.AddTask(t)
-		}
-
-		// Task 2: request small blind
-		if g.gs.Meta.Blind.SB > 0 && event.Payload.Task.GetTask("sb") == nil {
-			t := task.NewWaitPay("sb", g.gs.Meta.Blind.SB)
-
-			playerIdx := g.SmallBlind().State().Idx
-			t.PrepareStates([]int{playerIdx})
-
-			event.Payload.Task.AddTask(t)
-		}
-
-		// Task 3: request big blind
-		if g.gs.Meta.Blind.BB > 0 && event.Payload.Task.GetTask("bb") == nil {
-
-			// Minimal raise size
-			g.gs.Status.PreviousRaiseSize = g.gs.Meta.Blind.BB
-
-			t := task.NewWaitPay("bb", g.gs.Meta.Blind.BB)
-
-			playerIdx := g.BigBlind().State().Idx
-			t.PrepareStates([]int{playerIdx})
-
-			event.Payload.Task.AddTask(t)
-		}
-
-		// Task 4: Waiting for ready
-		g.AssertReadyTask("ready")
-
-		// Execute and check task status
-		event.Payload.Task.Execute()
-
-		if !event.Payload.Task.IsCompleted() {
-
-			//fmt.Printf("Check blinds: dealer=%d, sb=%d, bb=%d\n", g.gs.Meta.Blind.Dealer, g.gs.Meta.Blind.SB, g.gs.Meta.Blind.BB)
-
-			// Getting available task for the next action
-			t := event.Payload.Task.GetAvailableTask()
-
-			// task for dealer blind and getting ready
-			switch t.GetName() {
-			case "db":
-
-				// Start at dealer
-				p := g.Dealer()
-				p.AllowActions([]string{
-					"pay",
-				})
-				g.setCurrentPlayer(p)
-			case "sb":
-				p := g.SmallBlind()
-				p.AllowActions([]string{
-					"pay",
-				})
-				g.setCurrentPlayer(p)
-			case "bb":
-				p := g.BigBlind()
-				p.AllowActions([]string{
-					"pay",
-				})
-				g.setCurrentPlayer(p)
-			default:
-				return ErrUnknownTask
-			}
-
-			//fmt.Println("Waiting for blinds...")
-
-			return nil
-		}
-
-		g.ResetAllPlayerAllowedActions()
-
-		// Find the last player who has paid
-		var lp Player
-		for _, p := range g.GetPlayers() {
-			if p.State().Wager > 0 {
-				lp = p
-			}
-		}
-
-		g.SetCurrentPlayer(lp)
-
-		return g.EmitEvent(GameEvent_RoundPrepared, nil)
+	if g.gs.Meta.Blind.Dealer == 0 && g.gs.Meta.Blind.SB == 0 && g.gs.Meta.Blind.BB > 0 {
+		return nil
 	}
 
-	return nil
+	// Initializing for current event
+	event := g.GetEvent()
+
+	// Task 1: request dealer blind
+	if g.gs.Meta.Blind.Dealer > 0 && event.Payload.Task.GetTask("db") == nil {
+		t := task.NewWaitPay("db", g.gs.Meta.Blind.Dealer)
+
+		playerIdx := g.Dealer().State().Idx
+		t.PrepareStates([]int{playerIdx})
+
+		event.Payload.Task.AddTask(t)
+	}
+
+	// Task 2: request small blind
+	if g.gs.Meta.Blind.SB > 0 && event.Payload.Task.GetTask("sb") == nil {
+		t := task.NewWaitPay("sb", g.gs.Meta.Blind.SB)
+
+		playerIdx := g.SmallBlind().State().Idx
+		t.PrepareStates([]int{playerIdx})
+
+		event.Payload.Task.AddTask(t)
+	}
+
+	// Task 3: request big blind
+	if g.gs.Meta.Blind.BB > 0 && event.Payload.Task.GetTask("bb") == nil {
+
+		// Minimal raise size
+		g.gs.Status.PreviousRaiseSize = g.gs.Meta.Blind.BB
+
+		t := task.NewWaitPay("bb", g.gs.Meta.Blind.BB)
+
+		playerIdx := g.BigBlind().State().Idx
+		t.PrepareStates([]int{playerIdx})
+
+		event.Payload.Task.AddTask(t)
+	}
+
+	// Task 4: Waiting for ready
+	g.AssertReadyTask("ready")
+
+	// Execute and check task status
+	event.Payload.Task.Execute()
+
+	if !event.Payload.Task.IsCompleted() {
+
+		//fmt.Printf("Check blinds: dealer=%d, sb=%d, bb=%d\n", g.gs.Meta.Blind.Dealer, g.gs.Meta.Blind.SB, g.gs.Meta.Blind.BB)
+
+		// Getting available task for the next action
+		t := event.Payload.Task.GetAvailableTask()
+
+		// task for dealer blind and getting ready
+		switch t.GetName() {
+		case "db":
+
+			// Start at dealer
+			p := g.Dealer()
+			p.AllowActions([]string{
+				"pay",
+			})
+			g.setCurrentPlayer(p)
+		case "sb":
+			p := g.SmallBlind()
+			p.AllowActions([]string{
+				"pay",
+			})
+			g.setCurrentPlayer(p)
+		case "bb":
+			p := g.BigBlind()
+			p.AllowActions([]string{
+				"pay",
+			})
+			g.setCurrentPlayer(p)
+		default:
+			return ErrUnknownTask
+		}
+
+		//fmt.Println("Waiting for blinds...")
+
+		return nil
+	}
+
+	g.ResetAllPlayerAllowedActions()
+
+	// Everybody did all-in, no need to keep going with normal way
+	if g.GetMovablePlayerCount() == 0 {
+		return g.EmitEvent(GameEvent_RoundClosed, nil)
+	}
+
+	// Find the last player who has paid
+	var lp Player
+	for _, p := range g.GetPlayers() {
+		if p.State().Wager > 0 {
+			lp = p
+		}
+	}
+
+	g.SetCurrentPlayer(lp)
+
+	return g.EmitEvent(GameEvent_RoundPrepared, nil)
 }
 
 func (g *game) PrintState() error {

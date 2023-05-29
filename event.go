@@ -230,8 +230,7 @@ func (g *game) onRoundClosed() error {
 	g.ResetRoundStatus()
 	g.ResetAllPlayerStatus()
 
-	aliveCount := g.AlivePlayerCount()
-	if aliveCount == 1 {
+	if g.GetAlivePlayerCount() == 1 {
 		// Game is completed
 		return g.EmitEvent(GameEvent_GameCompleted, nil)
 	}
