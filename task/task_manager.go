@@ -1,7 +1,7 @@
 package task
 
 type TaskManager struct {
-	Tasks []Task `json:"tasks"`
+	Tasks []Task `json:"tasks,omitempty"`
 }
 
 func NewTaskManager() *TaskManager {

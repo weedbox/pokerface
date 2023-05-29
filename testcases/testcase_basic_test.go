@@ -64,6 +64,8 @@ func Test_Basic(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
+	g.PrintState()
+
 	// ante
 	assert.Equal(t, "Prepared", g.GetState().Status.CurrentEvent.Name)
 
@@ -341,5 +343,5 @@ func Test_Basic(t *testing.T) {
 	err = cp.Check()
 	assert.Nil(t, err)
 
-	//g.PrintState()
+	g.PrintState()
 }

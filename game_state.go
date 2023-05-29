@@ -35,9 +35,9 @@ type Event struct {
 type Status struct {
 	MiniBet             int64      `json:"min_bet"`
 	Pots                []*pot.Pot `json:"pots"`
-	Round               string     `json:"round"`
-	Burned              []string   `json:"burned"`
-	Board               []string   `json:"board"`
+	Round               string     `json:"round,omitempty"`
+	Burned              []string   `json:"burned,omitempty"`
+	Board               []string   `json:"board,omitempty"`
 	PreviousRaiseSize   int64      `json:"previous_raise_size"`
 	CurrentDeckPosition int        `json:"current_deck_position"`
 	CurrentRoundPot     int64      `json:"current_round_pot"`
@@ -59,7 +59,7 @@ type PlayerState struct {
 	HoleCards        []string        `json:"hole_cards,omitempty"`
 	Fold             bool            `json:"fold"`
 	ActionCount      int             `json:"action_count"`
-	Combination      CombinationInfo `json:"combination"`
+	Combination      CombinationInfo `json:"combination,omitempty"`
 
 	// Actions
 	AllowedActions []string `json:"allowed_actions,omitempty"`
