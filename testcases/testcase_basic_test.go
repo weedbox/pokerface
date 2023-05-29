@@ -124,7 +124,7 @@ func Test_Basic(t *testing.T) {
 	}
 
 	// Starting player loop
-	assert.Equal(t, "RoundReady", g.GetState().Status.CurrentEvent.Name)
+	assert.Equal(t, "PlayerActionRequested", g.GetState().Status.CurrentEvent.Name)
 
 	// Dealer
 	cp := g.GetCurrentPlayer()
@@ -177,7 +177,7 @@ func Test_Basic(t *testing.T) {
 	}
 
 	// Starting player loop
-	assert.Equal(t, "RoundReady", g.GetState().Status.CurrentEvent.Name)
+	assert.Equal(t, "PlayerActionRequested", g.GetState().Status.CurrentEvent.Name)
 
 	// SB
 	cp = g.GetCurrentPlayer()
@@ -235,7 +235,7 @@ func Test_Basic(t *testing.T) {
 
 	// Starting player loop
 	t.Log("Round is ready")
-	assert.Equal(t, "RoundReady", g.GetState().Status.CurrentEvent.Name)
+	assert.Equal(t, "PlayerActionRequested", g.GetState().Status.CurrentEvent.Name)
 
 	// SB
 	cp = g.GetCurrentPlayer()

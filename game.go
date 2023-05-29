@@ -394,7 +394,7 @@ func (g *game) GetMovablePlayerCount() int {
 	return mCount
 }
 
-func (g *game) PlayerLoop() error {
+func (g *game) RequestPlayerAction() error {
 
 	// only one player left
 	if g.GetAlivePlayerCount() == 1 {
@@ -745,10 +745,6 @@ func (g *game) PreparePreflopRound() error {
 	g.SetCurrentPlayer(lp)
 
 	return g.EmitEvent(GameEvent_RoundPrepared, nil)
-}
-
-func (g *game) RoundReady() error {
-	return g.PlayerLoop()
 }
 
 func (g *game) PrintState() error {
