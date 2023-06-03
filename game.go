@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/cfsghost/pokerface/pot"
-	"github.com/cfsghost/pokerface/task"
+	"github.com/weedbox/pokerface/pot"
+	"github.com/weedbox/pokerface/task"
 )
 
 var (

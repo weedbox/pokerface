@@ -1,4 +1,4 @@
-module github.com/cfsghost/pokerface
+module github.com/weedbox/pokerface
 
 go 1.19
 

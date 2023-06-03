@@ -3,7 +3,7 @@ package pokerface
 import (
 	"errors"
 
-	"github.com/cfsghost/pokerface/task"
+	"github.com/weedbox/pokerface/task"
 )
 
 var (

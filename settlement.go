@@ -1,8 +1,8 @@
 package pokerface
 
 import (
-	"github.com/cfsghost/pokerface/combination"
-	"github.com/cfsghost/pokerface/settlement"
+	"github.com/weedbox/pokerface/combination"
+	"github.com/weedbox/pokerface/settlement"
 )
 
 type RankInfo struct {

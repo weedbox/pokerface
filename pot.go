@@ -1,7 +1,7 @@
 package pokerface
 
 import (
-	"github.com/cfsghost/pokerface/pot"
+	"github.com/weedbox/pokerface/pot"
 )
 
 func (g *game) updatePots() error {

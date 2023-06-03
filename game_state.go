@@ -1,9 +1,9 @@
 package pokerface
 
 import (
-	"github.com/cfsghost/pokerface/combination"
-	"github.com/cfsghost/pokerface/pot"
-	"github.com/cfsghost/pokerface/settlement"
+	"github.com/weedbox/pokerface/combination"
+	"github.com/weedbox/pokerface/pot"
+	"github.com/weedbox/pokerface/settlement"
 )
 
 type GameState struct {

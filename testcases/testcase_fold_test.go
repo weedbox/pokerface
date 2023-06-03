@@ -3,8 +3,8 @@ package pokerface
 import (
 	"testing"
 
-	"github.com/cfsghost/pokerface"
 	"github.com/stretchr/testify/assert"
+	"github.com/weedbox/pokerface"
 )
 
 func Test_Fold(t *testing.T) {

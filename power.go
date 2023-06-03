@@ -3,7 +3,7 @@ package pokerface
 import (
 	"sort"
 
-	"github.com/cfsghost/pokerface/combination"
+	"github.com/weedbox/pokerface/combination"
 )
 
 func (g *game) CalculatePlayerPower(p *PlayerState) *combination.PowerState {

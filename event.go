@@ -1,7 +1,7 @@
 package pokerface
 
 import (
-	"github.com/cfsghost/pokerface/task"
+	"github.com/weedbox/pokerface/task"
 )
 
 type GameEvent int32

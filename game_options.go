@@ -1,6 +1,6 @@
 package pokerface
 
-import "github.com/cfsghost/pokerface/combination"
+import "github.com/weedbox/pokerface/combination"
 
 type GameOptions struct {
 	Ante                   int64                     `json:"ante"`
