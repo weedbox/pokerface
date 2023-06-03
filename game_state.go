@@ -9,7 +9,6 @@ import (
 type GameState struct {
 	GameID    string             `json:"game_id"`
 	CreatedAt int64              `json:"created_at"`
-	UpdatedAt int64              `json:"updated_at"`
 	Meta      Meta               `json:"meta"`
 	Status    Status             `json:"status"`
 	Players   []*PlayerState     `json:"players"`

@@ -23,7 +23,6 @@ func (pf *pokerface) NewGame(opts *GameOptions) Game {
 	s := g.GetState()
 	s.GameID = uuid.New().String()
 	s.CreatedAt = time.Now().Unix()
-	s.UpdatedAt = time.Now().Unix()
 
 	return g
 }
