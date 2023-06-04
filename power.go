@@ -20,6 +20,10 @@ func (g *game) UpdateCombinationOfAllPlayers() error {
 	for _, p := range g.gs.Players {
 		ps := g.CalculatePlayerPower(p)
 
+		if p.Combination == nil {
+			continue
+		}
+
 		p.Combination.Type = combination.CombinationSymbol[ps.Combination]
 
 		// Override old cards

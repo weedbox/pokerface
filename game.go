@@ -174,6 +174,7 @@ func (g *game) AddPlayer(idx int, setting *PlayerSetting) error {
 		Bankroll:         setting.Bankroll,
 		InitialStackSize: setting.Bankroll,
 		StackSize:        setting.Bankroll,
+		Combination:      &CombinationInfo{},
 	}
 
 	g.gs.Players = append(g.gs.Players, ps)

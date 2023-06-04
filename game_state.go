@@ -47,18 +47,18 @@ type Status struct {
 }
 
 type PlayerState struct {
-	Idx              int             `json:"idx"`
-	Positions        []string        `json:"positions"`
-	DidAction        string          `json:"did_action,omitempty"`
-	Bankroll         int64           `json:"bankroll"`
-	InitialStackSize int64           `json:"initial_stack_size"` // bankroll - pot
-	StackSize        int64           `json:"stack_size"`         // initial_stack_size - wager
-	Pot              int64           `json:"pot"`
-	Wager            int64           `json:"wager"`
-	HoleCards        []string        `json:"hole_cards,omitempty"`
-	Fold             bool            `json:"fold"`
-	ActionCount      int             `json:"action_count"`
-	Combination      CombinationInfo `json:"combination,omitempty"`
+	Idx              int              `json:"idx"`
+	Positions        []string         `json:"positions"`
+	DidAction        string           `json:"did_action,omitempty"`
+	Bankroll         int64            `json:"bankroll"`
+	InitialStackSize int64            `json:"initial_stack_size"` // bankroll - pot
+	StackSize        int64            `json:"stack_size"`         // initial_stack_size - wager
+	Pot              int64            `json:"pot"`
+	Wager            int64            `json:"wager"`
+	HoleCards        []string         `json:"hole_cards,omitempty"`
+	Fold             bool             `json:"fold"`
+	ActionCount      int              `json:"action_count"`
+	Combination      *CombinationInfo `json:"combination,omitempty"`
 
 	// Actions
 	AllowedActions []string `json:"allowed_actions,omitempty"`
@@ -68,4 +68,37 @@ type CombinationInfo struct {
 	Type  string   `json:"type"`
 	Cards []string `json:"cards"`
 	Power int      `json:"power"`
+}
+
+func (gs *GameState) AsPlayer(idx int) {
+
+	gs.Meta.Deck = []string{}
+
+	// Do nothing if game has been closed already
+	if gs.Status.CurrentEvent.Name == "GameClosed" {
+
+		for _, p := range gs.Players {
+			if p.Idx == idx {
+				continue
+			}
+
+			// Hide private information if player do fold
+			if p.Fold {
+				p.HoleCards = []string{}
+				p.Combination = nil
+			}
+		}
+
+		return
+	}
+
+	for _, p := range gs.Players {
+		if p.Idx == idx {
+			continue
+		}
+
+		// Hide private information
+		p.HoleCards = []string{}
+		p.Combination = nil
+	}
 }
