@@ -3,6 +3,7 @@ package actor
 import (
 	"math/rand"
 
+	"github.com/weedbox/pokerface"
 	pokertable "github.com/weedbox/pokertable/model"
 )
 
@@ -47,10 +48,35 @@ func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
 
 func (br *botRunner) requestMove() error {
 
-	//TODO: To simulate human-like behavior, it is necessary to incorporate random delays when performing actions.
-
 	gs := br.tableInfo.State.GameState
 	player := gs.Players[br.seatIndex]
+
+	// Do ready() and pay() automatically
+	if gs.HasAction(br.seatIndex, "ready") {
+		return br.actions.Ready()
+	} else if gs.HasAction(br.seatIndex, "pay") {
+
+		// Pay for ante and blinds
+		switch gs.Status.CurrentEvent.Name {
+		case pokerface.GameEventSymbols[pokerface.GameEvent_Prepared]:
+
+			// Ante
+			return br.actions.Pay(gs.Meta.Ante)
+
+		case pokerface.GameEventSymbols[pokerface.GameEvent_RoundInitialized]:
+
+			// blinds
+			if gs.HasPosition(br.seatIndex, "sb") {
+				return br.actions.Pay(gs.Meta.Blind.SB)
+			} else if gs.HasPosition(br.seatIndex, "bb") {
+				return br.actions.Pay(gs.Meta.Blind.BB)
+			}
+
+			return br.actions.Pay(gs.Meta.Blind.Dealer)
+		}
+	}
+
+	//TODO: To simulate human-like behavior, it is necessary to incorporate random delays when performing actions.
 
 	//TODO: require smarter AI
 	// Select action randomly
