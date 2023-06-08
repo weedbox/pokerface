@@ -41,7 +41,7 @@ type Game interface {
 	SetCurrentPlayer(Player) error
 	GetCurrentPlayer() Player
 	GetAllowedActions(Player) []string
-	GetAllowedBetActions(Player) []string
+	GetAvailableActions(Player) []string
 	GetAlivePlayerCount() int
 	GetMovablePlayerCount() int
 	Next() error
@@ -448,13 +448,13 @@ func (g *game) GetAllowedActions(p Player) []string {
 
 	// player is movable for this round
 	if g.gs.Status.CurrentPlayer == p.SeatIndex() {
-		return g.GetAllowedBetActions(p)
+		return g.GetAvailableActions(p)
 	}
 
 	return make([]string, 0)
 }
 
-func (g *game) GetAllowedBetActions(p Player) []string {
+func (g *game) GetAvailableActions(p Player) []string {
 
 	actions := make([]string, 0)
 

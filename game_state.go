@@ -32,7 +32,7 @@ type Event struct {
 }
 
 type Status struct {
-	MiniBet             int64      `json:"min_bet"`
+	MiniBet             int64      `json:"mini_bet"`
 	Pots                []*pot.Pot `json:"pots"`
 	Round               string     `json:"round,omitempty"`
 	Burned              []string   `json:"burned,omitempty"`
@@ -101,4 +101,41 @@ func (gs *GameState) AsPlayer(idx int) {
 		p.HoleCards = []string{}
 		p.Combination = nil
 	}
+}
+
+func (gs *GameState) AsObserver() {
+
+	gs.Meta.Deck = []string{}
+
+	// Hide all private information
+	for _, p := range gs.Players {
+		p.HoleCards = []string{}
+		p.Combination = nil
+	}
+}
+
+func (gs *GameState) GetPlayer(idx int) *PlayerState {
+	return gs.Players[idx]
+}
+
+func (gs *GameState) HasPosition(idx int, position string) bool {
+
+	for _, pos := range gs.Players[idx].Positions {
+		if pos == position {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (gs *GameState) HasAction(idx int, action string) bool {
+
+	for _, aa := range gs.Players[idx].AllowedActions {
+		if aa == action {
+			return true
+		}
+	}
+
+	return false
 }
