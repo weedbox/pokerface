@@ -89,8 +89,9 @@ func TestActor_Basic(t *testing.T) {
 	// Preparing table state updater
 	tableEngine.OnTableUpdated(func(table *pokertable.Table) {
 
+		// Update table state via adapter
 		for _, a := range actors {
-			a.UpdateTableState(table)
+			a.GetTable().UpdateTableState(table)
 		}
 	})
 
