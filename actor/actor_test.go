@@ -4,32 +4,29 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	pokertable "github.com/weedbox/pokertable"
-	"github.com/weedbox/pokertable/model"
-	pokertableModel "github.com/weedbox/pokertable/model"
-	"github.com/weedbox/pokertable/util"
 )
 
 func TestActor_Basic(t *testing.T) {
 
 	// Preparing table
-	gameEngine := pokertable.NewGameEngine()
-	tableEngine := pokertable.NewTableEngine(gameEngine)
+	tableEngine := pokertable.NewTableEngine(uint32(logrus.DebugLevel))
 	table, _ := tableEngine.CreateTable(
-		pokertableModel.TableSetting{
+		pokertable.TableSetting{
 			ShortID:        "ABC123",
 			Code:           "01",
 			Name:           "table name",
 			InvitationCode: "come_to_play",
-			CompetitionMeta: model.CompetitionMeta{
+			CompetitionMeta: pokertable.CompetitionMeta{
 				ID: "competition id",
-				Blind: model.Blind{
+				Blind: pokertable.Blind{
 					ID:              uuid.New().String(),
 					Name:            "blind name",
 					FinalBuyInLevel: 2,
 					InitialLevel:    1,
-					Levels: []model.BlindLevel{
+					Levels: []pokertable.BlindLevel{
 						{
 							Level:        1,
 							SBChips:      10,
@@ -54,8 +51,8 @@ func TestActor_Basic(t *testing.T) {
 					},
 				},
 				MaxDurationMins:      60,
-				Rule:                 util.CompetitionRule_Default,
-				Mode:                 util.CompetitionMode_MTT,
+				Rule:                 pokertable.CompetitionRule_Default,
+				Mode:                 pokertable.CompetitionMode_MTT,
 				TableMaxSeatCount:    9,
 				TableMinPlayingCount: 2,
 				MinChipsUnit:         10,
@@ -64,7 +61,7 @@ func TestActor_Basic(t *testing.T) {
 	)
 
 	// Initializing bot
-	players := []pokertableModel.JoinPlayer{
+	players := []pokertable.JoinPlayer{
 		{PlayerID: "Jeffrey", RedeemChips: 150},
 		{PlayerID: "Chuck", RedeemChips: 150},
 		{PlayerID: "Fred", RedeemChips: 150},
@@ -87,6 +84,6 @@ func TestActor_Basic(t *testing.T) {
 	}
 
 	// Start game
-	_, err := tableEngine.StartGame(table)
+	err := tableEngine.StartGame(table.ID)
 	assert.Nil(t, err)
 }

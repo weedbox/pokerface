@@ -10,7 +10,9 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/thoas/go-funk v0.9.3 // indirect
-	github.com/weedbox/pokertable v0.0.0-20230607143834-8d27aff0fbc5 // indirect
+	github.com/weedbox/pokertable v0.0.0-20230609160128-888903c91b29 // indirect
+	golang.org/x/sys v0.8.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

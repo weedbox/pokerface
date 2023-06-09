@@ -1,22 +1,27 @@
 package actor
 
 import (
+	"time"
+
 	"github.com/weedbox/pokerface"
-	pokertable "github.com/weedbox/pokertable/model"
+	"github.com/weedbox/pokerface/actor/timebank"
+	"github.com/weedbox/pokertable"
 )
 
 type playerRunner struct {
 	actor               Actor
 	actions             Actions
 	playerID            string
-	seatIndex           int
+	gamePlayerIdx       int
 	tableInfo           *pokertable.Table
+	timebank            *timebank.TimeBank
 	onTableStateUpdated func(*pokertable.Table)
 }
 
 func NewPlayerRunner(playerID string) *playerRunner {
 	return &playerRunner{
 		playerID: playerID,
+		timebank: timebank.NewTimeBank(),
 	}
 }
 
@@ -28,10 +33,10 @@ func (pr *playerRunner) SetActor(a Actor) {
 func (pr *playerRunner) UpdateTableState(table *pokertable.Table) error {
 
 	// Update seat index
-	pr.seatIndex = pr.actor.GetSeatIndex(pr.playerID)
+	pr.gamePlayerIdx = table.PlayingPlayerIndex(pr.playerID)
 
 	// Filtering private information fpr player
-	table.State.GameState.AsPlayer(pr.seatIndex)
+	table.State.GameState.AsPlayer(pr.gamePlayerIdx)
 
 	pr.tableInfo = table
 
@@ -43,7 +48,7 @@ func (pr *playerRunner) UpdateTableState(table *pokertable.Table) error {
 	case pokertable.TableStateStatus_TableGameMatchOpen:
 
 		// We have actions allowed by game engine
-		player := pr.tableInfo.State.GameState.GetPlayer(pr.seatIndex)
+		player := pr.tableInfo.State.GameState.GetPlayer(pr.gamePlayerIdx)
 		if len(player.AllowedActions) > 0 {
 			pr.requestMove()
 		}
@@ -59,17 +64,29 @@ func (pr *playerRunner) OnTableStateUpdated(fn func(*pokertable.Table)) error {
 
 func (pr *playerRunner) requestMove() error {
 
-	//TODO: Setup timer to wait for player
-	return nil
+	// Setup timebank to wait for player
+	thinkingTime := time.Duration(pr.tableInfo.Meta.CompetitionMeta.ActionTimeSecs) * time.Second
+	return pr.timebank.NewTask(thinkingTime, func(isCancelled bool) {
+
+		if isCancelled {
+			return
+		}
+
+		// Do default actions if player has no response
+		pr.automate()
+	})
+}
+
+func (pr *playerRunner) automate() error {
 
 	gs := pr.tableInfo.State.GameState
 
 	// Default actions for automation when player has no response
-	if gs.HasAction(pr.seatIndex, "ready") {
+	if gs.HasAction(pr.gamePlayerIdx, "ready") {
 		return pr.actions.Ready()
-	} else if gs.HasAction(pr.seatIndex, "check") {
+	} else if gs.HasAction(pr.gamePlayerIdx, "check") {
 		return pr.actions.Check()
-	} else if gs.HasAction(pr.seatIndex, "fold") {
+	} else if gs.HasAction(pr.gamePlayerIdx, "fold") {
 		return pr.actions.Fold()
 	}
 
@@ -83,9 +100,9 @@ func (pr *playerRunner) requestMove() error {
 	case pokerface.GameEventSymbols[pokerface.GameEvent_RoundInitialized]:
 
 		// blinds
-		if gs.HasPosition(pr.seatIndex, "sb") {
+		if gs.HasPosition(pr.gamePlayerIdx, "sb") {
 			return pr.actions.Pay(gs.Meta.Blind.SB)
-		} else if gs.HasPosition(pr.seatIndex, "bb") {
+		} else if gs.HasPosition(pr.gamePlayerIdx, "bb") {
 			return pr.actions.Pay(gs.Meta.Blind.BB)
 		}
 

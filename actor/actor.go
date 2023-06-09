@@ -1,6 +1,6 @@
 package actor
 
-import pokertable "github.com/weedbox/pokertable/model"
+import pokertable "github.com/weedbox/pokertable"
 
 type Actor interface {
 	SetRunner(r Runner) error
@@ -8,7 +8,6 @@ type Actor interface {
 	GetTable() Adapter
 	GetRunner() Runner
 	UpdateTableState(t *pokertable.Table) error
-	GetSeatIndex(playerID string) int
 }
 
 type actor struct {
@@ -44,17 +43,4 @@ func (a *actor) GetRunner() Runner {
 func (a *actor) UpdateTableState(tableInfo *pokertable.Table) error {
 	a.tableInfo = tableInfo
 	return a.runner.UpdateTableState(tableInfo)
-}
-
-// TODO: this function should be moved to TableStatus struct
-func (a *actor) GetSeatIndex(playerID string) int {
-
-	// Find seat index about me
-	for _, ps := range a.tableInfo.State.PlayerStates {
-		if ps.PlayerID == playerID {
-			return ps.SeatIndex
-		}
-	}
-
-	return -1
 }

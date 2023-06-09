@@ -1,7 +1,7 @@
 package actor
 
 import (
-	pokertable "github.com/weedbox/pokertable/model"
+	"github.com/weedbox/pokertable"
 )
 
 type Runner interface {

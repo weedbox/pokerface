@@ -1,6 +1,6 @@
 package actor
 
-import pokertable "github.com/weedbox/pokertable/model"
+import pokertable "github.com/weedbox/pokertable"
 
 type Adapter interface {
 	SetActor(a Actor)
