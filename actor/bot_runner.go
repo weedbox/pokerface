@@ -50,6 +50,8 @@ func (br *botRunner) requestMove() error {
 
 	gs := br.tableInfo.State.GameState
 
+	//fmt.Println(br.gamePlayerIdx, gs.Players[br.gamePlayerIdx].AllowedActions)
+
 	// Do ready() and pay() automatically
 	if gs.HasAction(br.gamePlayerIdx, "ready") {
 		return br.actions.Ready()
@@ -84,8 +86,6 @@ func (br *botRunner) requestAI() error {
 	player := gs.Players[br.gamePlayerIdx]
 
 	//TODO: To simulate human-like behavior, it is necessary to incorporate random delays when performing actions.
-
-	//TODO: require smarter AI
 
 	// Select action randomly
 	actionIdx := rand.Intn(len(player.AllowedActions) - 1)

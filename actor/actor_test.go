@@ -11,9 +11,9 @@ import (
 
 func TestActor_Basic(t *testing.T) {
 
-	// Preparing table
+	// Initializing table
 	tableEngine := pokertable.NewTableEngine(uint32(logrus.DebugLevel))
-	table, _ := tableEngine.CreateTable(
+	table, err := tableEngine.CreateTable(
 		pokertable.TableSetting{
 			ShortID:        "ABC123",
 			Code:           "01",
@@ -59,6 +59,7 @@ func TestActor_Basic(t *testing.T) {
 			},
 		},
 	)
+	assert.Nil(t, err)
 
 	// Initializing bot
 	players := []pokertable.JoinPlayer{
@@ -67,23 +68,39 @@ func TestActor_Basic(t *testing.T) {
 		{PlayerID: "Fred", RedeemChips: 150},
 	}
 
+	// Preparing actors
 	actors := make([]Actor, 0)
 	for _, p := range players {
+
 		// Create new actor
 		a := NewActor()
-
-		// Initializing bot runner
-		bot := NewBotRunner(p.PlayerID)
-		a.SetRunner(bot)
 
 		// Initializing table engine adapter to communicate with table engine
 		tc := NewTableEngineAdapter(tableEngine, table)
 		a.SetAdapter(tc)
 
+		// Initializing bot runner
+		bot := NewBotRunner(p.PlayerID)
+		a.SetRunner(bot)
+
 		actors = append(actors, a)
 	}
 
+	// Preparing table state updater
+	tableEngine.OnTableUpdated(func(table *pokertable.Table) {
+
+		for _, a := range actors {
+			a.UpdateTableState(table)
+		}
+	})
+
+	// Add player to table
+	for _, p := range players {
+		err := tableEngine.PlayerJoin(table.ID, p)
+		assert.Nil(t, err)
+	}
+
 	// Start game
-	err := tableEngine.StartGame(table.ID)
+	err = tableEngine.StartGame(table.ID)
 	assert.Nil(t, err)
 }
