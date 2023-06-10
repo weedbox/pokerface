@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/weedbox/pokerface"
-	"github.com/weedbox/pokerface/actor/timebank"
 	"github.com/weedbox/pokertable"
+	"github.com/weedbox/timebank"
 )
 
 type playerRunner struct {
