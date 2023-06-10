@@ -1,7 +1,9 @@
 package actor
 
 import (
+	"fmt"
 	"math/rand"
+	"time"
 
 	"github.com/weedbox/pokerface"
 	"github.com/weedbox/pokertable"
@@ -50,7 +52,7 @@ func (br *botRunner) requestMove() error {
 
 	gs := br.tableInfo.State.GameState
 
-	//fmt.Println(br.gamePlayerIdx, gs.Players[br.gamePlayerIdx].AllowedActions)
+	fmt.Println(br.tableInfo.State.GameState.Status.Round, br.gamePlayerIdx, gs.Players[br.gamePlayerIdx].AllowedActions)
 
 	// Do ready() and pay() automatically
 	if gs.HasAction(br.gamePlayerIdx, "ready") {
@@ -87,7 +89,13 @@ func (br *botRunner) requestAI() error {
 
 	//TODO: To simulate human-like behavior, it is necessary to incorporate random delays when performing actions.
 
+	// None of actions is allowed
+	if len(player.AllowedActions) == 0 {
+		return nil
+	}
+
 	// Select action randomly
+	rand.Seed(time.Now().UnixNano())
 	actionIdx := rand.Intn(len(player.AllowedActions) - 1)
 	action := player.AllowedActions[actionIdx]
 
@@ -113,6 +121,8 @@ func (br *botRunner) requestAI() error {
 		return br.actions.Check()
 	case "allin":
 		return br.actions.Allin()
+	case "pass":
+		return br.actions.Pass()
 	}
 
 	return br.actions.Fold()

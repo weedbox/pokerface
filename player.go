@@ -141,7 +141,10 @@ func (p *player) pay(chips int64) error {
 
 		if p.state.InitialStackSize > gs.Status.CurrentWager {
 			gs.Status.CurrentWager = p.state.InitialStackSize
+
+			// Become new raiser
 			gs.Status.CurrentRaiser = p.idx
+			p.state.VPIP = true
 		}
 
 		p.state.DidAction = "allin"
@@ -161,7 +164,10 @@ func (p *player) pay(chips int64) error {
 	// player raised
 	if gs.Status.CurrentWager < p.state.Wager {
 		gs.Status.CurrentWager = chips
+
+		// Become new raiser
 		gs.Status.CurrentRaiser = p.idx
+		p.state.VPIP = true
 	}
 
 	return nil

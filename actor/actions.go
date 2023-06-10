@@ -1,6 +1,7 @@
 package actor
 
 type Actions interface {
+	Pass() error
 	Ready() error
 	Pay(chips int64) error
 	Check() error
@@ -21,6 +22,10 @@ func NewActions(actor Actor, playerID string) Actions {
 		actor:    actor,
 		playerID: playerID,
 	}
+}
+
+func (a *actions) Pass() error {
+	return a.actor.GetTable().Pass(a.playerID)
 }
 
 func (a *actions) Ready() error {

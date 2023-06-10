@@ -57,6 +57,7 @@ type PlayerState struct {
 	Wager            int64            `json:"wager"`
 	HoleCards        []string         `json:"hole_cards,omitempty"`
 	Fold             bool             `json:"fold"`
+	VPIP             bool             `json:"vpip"` // Voluntarily Put In Pot
 	ActionCount      int              `json:"action_count"`
 	Combination      *CombinationInfo `json:"combination,omitempty"`
 

@@ -27,6 +27,10 @@ func (tea *tableEngineAdapter) UpdateTableState(tableInfo *pokertable.Table) err
 	return tea.actor.UpdateTableState(tableInfo)
 }
 
+func (tea *tableEngineAdapter) Pass(playerID string) error {
+	return tea.engine.PlayerPass(tea.table.ID, playerID)
+}
+
 func (tea *tableEngineAdapter) Ready(playerID string) error {
 	return tea.engine.PlayerReady(tea.table.ID, playerID)
 }
