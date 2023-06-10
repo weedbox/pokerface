@@ -1,7 +1,7 @@
 package actor
 
 import (
-	pokertable "github.com/weedbox/pokertable"
+	"github.com/weedbox/pokertable"
 )
 
 type tableEngineAdapter struct {

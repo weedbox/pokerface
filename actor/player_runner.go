@@ -64,6 +64,13 @@ func (pr *playerRunner) OnTableStateUpdated(fn func(*pokertable.Table)) error {
 
 func (pr *playerRunner) requestMove() error {
 
+	gs := pr.tableInfo.State.GameState
+
+	// Do pass automatically
+	if gs.HasAction(pr.gamePlayerIdx, "pass") {
+		return pr.actions.Pass()
+	}
+
 	// Setup timebank to wait for player
 	thinkingTime := time.Duration(pr.tableInfo.Meta.CompetitionMeta.ActionTimeSecs) * time.Second
 	return pr.timebank.NewTask(thinkingTime, func(isCancelled bool) {

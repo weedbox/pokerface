@@ -7,6 +7,7 @@ type Adapter interface {
 	UpdateTableState(t *pokertable.Table) error
 
 	// Player actions
+	Pass(playerID string) error
 	Ready(playerID string) error
 	Pay(playerID string, chips int64) error
 	Check(playerID string) error
