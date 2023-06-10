@@ -154,7 +154,9 @@ func (g *game) addPlayer(state *PlayerState) error {
 
 	if p.CheckPosition("dealer") {
 		g.dealer = p
-	} else if p.CheckPosition("sb") {
+	}
+
+	if p.CheckPosition("sb") {
 		g.smallBlind = p
 	} else if p.CheckPosition("bb") {
 		g.bigBlind = p

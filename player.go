@@ -164,7 +164,7 @@ func (p *player) pay(chips int64) error {
 
 	// player raised
 	if gs.Status.CurrentWager < p.state.Wager {
-		gs.Status.CurrentWager = chips
+		gs.Status.CurrentWager = p.state.Wager
 
 		// Become new raiser
 		gs.Status.CurrentRaiser = p.idx
