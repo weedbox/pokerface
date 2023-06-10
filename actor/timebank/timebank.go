@@ -38,6 +38,11 @@ func NewTimeBank() *TimeBank {
 }
 
 func (tb *TimeBank) Cancel() {
+
+	if !tb.isRunning {
+		return
+	}
+
 	tb.closed <- struct{}{}
 	tb.isRunning = false
 	tb.timer.Stop()
