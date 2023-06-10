@@ -57,6 +57,8 @@ func (br *botRunner) requestMove() error {
 	// Do ready() and pay() automatically
 	if gs.HasAction(br.gamePlayerIdx, "ready") {
 		return br.actions.Ready()
+	} else if gs.HasAction(br.gamePlayerIdx, "pass") {
+		return br.actions.Pass()
 	} else if gs.HasAction(br.gamePlayerIdx, "pay") {
 
 		// Pay for ante and blinds
@@ -94,9 +96,13 @@ func (br *botRunner) requestAI() error {
 		return nil
 	}
 
-	// Select action randomly
-	rand.Seed(time.Now().UnixNano())
-	actionIdx := rand.Intn(len(player.AllowedActions) - 1)
+	actionIdx := 0
+	if len(player.AllowedActions) > 1 {
+		// Select action randomly
+		rand.Seed(time.Now().UnixNano())
+		actionIdx = rand.Intn(len(player.AllowedActions) - 1)
+	}
+
 	action := player.AllowedActions[actionIdx]
 
 	// Calculate chips

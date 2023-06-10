@@ -62,9 +62,9 @@ func TestActor_Basic(t *testing.T) {
 
 	// Initializing bot
 	players := []pokertable.JoinPlayer{
-		{PlayerID: "Jeffrey", RedeemChips: 150},
-		{PlayerID: "Chuck", RedeemChips: 150},
-		{PlayerID: "Fred", RedeemChips: 150},
+		{PlayerID: "Jeffrey", RedeemChips: 3000},
+		{PlayerID: "Chuck", RedeemChips: 3000},
+		{PlayerID: "Fred", RedeemChips: 3000},
 	}
 
 	// Preparing actors
