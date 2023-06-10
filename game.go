@@ -232,11 +232,18 @@ func (g *game) ResetAllPlayerAllowedActions() error {
 func (g *game) ResetAllPlayerStatus() error {
 	for _, p := range g.GetPlayers() {
 		ps := p.State()
-		ps.DidAction = ""
 		ps.AllowedActions = make([]string, 0)
 		ps.Pot += ps.Wager
 		ps.Wager = 0
 		ps.InitialStackSize = ps.StackSize
+
+		if ps.Fold {
+			ps.DidAction = "fold"
+		} else if ps.InitialStackSize == 0 {
+			ps.DidAction = "allin"
+		} else {
+			ps.DidAction = ""
+		}
 	}
 
 	return nil

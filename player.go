@@ -127,8 +127,9 @@ func (p *player) Pass() error {
 		return nil
 	}
 
-	// Implement the logic for the Pass() function
-	return nil
+	p.state.ActionCount++
+
+	return p.game.Resume()
 }
 
 func (p *player) pay(chips int64) error {
