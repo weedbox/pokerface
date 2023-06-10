@@ -7,6 +7,7 @@ import (
 
 var (
 	ErrInvalidParameters = errors.New("timebank: invalid parameters")
+	ErrInvalidDeadline   = errors.New("timebank: invalid deadline")
 )
 
 const (
@@ -48,11 +49,7 @@ func (tb *TimeBank) Cancel() {
 
 func (tb *TimeBank) NewTask(duration time.Duration, fn func(isCancelled bool)) error {
 
-	if duration == time.Second*0 {
-		return nil
-	}
-
-	if fn == nil {
+	if duration == time.Second*0 || fn == nil {
 		return ErrInvalidParameters
 	}
 
@@ -93,4 +90,18 @@ func (tb *TimeBank) Extend(duration time.Duration) bool {
 	tb.timer.Reset(total)
 
 	return true
+}
+
+func (tb *TimeBank) NewTaskWithDeadline(deadline time.Time, fn func(isCancelled bool)) error {
+
+	now := time.Now()
+
+	if deadline.Before(now) {
+		return ErrInvalidDeadline
+	}
+
+	// Calculate duration
+	duration := deadline.Sub(now)
+
+	return tb.NewTask(duration, fn)
 }

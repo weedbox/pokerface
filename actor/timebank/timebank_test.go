@@ -70,3 +70,24 @@ func TestExtend(t *testing.T) {
 	duration := time.Now().Unix() - startTime.Unix()
 	assert.Equal(t, int64(5), duration)
 }
+
+func TestNewTaskWithDeadline(t *testing.T) {
+
+	tb := NewTimeBank()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	startTime := time.Now()
+
+	err := tb.NewTaskWithDeadline(startTime.Add(3*time.Second), func(isCancelled bool) {
+		wg.Done()
+	})
+
+	assert.Nil(t, err)
+
+	wg.Wait()
+
+	duration := time.Now().Unix() - startTime.Unix()
+	assert.Equal(t, int64(3), duration)
+}
