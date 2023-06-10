@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
-	github.com/weedbox/pokertable v0.0.0-20230609160128-888903c91b29
+	github.com/weedbox/pokertable v0.0.0-20230610083445-6c6736343d98
 	github.com/weedbox/timebank v0.0.0-20230610090731-5f6d4b480f02
 )
 

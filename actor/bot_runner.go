@@ -29,7 +29,7 @@ func (br *botRunner) SetActor(a Actor) {
 func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
 
 	// Update player index in game
-	br.gamePlayerIdx = table.PlayingPlayerIndex(br.playerID)
+	br.gamePlayerIdx = table.GamePlayerIndex(br.playerID)
 	br.tableInfo = table
 
 	// Game is running right now

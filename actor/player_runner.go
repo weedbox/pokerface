@@ -33,7 +33,7 @@ func (pr *playerRunner) SetActor(a Actor) {
 func (pr *playerRunner) UpdateTableState(table *pokertable.Table) error {
 
 	// Update seat index
-	pr.gamePlayerIdx = table.PlayingPlayerIndex(pr.playerID)
+	pr.gamePlayerIdx = table.GamePlayerIndex(pr.playerID)
 
 	// Filtering private information fpr player
 	table.State.GameState.AsPlayer(pr.gamePlayerIdx)
