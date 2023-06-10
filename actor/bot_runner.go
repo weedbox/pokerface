@@ -1,7 +1,6 @@
 package actor
 
 import (
-	"fmt"
 	"math/rand"
 	"time"
 
@@ -52,7 +51,7 @@ func (br *botRunner) requestMove() error {
 
 	gs := br.tableInfo.State.GameState
 
-	fmt.Println(br.tableInfo.State.GameState.Status.Round, br.gamePlayerIdx, gs.Players[br.gamePlayerIdx].AllowedActions)
+	//fmt.Println(br.tableInfo.State.GameState.Status.Round, br.gamePlayerIdx, gs.Players[br.gamePlayerIdx].AllowedActions)
 
 	// Do ready() and pay() automatically
 	if gs.HasAction(br.gamePlayerIdx, "ready") {
