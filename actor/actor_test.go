@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	pokertable "github.com/weedbox/pokertable"
 )
@@ -12,7 +11,7 @@ import (
 func TestActor_Basic(t *testing.T) {
 
 	// Initializing table
-	tableEngine := pokertable.NewTableEngine(uint32(logrus.DebugLevel))
+	tableEngine := pokertable.NewTableEngine()
 	table, err := tableEngine.CreateTable(
 		pokertable.TableSetting{
 			ShortID:        "ABC123",
