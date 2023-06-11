@@ -84,8 +84,9 @@ func Test_Actions(t *testing.T) {
 	// Round: Flop
 	assert.Nil(t, g.Next())
 	assert.Nil(t, g.ReadyForAll()) // ready for the round
-	assert.Nil(t, g.Check())       // SB
-	assert.Nil(t, g.Check())       // BB
+	assert.Equal(t, true, g.GetCurrentPlayer().CheckPosition("sb"))
+	assert.Nil(t, g.Check()) // SB
+	assert.Nil(t, g.Check()) // BB
 	assert.Nil(t, g.Bet(100))
 	assert.Nil(t, g.Call())
 	assert.Nil(t, g.Call())
@@ -99,8 +100,9 @@ func Test_Actions(t *testing.T) {
 	// Round: Turn
 	assert.Nil(t, g.Next())
 	assert.Nil(t, g.ReadyForAll()) // ready for the round
-	assert.Nil(t, g.Check())       // SB
-	assert.Nil(t, g.Bet(100))      // BB
+	assert.Equal(t, true, g.GetCurrentPlayer().CheckPosition("sb"))
+	assert.Nil(t, g.Check())  // SB
+	assert.Nil(t, g.Bet(100)) // BB
 	assert.Nil(t, g.Raise(200))
 	assert.Nil(t, g.Raise(300))
 	assert.Nil(t, g.Call())
@@ -115,8 +117,9 @@ func Test_Actions(t *testing.T) {
 	// Round: River
 	assert.Nil(t, g.Next())
 	assert.Nil(t, g.ReadyForAll()) // ready for the round
-	assert.Nil(t, g.Check())       // SB
-	assert.Nil(t, g.Check())       // BB
+	assert.Equal(t, true, g.GetCurrentPlayer().CheckPosition("sb"))
+	assert.Nil(t, g.Check()) // SB
+	assert.Nil(t, g.Check()) // BB
 	assert.Nil(t, g.Check())
 	assert.Nil(t, g.Check())
 	assert.Nil(t, g.Check())
