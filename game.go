@@ -33,6 +33,7 @@ type Game interface {
 	BigBlind() Player
 	Deal(count int) []string
 	Burn(count int) error
+	BecomeRaiser(Player) error
 	ResetAllPlayerStatus() error
 	StartAtDealer() (Player, error)
 	NextMovablePlayer() Player
@@ -50,6 +51,7 @@ type Game interface {
 
 	// Actions
 	ReadyForAll() error
+	Pass() error
 	Ready(playerIdx int) error
 	PayAnte() error
 	Pay(chips int64) error
@@ -410,12 +412,37 @@ func (g *game) GetMovablePlayerCount() int {
 	mCount := g.GetPlayerCount()
 
 	for _, p := range g.gs.Players {
+		// Fold or allin
 		if p.Fold || p.StackSize == 0 {
 			mCount--
 		}
 	}
 
 	return mCount
+}
+
+func (g *game) BecomeRaiser(p Player) error {
+
+	if p.State().Wager > 0 {
+		p.State().VPIP = true
+	}
+
+	g.gs.Status.CurrentRaiser = p.SeatIndex()
+
+	// Reset all player states except raiser
+	for _, ps := range g.gs.Players {
+		if ps.Idx == p.SeatIndex() {
+			continue
+		}
+
+		if ps.DidAction != "fold" && ps.DidAction != "allin" {
+			ps.DidAction = ""
+		}
+
+		ps.Acted = false
+	}
+
+	return nil
 }
 
 func (g *game) RequestPlayerAction() error {
@@ -430,27 +457,17 @@ func (g *game) RequestPlayerAction() error {
 		return g.EmitEvent(GameEvent_RoundClosed, nil)
 	}
 
-	// check for last check of first player on this round
-	cp := g.GetCurrentPlayer()
-	if g.gs.Status.CurrentRaiser == cp.SeatIndex() && cp.State().DidAction == "check" {
-		return g.EmitEvent(GameEvent_RoundClosed, nil)
-	}
-
 	// next player
-	p := g.NextMovablePlayer()
+	p := g.NextPlayer()
 
-	//fmt.Printf("===================== cur=%d, actionCount=%d, raiser=%d\n", p.SeatIndex(), p.State().ActionCount, g.gs.Status.CurrentRaiser)
+	//fmt.Printf("===================== [%s] cur=%d, actionCount=%d, raiser=%d\n", g.gs.Status.Round, p.SeatIndex(), p.State().ActionCount, g.gs.Status.CurrentRaiser)
 
-	if p.State().ActionCount == 0 {
-		g.SetCurrentPlayer(p)
-	} else if p.SeatIndex() != g.gs.Status.CurrentRaiser {
-		g.SetCurrentPlayer(p)
-	} else {
-		// No more player can move
+	// Run around already, no one need to act
+	if p.State().Acted {
 		return g.EmitEvent(GameEvent_RoundClosed, nil)
 	}
 
-	return nil
+	return g.SetCurrentPlayer(p)
 }
 
 func (g *game) GetAllowedActions(p Player) []string {

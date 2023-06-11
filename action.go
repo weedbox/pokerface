@@ -12,6 +12,10 @@ func (g *game) ReadyForAll() error {
 	return nil
 }
 
+func (g *game) Pass() error {
+	return g.GetCurrentPlayer().Pass()
+}
+
 func (g *game) Ready(playerIdx int) error {
 	return g.Player(playerIdx).Ready()
 }

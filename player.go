@@ -51,16 +51,7 @@ func (p *player) SeatIndex() int {
 }
 
 func (p *player) Reset() error {
-
-	if p.state.Fold {
-		p.state.DidAction = "fold"
-	} else if p.state.InitialStackSize == 0 {
-		p.state.DidAction = "allin"
-	} else {
-		p.state.DidAction = ""
-	}
-
-	p.state.ActionCount = 0
+	p.state.Acted = false
 	return p.ResetAllowedActions()
 }
 
@@ -135,7 +126,7 @@ func (p *player) Pass() error {
 		return nil
 	}
 
-	p.state.ActionCount++
+	p.state.Acted = true
 
 	return p.game.Resume()
 }
@@ -148,17 +139,16 @@ func (p *player) pay(chips int64) error {
 		gs := p.game.GetState()
 		gs.Status.CurrentRoundPot += p.state.InitialStackSize - p.state.Wager
 
+		p.state.DidAction = "allin"
+		p.state.Wager = p.state.InitialStackSize
+		p.state.StackSize = 0
+
 		if p.state.InitialStackSize > gs.Status.CurrentWager {
 			gs.Status.CurrentWager = p.state.InitialStackSize
 
 			// Become new raiser
-			gs.Status.CurrentRaiser = p.idx
-			p.state.VPIP = true
+			p.game.BecomeRaiser(p)
 		}
-
-		p.state.DidAction = "allin"
-		p.state.Wager = p.state.InitialStackSize
-		p.state.StackSize = 0
 
 		return nil
 	}
@@ -175,8 +165,7 @@ func (p *player) pay(chips int64) error {
 		gs.Status.CurrentWager = p.state.Wager
 
 		// Become new raiser
-		gs.Status.CurrentRaiser = p.idx
-		p.state.VPIP = true
+		p.game.BecomeRaiser(p)
 	}
 
 	return nil
@@ -223,7 +212,7 @@ func (p *player) Fold() error {
 	p.state.Fold = true
 
 	p.state.DidAction = "fold"
-	p.state.ActionCount++
+	p.state.Acted = true
 
 	return p.game.Resume()
 }
@@ -241,7 +230,7 @@ func (p *player) Call() error {
 	delta := gs.Status.CurrentWager - p.state.Wager
 
 	p.state.DidAction = "call"
-	p.state.ActionCount++
+	p.state.Acted = true
 
 	p.pay(delta)
 
@@ -257,7 +246,7 @@ func (p *player) Check() error {
 	//fmt.Printf("[Player %d] check\n", p.idx)
 
 	p.state.DidAction = "check"
-	p.state.ActionCount++
+	p.state.Acted = true
 
 	return p.game.Resume()
 }
@@ -271,7 +260,7 @@ func (p *player) Bet(chips int64) error {
 	//fmt.Printf("[Player %d] bet %d\n", p.idx, chips)
 
 	p.state.DidAction = "bet"
-	p.state.ActionCount++
+	p.state.Acted = true
 
 	p.pay(chips)
 
@@ -307,7 +296,7 @@ func (p *player) Raise(chipLevel int64) error {
 	//fmt.Printf("[Player %d] raise\n", p.idx)
 
 	p.state.DidAction = "raise"
-	p.state.ActionCount++
+	p.state.Acted = true
 
 	// Update raise size
 	gs.Status.PreviousRaiseSize = chipLevel - gs.Status.CurrentWager
@@ -326,7 +315,7 @@ func (p *player) Allin() error {
 	//fmt.Printf("[Player %d] allin\n", p.idx)
 
 	p.state.DidAction = "allin"
-	p.state.ActionCount++
+	p.state.Acted = true
 
 	p.pay(p.state.StackSize)
 

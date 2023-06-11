@@ -47,22 +47,26 @@ type Status struct {
 }
 
 type PlayerState struct {
-	Idx              int              `json:"idx"`
-	Positions        []string         `json:"positions"`
-	DidAction        string           `json:"did_action,omitempty"`
-	Bankroll         int64            `json:"bankroll"`
-	InitialStackSize int64            `json:"initial_stack_size"` // bankroll - pot
-	StackSize        int64            `json:"stack_size"`         // initial_stack_size - wager
-	Pot              int64            `json:"pot"`
-	Wager            int64            `json:"wager"`
-	HoleCards        []string         `json:"hole_cards,omitempty"`
-	Fold             bool             `json:"fold"`
-	VPIP             bool             `json:"vpip"` // Voluntarily Put In Pot
-	ActionCount      int              `json:"action_count"`
-	Combination      *CombinationInfo `json:"combination,omitempty"`
+	Idx       int      `json:"idx"`
+	Positions []string `json:"positions"`
 
-	// Actions
+	// Status
+	Acted          bool     `json:"acted"`
+	DidAction      string   `json:"did_action,omitempty"`
+	Fold           bool     `json:"fold"`
+	VPIP           bool     `json:"vpip"` // Voluntarily Put In Pot
 	AllowedActions []string `json:"allowed_actions,omitempty"`
+
+	// Stack and wager
+	Bankroll         int64 `json:"bankroll"`
+	InitialStackSize int64 `json:"initial_stack_size"` // bankroll - pot
+	StackSize        int64 `json:"stack_size"`         // initial_stack_size - wager
+	Pot              int64 `json:"pot"`
+	Wager            int64 `json:"wager"`
+
+	// Hole cards information
+	HoleCards   []string         `json:"hole_cards,omitempty"`
+	Combination *CombinationInfo `json:"combination,omitempty"`
 }
 
 type CombinationInfo struct {

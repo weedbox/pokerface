@@ -84,8 +84,8 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "Prepared", g.GetState().Status.CurrentEvent.Name)
 
 	for _, p := range g.GetPlayers() {
+		assert.Equal(t, false, p.State().Acted)
 		assert.Equal(t, 0, len(p.State().HoleCards))
-		assert.Equal(t, 0, p.State().ActionCount)
 		assert.Equal(t, false, p.State().Fold)
 		assert.Equal(t, int64(0), p.State().Wager)
 		assert.Equal(t, int64(0), p.State().Pot)
@@ -104,9 +104,8 @@ func Test_Basic(t *testing.T) {
 
 	// Blinds
 	for _, p := range g.GetPlayers() {
-		assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
+		assert.Equal(t, false, p.State().Acted)
 		assert.Equal(t, 2, len(p.State().HoleCards))
-		assert.Equal(t, 0, p.State().ActionCount)
 		assert.Equal(t, false, p.State().Fold)
 		assert.Equal(t, int64(0), p.State().Wager)
 		assert.Equal(t, int64(10), p.State().Pot)

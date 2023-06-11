@@ -11,10 +11,6 @@ github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcU
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/thoas/go-funk v0.9.3 h1:7+nAEx3kn5ZJcnDm2Bh23N2yOtweO14bi//dvRtgLpw=
 github.com/thoas/go-funk v0.9.3/go.mod h1:+IWnUfUmFO1+WVYQWQtIJHeRRdaIyyYglZN7xzUPe4Q=
-github.com/weedbox/pokertable v0.0.0-20230610083445-6c6736343d98 h1:t8KHXbwM24VO0uLZUj2VjwmcueDUUt0fsU6w1WQJlH8=
-github.com/weedbox/pokertable v0.0.0-20230610083445-6c6736343d98/go.mod h1:v1bYu3FY25xz2P2f0nDJIMyoqOhjjbu/guU+++umgU0=
-github.com/weedbox/pokertable v0.0.0-20230610094005-178238cffd62 h1:KPlRCYs+ha+G9niLGDSNQoqrIg8zCN46jaHnOoT6UA0=
-github.com/weedbox/pokertable v0.0.0-20230610094005-178238cffd62/go.mod h1:v1bYu3FY25xz2P2f0nDJIMyoqOhjjbu/guU+++umgU0=
 github.com/weedbox/pokertable v0.0.0-20230610142511-d9c474c29219 h1:T3+t3VCwC6yTiFq5OQZt2OMjPmG3pEhJwPwgrkclNi0=
 github.com/weedbox/pokertable v0.0.0-20230610142511-d9c474c29219/go.mod h1:v1bYu3FY25xz2P2f0nDJIMyoqOhjjbu/guU+++umgU0=
 github.com/weedbox/timebank v0.0.0-20230610090731-5f6d4b480f02 h1:+tUkr1MQc7EIaES6Aer3vkp2IXyDPZXb8KW4amBmfIM=
