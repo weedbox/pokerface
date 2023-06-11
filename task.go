@@ -12,42 +12,41 @@ func (g *game) AssertReadyTask(taskName string) task.Task {
 	t := event.Payload.Task.GetTask(taskName)
 
 	// task doesn't exist
-	if t == nil {
-
-		// Create a new task to wait for ready
-		wr := task.NewWaitReady(taskName)
-		wr.PreparePlayerStates(len(g.gs.Players))
-
-		// Update event payload
-		wr.OnUpdated(func() {
-
-			// Update allowed actions of players based on task state
-			players := wr.GetPayload().(map[int]bool)
-			for idx, isReady := range players {
-
-				if isReady {
-					g.Player(idx).AllowActions([]string{})
-					continue
-				}
-
-				// Not ready so we are waiting for this player
-				g.Player(idx).AllowActions([]string{
-					"ready",
-				})
-			}
-		})
-
-		// Reset player action states when task completed
-		wr.OnCompleted(func() {
-			g.ResetAllPlayerAllowedActions()
-		})
-
-		event.Payload.Task.AddTask(wr)
-
-		return wr
+	if t != nil {
+		return t
 	}
 
-	return t
+	// Create a new task to wait for ready
+	wr := task.NewWaitReady(taskName)
+	wr.PreparePlayerStates(len(g.gs.Players))
+
+	// Update event payload
+	wr.OnUpdated(func() {
+
+		// Update allowed actions of players based on task state
+		players := wr.GetPayload().(map[int]bool)
+		for idx, isReady := range players {
+
+			if isReady {
+				g.Player(idx).AllowActions([]string{})
+				continue
+			}
+
+			// Not ready so we are waiting for this player
+			g.Player(idx).AllowActions([]string{
+				"ready",
+			})
+		}
+	})
+
+	// Reset player action states when task completed
+	wr.OnCompleted(func() {
+		g.ResetAllPlayerAllowedActions()
+	})
+
+	event.Payload.Task.AddTask(wr)
+
+	return wr
 }
 
 func (g *game) WaitForAllPlayersReady(taskName string) bool {
@@ -78,49 +77,48 @@ func (g *game) AssertPaymentTask(taskName string) task.Task {
 	t := event.Payload.Task.GetTask(taskName)
 
 	// task doesn't exist
-	if t == nil {
-
-		// Create a new task to wait for payment
-		wp := task.NewWaitPay(taskName, g.gs.Meta.Ante)
-
-		// All players must pay ante
-		states := make([]int, 0)
-		for _, ps := range g.gs.Players {
-			states = append(states, ps.Idx)
-		}
-		wp.PrepareStates(states)
-
-		// Update event payload
-		wp.OnUpdated(func() {
-
-			// Update allowed actions of players based on task state
-			pr := wp.GetPayload().(task.PaymentRequest)
-			for idx, chips := range pr.Players {
-
-				// Paid already
-				if chips > 0 {
-					g.Player(idx).AllowActions([]string{})
-					continue
-				}
-
-				// Not ready so we are waiting for this player
-				g.Player(idx).AllowActions([]string{
-					"pay",
-				})
-			}
-		})
-
-		// Reset player action states when task completed
-		wp.OnCompleted(func() {
-			g.ResetAllPlayerAllowedActions()
-		})
-
-		event.Payload.Task.AddTask(wp)
-
-		return wp
+	if t != nil {
+		return t
 	}
 
-	return t
+	// Create a new task to wait for payment
+	wp := task.NewWaitPay(taskName, g.gs.Meta.Ante)
+
+	// All players must pay ante
+	states := make([]int, 0)
+	for _, ps := range g.gs.Players {
+		states = append(states, ps.Idx)
+	}
+	wp.PrepareStates(states)
+
+	// Update event payload
+	wp.OnUpdated(func() {
+
+		// Update allowed actions of players based on task state
+		pr := wp.GetPayload().(task.PaymentRequest)
+		for idx, chips := range pr.Players {
+
+			// Paid already
+			if chips > 0 {
+				g.Player(idx).AllowActions([]string{})
+				continue
+			}
+
+			// Not ready so we are waiting for this player
+			g.Player(idx).AllowActions([]string{
+				"pay",
+			})
+		}
+	})
+
+	// Reset player action states when task completed
+	wp.OnCompleted(func() {
+		g.ResetAllPlayerAllowedActions()
+	})
+
+	event.Payload.Task.AddTask(wp)
+
+	return wp
 }
 
 func (g *game) WaitForPayment(taskName string) bool {

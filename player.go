@@ -211,8 +211,6 @@ func (p *player) Pay(chips int64) error {
 	// Keep going
 	p.game.Resume()
 
-	// Implement the logic for the Pay() function
-
 	return nil
 }
 
