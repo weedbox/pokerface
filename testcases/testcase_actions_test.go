@@ -171,29 +171,33 @@ func Test_Actions_TwoPlayers(t *testing.T) {
 
 	// Round: Preflop
 	assert.Nil(t, g.ReadyForAll()) // ready for the round
-	assert.Nil(t, g.Call())        // SB, Dealer
-	assert.Nil(t, g.Check())       // BB
+	assert.Equal(t, true, g.GetCurrentPlayer().CheckPosition("sb"))
+	assert.Nil(t, g.Call())  // SB, Dealer
+	assert.Nil(t, g.Check()) // BB
 
 	// Round: Flop
 	assert.Nil(t, g.Next())
 	assert.Nil(t, g.ReadyForAll()) // ready for the round
-	assert.Nil(t, g.Check())       // BB
-	assert.Nil(t, g.Check())       // SB, Dealer
+	assert.Equal(t, true, g.GetCurrentPlayer().CheckPosition("bb"))
+	assert.Nil(t, g.Check()) // BB
+	assert.Nil(t, g.Check()) // SB, Dealer
 
 	// Round: Turn
 	assert.Nil(t, g.Next())
 	assert.Nil(t, g.ReadyForAll()) // ready for the round
-	assert.Nil(t, g.Check())       // BB
-	assert.Nil(t, g.Bet(100))      // SB, Dealer
-	assert.Nil(t, g.Raise(200))    // BB
-	assert.Nil(t, g.Raise(300))    // SB, Dealer
-	assert.Nil(t, g.Call())        // BB
+	assert.Equal(t, true, g.GetCurrentPlayer().CheckPosition("bb"))
+	assert.Nil(t, g.Check())    // BB
+	assert.Nil(t, g.Bet(100))   // SB, Dealer
+	assert.Nil(t, g.Raise(200)) // BB
+	assert.Nil(t, g.Raise(300)) // SB, Dealer
+	assert.Nil(t, g.Call())     // BB
 
 	// Round: River
 	assert.Nil(t, g.Next())
 	assert.Nil(t, g.ReadyForAll()) // ready for the round
-	assert.Nil(t, g.Check())       // BB
-	assert.Nil(t, g.Check())       // SB, Dealer
+	assert.Equal(t, true, g.GetCurrentPlayer().CheckPosition("bb"))
+	assert.Nil(t, g.Check()) // BB
+	assert.Nil(t, g.Check()) // SB, Dealer
 
 	// Game closed
 	assert.Nil(t, g.Next())
