@@ -14,9 +14,6 @@ const (
 	GameEvent_Prepared
 	GameEvent_AnteRequested
 
-	// States
-	GameEvent_PlayerActionRequested
-
 	// Rounds
 	GameEvent_PreflopRoundEntered
 	GameEvent_FlopRoundEntered
@@ -24,6 +21,7 @@ const (
 	GameEvent_RiverRoundEntered
 	GameEvent_RoundInitialized
 	GameEvent_RoundPrepared
+	GameEvent_RoundStarted
 	GameEvent_RoundClosed
 
 	// Result
@@ -34,41 +32,41 @@ const (
 )
 
 var GameEventSymbols = map[GameEvent]string{
-	GameEvent_Started:               "Started",
-	GameEvent_Initialized:           "Initialized",
-	GameEvent_Prepared:              "Prepared",
-	GameEvent_AnteRequested:         "AnteRequested",
-	GameEvent_PlayerActionRequested: "PlayerActionRequested",
-	GameEvent_PreflopRoundEntered:   "PreflopRoundEntered",
-	GameEvent_FlopRoundEntered:      "FlopRoundEntered",
-	GameEvent_TurnRoundEntered:      "TurnRoundEntered",
-	GameEvent_RiverRoundEntered:     "RiverRoundEntered",
-	GameEvent_RoundInitialized:      "RoundInitialized",
-	GameEvent_RoundPrepared:         "RoundPrepared",
-	GameEvent_RoundClosed:           "RoundClosed",
-	GameEvent_GameCompleted:         "GameCompleted",
-	GameEvent_SettlementRequested:   "SettlementRequested",
-	GameEvent_SettlementCompleted:   "SettlementCompleted",
-	GameEvent_GameClosed:            "GameClosed",
+	GameEvent_Started:             "Started",
+	GameEvent_Initialized:         "Initialized",
+	GameEvent_Prepared:            "Prepared",
+	GameEvent_AnteRequested:       "AnteRequested",
+	GameEvent_PreflopRoundEntered: "PreflopRoundEntered",
+	GameEvent_FlopRoundEntered:    "FlopRoundEntered",
+	GameEvent_TurnRoundEntered:    "TurnRoundEntered",
+	GameEvent_RiverRoundEntered:   "RiverRoundEntered",
+	GameEvent_RoundInitialized:    "RoundInitialized",
+	GameEvent_RoundPrepared:       "RoundPrepared",
+	GameEvent_RoundStarted:        "RoundStarted",
+	GameEvent_RoundClosed:         "RoundClosed",
+	GameEvent_GameCompleted:       "GameCompleted",
+	GameEvent_SettlementRequested: "SettlementRequested",
+	GameEvent_SettlementCompleted: "SettlementCompleted",
+	GameEvent_GameClosed:          "GameClosed",
 }
 
 var GameEventBySymbol = map[string]GameEvent{
-	"Started":               GameEvent_Started,
-	"Initialized":           GameEvent_Initialized,
-	"Prepared":              GameEvent_Prepared,
-	"AnteRequested":         GameEvent_AnteRequested,
-	"PlayerActionRequested": GameEvent_PlayerActionRequested,
-	"PreflopRoundEntered":   GameEvent_PreflopRoundEntered,
-	"FlopRoundEntered":      GameEvent_FlopRoundEntered,
-	"TurnRoundEntered":      GameEvent_TurnRoundEntered,
-	"RiverRoundEntered":     GameEvent_RiverRoundEntered,
-	"RoundInitialized":      GameEvent_RoundInitialized,
-	"RoundPrepared":         GameEvent_RoundPrepared,
-	"RoundClosed":           GameEvent_RoundClosed,
-	"GameCompleted":         GameEvent_GameCompleted,
-	"SettlementRequested":   GameEvent_SettlementRequested,
-	"SettlementCompleted":   GameEvent_SettlementCompleted,
-	"GameClosed":            GameEvent_GameClosed,
+	"Started":             GameEvent_Started,
+	"Initialized":         GameEvent_Initialized,
+	"Prepared":            GameEvent_Prepared,
+	"AnteRequested":       GameEvent_AnteRequested,
+	"PreflopRoundEntered": GameEvent_PreflopRoundEntered,
+	"FlopRoundEntered":    GameEvent_FlopRoundEntered,
+	"TurnRoundEntered":    GameEvent_TurnRoundEntered,
+	"RiverRoundEntered":   GameEvent_RiverRoundEntered,
+	"RoundInitialized":    GameEvent_RoundInitialized,
+	"RoundPrepared":       GameEvent_RoundPrepared,
+	"RoundStarted":        GameEvent_RoundStarted,
+	"RoundClosed":         GameEvent_RoundClosed,
+	"GameCompleted":       GameEvent_GameCompleted,
+	"SettlementRequested": GameEvent_SettlementRequested,
+	"SettlementCompleted": GameEvent_SettlementCompleted,
+	"GameClosed":          GameEvent_GameClosed,
 }
 
 type EventPayload struct {
@@ -90,67 +88,51 @@ func (g *game) triggerEvent(event GameEvent) error {
 	switch event {
 
 	case GameEvent_Started:
-		//fmt.Println("Game has started.")
 		return g.onStarted()
 
 	case GameEvent_Initialized:
-		//fmt.Println("Game has been initialized.")
 		return g.onInitialized()
 
 	case GameEvent_Prepared:
-		//fmt.Println("Game has been prepared.")
 		return g.onPrepared()
 
 	case GameEvent_AnteRequested:
-		//fmt.Println("Ante has been requested.")
 		return g.onAnteRequested()
 
-	case GameEvent_PlayerActionRequested:
-		//fmt.Println("Player action has been requested.")
-		return g.onPlayerActionRequested()
+	case GameEvent_RoundStarted:
+		return g.onRoundStarted()
 
 	case GameEvent_PreflopRoundEntered:
-		//fmt.Println("Entered Preflop round.")
 		return g.onPreflopRoundEntered()
 
 	case GameEvent_FlopRoundEntered:
-		//fmt.Println("Entered Flop round.")
 		return g.onFlopRoundEntered()
 
 	case GameEvent_TurnRoundEntered:
-		//fmt.Println("Entered Turn round.")
 		return g.onTurnRoundEntered()
 
 	case GameEvent_RiverRoundEntered:
-		//fmt.Println("Entered River round.")
 		return g.onRiverRoundEntered()
 
 	case GameEvent_RoundInitialized:
-		//fmt.Println("Current round has initialized.")
 		return g.onRoundInitialized()
 
 	case GameEvent_RoundPrepared:
-		//fmt.Println("Current round has been prepared.")
 		return g.onRoundPrepared()
 
 	case GameEvent_RoundClosed:
-		//fmt.Println("Current round has closed.")
 		return g.onRoundClosed()
 
 	case GameEvent_GameCompleted:
-		//fmt.Println("Game has been completed.")
 		return g.onGameCompleted()
 
 	case GameEvent_SettlementRequested:
-		//fmt.Println("Settlement has been requested.")
 		return g.onSettlementRequested()
 
 	case GameEvent_SettlementCompleted:
-		//fmt.Println("Settlement has been completed.")
 		return g.onSettlementCompleted()
 
 	case GameEvent_GameClosed:
-		//fmt.Println("Game has closed.")
 	}
 
 	return nil
@@ -205,7 +187,7 @@ func (g *game) onAnteRequested() error {
 	return g.EmitEvent(GameEvent_PreflopRoundEntered, nil)
 }
 
-func (g *game) onPlayerActionRequested() error {
+func (g *game) onRoundStarted() error {
 	return g.RequestPlayerAction()
 }
 
@@ -214,7 +196,7 @@ func (g *game) onRoundInitialized() error {
 }
 
 func (g *game) onRoundPrepared() error {
-	return g.EmitEvent(GameEvent_PlayerActionRequested, nil)
+	return g.EmitEvent(GameEvent_RoundStarted, nil)
 }
 
 func (g *game) onRoundClosed() error {
