@@ -51,7 +51,15 @@ func (p *player) SeatIndex() int {
 }
 
 func (p *player) Reset() error {
-	p.state.DidAction = ""
+
+	if p.state.Fold {
+		p.state.DidAction = "fold"
+	} else if p.state.InitialStackSize == 0 {
+		p.state.DidAction = "allin"
+	} else {
+		p.state.DidAction = ""
+	}
+
 	p.state.ActionCount = 0
 	return p.ResetAllowedActions()
 }
