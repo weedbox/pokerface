@@ -33,6 +33,12 @@ func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
 	br.gamePlayerIdx = table.GamePlayerIndex(br.playerID)
 	br.tableInfo = table
 
+	// Somehow, this player is not in the game.
+	// It probably has no chips already.
+	if br.gamePlayerIdx == -1 {
+		return nil
+	}
+
 	// Game is running right now
 	switch br.tableInfo.State.Status {
 	case pokertable.TableStateStatus_TableGameMatchOpen:

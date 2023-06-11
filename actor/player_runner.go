@@ -43,6 +43,12 @@ func (pr *playerRunner) UpdateTableState(table *pokertable.Table) error {
 	// Emit event
 	pr.onTableStateUpdated(table)
 
+	// Somehow, this player is not in the game.
+	// It probably has no chips already.
+	if pr.gamePlayerIdx == -1 {
+		return nil
+	}
+
 	// Game is running right now
 	switch pr.tableInfo.State.Status {
 	case pokertable.TableStateStatus_TableGameMatchOpen:
