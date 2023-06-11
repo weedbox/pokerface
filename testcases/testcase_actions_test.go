@@ -144,11 +144,11 @@ func Test_Actions_TwoPlayers(t *testing.T) {
 	players := []*pokerface.PlayerSetting{
 		&pokerface.PlayerSetting{
 			Bankroll:  10000,
-			Positions: []string{"dealer", "bb"},
+			Positions: []string{"dealer", "sb"},
 		},
 		&pokerface.PlayerSetting{
 			Bankroll:  10000,
-			Positions: []string{"sb"},
+			Positions: []string{"bb"},
 		},
 	}
 	opts.Players = append(opts.Players, players...)
@@ -171,29 +171,29 @@ func Test_Actions_TwoPlayers(t *testing.T) {
 
 	// Round: Preflop
 	assert.Nil(t, g.ReadyForAll()) // ready for the round
-	assert.Nil(t, g.Call())        // SB
-	assert.Nil(t, g.Check())       // BB, Dealer
+	assert.Nil(t, g.Call())        // SB, Dealer
+	assert.Nil(t, g.Check())       // BB
 
 	// Round: Flop
 	assert.Nil(t, g.Next())
 	assert.Nil(t, g.ReadyForAll()) // ready for the round
-	assert.Nil(t, g.Check())       // SB
-	assert.Nil(t, g.Check())       // BB, Dealer
+	assert.Nil(t, g.Check())       // BB
+	assert.Nil(t, g.Check())       // SB, Dealer
 
 	// Round: Turn
 	assert.Nil(t, g.Next())
 	assert.Nil(t, g.ReadyForAll()) // ready for the round
-	assert.Nil(t, g.Check())       // SB
-	assert.Nil(t, g.Bet(100))      // BB, Dealer
-	assert.Nil(t, g.Raise(200))    // SB
-	assert.Nil(t, g.Raise(300))    // BB, Dealer
-	assert.Nil(t, g.Call())        // SB
+	assert.Nil(t, g.Check())       // BB
+	assert.Nil(t, g.Bet(100))      // SB, Dealer
+	assert.Nil(t, g.Raise(200))    // BB
+	assert.Nil(t, g.Raise(300))    // SB, Dealer
+	assert.Nil(t, g.Call())        // BB
 
 	// Round: River
 	assert.Nil(t, g.Next())
 	assert.Nil(t, g.ReadyForAll()) // ready for the round
-	assert.Nil(t, g.Check())       // SB
-	assert.Nil(t, g.Check())       // BB, Dealer
+	assert.Nil(t, g.Check())       // BB
+	assert.Nil(t, g.Check())       // SB, Dealer
 
 	// Game closed
 	assert.Nil(t, g.Next())

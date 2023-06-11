@@ -343,6 +343,8 @@ func (g *game) GetPlayers() []Player {
 
 	for i := 0; i < playerCount; i++ {
 
+		players = append(players, g.players[cur])
+
 		// Find the next player
 		cur++
 
@@ -350,8 +352,6 @@ func (g *game) GetPlayers() []Player {
 		if cur == playerCount {
 			cur = 0
 		}
-
-		players = append(players, g.players[cur])
 	}
 
 	return players
