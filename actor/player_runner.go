@@ -26,15 +26,17 @@ type playerRunner struct {
 	onTableStateUpdated func(*pokertable.Table)
 
 	// status
-	status    PlayerStatus
-	idleCount int
+	status           PlayerStatus
+	idleCount        int
+	suspendThreshold int
 }
 
 func NewPlayerRunner(playerID string) *playerRunner {
 	return &playerRunner{
-		playerID: playerID,
-		timebank: timebank.NewTimeBank(),
-		status:   PlayerStatus_Running,
+		playerID:         playerID,
+		timebank:         timebank.NewTimeBank(),
+		status:           PlayerStatus_Running,
+		suspendThreshold: 2,
 	}
 }
 
@@ -154,6 +156,10 @@ func (pr *playerRunner) automate() error {
 	return nil
 }
 
+func (pr *playerRunner) SetSuspendThreshold(count int) {
+	pr.suspendThreshold = count
+}
+
 func (pr *playerRunner) Resume() error {
 
 	if pr.status == PlayerStatus_Running {
@@ -174,7 +180,7 @@ func (pr *playerRunner) Idle() error {
 		pr.idleCount++
 	}
 
-	if pr.idleCount == 2 {
+	if pr.idleCount == pr.suspendThreshold {
 		return pr.Suspend()
 	}
 
@@ -193,7 +199,9 @@ func (pr *playerRunner) Pass() error {
 		return err
 	}
 
-	return pr.Resume()
+	pr.idleCount = 0
+
+	return nil
 }
 
 func (pr *playerRunner) Ready() error {
@@ -203,7 +211,9 @@ func (pr *playerRunner) Ready() error {
 		return err
 	}
 
-	return pr.Resume()
+	pr.idleCount = 0
+
+	return nil
 }
 
 func (pr *playerRunner) Pay(chips int64) error {
@@ -213,7 +223,9 @@ func (pr *playerRunner) Pay(chips int64) error {
 		return err
 	}
 
-	return pr.Resume()
+	pr.idleCount = 0
+
+	return nil
 }
 
 func (pr *playerRunner) Check() error {
@@ -223,7 +235,9 @@ func (pr *playerRunner) Check() error {
 		return err
 	}
 
-	return pr.Resume()
+	pr.idleCount = 0
+
+	return nil
 }
 
 func (pr *playerRunner) Bet(chips int64) error {
@@ -233,7 +247,9 @@ func (pr *playerRunner) Bet(chips int64) error {
 		return err
 	}
 
-	return pr.Resume()
+	pr.idleCount = 0
+
+	return nil
 }
 
 func (pr *playerRunner) Call() error {
@@ -243,7 +259,9 @@ func (pr *playerRunner) Call() error {
 		return err
 	}
 
-	return pr.Resume()
+	pr.idleCount = 0
+
+	return nil
 }
 
 func (pr *playerRunner) Fold() error {
@@ -258,7 +276,9 @@ func (pr *playerRunner) Allin() error {
 		return err
 	}
 
-	return pr.Resume()
+	pr.idleCount = 0
+
+	return nil
 }
 
 func (pr *playerRunner) Raise(chipLevel int64) error {
@@ -268,5 +288,7 @@ func (pr *playerRunner) Raise(chipLevel int64) error {
 		return err
 	}
 
-	return pr.Resume()
+	pr.idleCount = 0
+
+	return nil
 }
