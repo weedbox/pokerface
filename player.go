@@ -71,6 +71,10 @@ func (p *player) IsMovable() bool {
 		return true
 	}
 
+	if len(p.state.AllowedActions) > 0 {
+		return true
+	}
+
 	return false
 }
 
