@@ -487,7 +487,7 @@ func (g *game) GetAvailableActions(p Player) []string {
 			actions = append(actions, "call")
 
 			// raise
-			if ps.InitialStackSize >= g.gs.Status.CurrentWager+g.gs.Status.PreviousRaiseSize {
+			if ps.InitialStackSize > g.gs.Status.CurrentWager+g.gs.Status.PreviousRaiseSize {
 				actions = append(actions, "raise")
 			}
 		}

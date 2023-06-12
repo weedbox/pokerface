@@ -160,7 +160,6 @@ func (br *botRunner) requestAI() error {
 		return nil
 	}
 
-	//	actionIdx := 0
 	action := player.AllowedActions[0]
 
 	if len(player.AllowedActions) > 1 {
