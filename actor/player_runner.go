@@ -8,6 +8,14 @@ import (
 	"github.com/weedbox/timebank"
 )
 
+type PlayerStatus int32
+
+const (
+	PlayerStatus_Running PlayerStatus = iota
+	PlayerStatus_Idle
+	PlayerStatus_Suspend
+)
+
 type playerRunner struct {
 	actor               Actor
 	actions             Actions
@@ -16,12 +24,17 @@ type playerRunner struct {
 	tableInfo           *pokertable.Table
 	timebank            *timebank.TimeBank
 	onTableStateUpdated func(*pokertable.Table)
+
+	// status
+	status    PlayerStatus
+	idleCount int
 }
 
 func NewPlayerRunner(playerID string) *playerRunner {
 	return &playerRunner{
 		playerID: playerID,
 		timebank: timebank.NewTimeBank(),
+		status:   PlayerStatus_Running,
 	}
 }
 
@@ -43,15 +56,24 @@ func (pr *playerRunner) UpdateTableState(table *pokertable.Table) error {
 	// Emit event
 	pr.onTableStateUpdated(table)
 
-	// Somehow, this player is not in the game.
-	// It probably has no chips already.
-	if pr.gamePlayerIdx == -1 {
-		return nil
-	}
-
 	// Game is running right now
 	switch pr.tableInfo.State.Status {
 	case pokertable.TableStateStatus_TableGameMatchOpen:
+
+		// Somehow, this player is not in the game.
+		// It probably has no chips already.
+		if pr.gamePlayerIdx == -1 {
+			return nil
+		}
+
+		// Game is closed
+		if pr.tableInfo.State.GameState.Status.CurrentEvent.Name == "GameClosed" {
+
+			// Stay idle
+			if pr.status == PlayerStatus_Idle {
+				pr.Idle()
+			}
+		}
 
 		// We have actions allowed by game engine
 		player := pr.tableInfo.State.GameState.GetPlayer(pr.gamePlayerIdx)
@@ -77,6 +99,11 @@ func (pr *playerRunner) requestMove() error {
 		return pr.actions.Pass()
 	}
 
+	// Player is suspended
+	if pr.status == PlayerStatus_Suspend {
+		return pr.automate()
+	}
+
 	// Setup timebank to wait for player
 	thinkingTime := time.Duration(pr.tableInfo.Meta.CompetitionMeta.ActionTimeSecs) * time.Second
 	return pr.timebank.NewTask(thinkingTime, func(isCancelled bool) {
@@ -84,6 +111,8 @@ func (pr *playerRunner) requestMove() error {
 		if isCancelled {
 			return
 		}
+
+		pr.Idle()
 
 		// Do default actions if player has no response
 		pr.automate()
@@ -123,4 +152,121 @@ func (pr *playerRunner) automate() error {
 	}
 
 	return nil
+}
+
+func (pr *playerRunner) Resume() error {
+
+	if pr.status == PlayerStatus_Running {
+		return nil
+	}
+
+	pr.status = PlayerStatus_Running
+	pr.idleCount = 0
+
+	return nil
+}
+
+func (pr *playerRunner) Idle() error {
+	if pr.status != PlayerStatus_Idle {
+		pr.status = PlayerStatus_Idle
+		pr.idleCount = 0
+	} else {
+		pr.idleCount++
+	}
+
+	if pr.idleCount == 2 {
+		return pr.Suspend()
+	}
+
+	return nil
+}
+
+func (pr *playerRunner) Suspend() error {
+	pr.status = PlayerStatus_Suspend
+	return nil
+}
+
+func (pr *playerRunner) Pass() error {
+
+	err := pr.actions.Pass()
+	if err != nil {
+		return err
+	}
+
+	return pr.Resume()
+}
+
+func (pr *playerRunner) Ready() error {
+
+	err := pr.actions.Ready()
+	if err != nil {
+		return err
+	}
+
+	return pr.Resume()
+}
+
+func (pr *playerRunner) Pay(chips int64) error {
+
+	err := pr.actions.Pay(chips)
+	if err != nil {
+		return err
+	}
+
+	return pr.Resume()
+}
+
+func (pr *playerRunner) Check() error {
+
+	err := pr.actions.Check()
+	if err != nil {
+		return err
+	}
+
+	return pr.Resume()
+}
+
+func (pr *playerRunner) Bet(chips int64) error {
+
+	err := pr.actions.Bet(chips)
+	if err != nil {
+		return err
+	}
+
+	return pr.Resume()
+}
+
+func (pr *playerRunner) Call() error {
+
+	err := pr.actions.Call()
+	if err != nil {
+		return err
+	}
+
+	return pr.Resume()
+}
+
+func (pr *playerRunner) Fold() error {
+	pr.Resume()
+	return pr.actions.Fold()
+}
+
+func (pr *playerRunner) Allin() error {
+
+	err := pr.actions.Allin()
+	if err != nil {
+		return err
+	}
+
+	return pr.Resume()
+}
+
+func (pr *playerRunner) Raise(chipLevel int64) error {
+
+	err := pr.actions.Raise(chipLevel)
+	if err != nil {
+		return err
+	}
+
+	return pr.Resume()
 }
