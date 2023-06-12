@@ -8,6 +8,22 @@ import (
 	"github.com/weedbox/pokertable"
 )
 
+type ActionProbability struct {
+	Action string
+	Weight float64
+}
+
+var (
+	actionProbabilities = []ActionProbability{
+		{Action: "check", Weight: 0.1},
+		{Action: "call", Weight: 0.3},
+		{Action: "fold", Weight: 0.2},
+		{Action: "allin", Weight: 0.1},
+		{Action: "raise", Weight: 0.2},
+		{Action: "bet", Weight: 0.1},
+	}
+)
+
 type botRunner struct {
 	actor         Actor
 	actions       Actions
@@ -89,6 +105,49 @@ func (br *botRunner) requestMove() error {
 	return br.requestAI()
 }
 
+func (br *botRunner) calcActionProbabilities(actions []string) map[string]float64 {
+
+	probabilities := make(map[string]float64)
+	totalWeight := 0.0
+	for _, action := range actions {
+
+		for _, p := range actionProbabilities {
+			if action == p.Action {
+				probabilities[action] = p.Weight
+				totalWeight += p.Weight
+				break
+			}
+		}
+	}
+
+	scaleRatio := 1.0 / totalWeight
+	weightLevel := 0.0
+	for action, weight := range probabilities {
+		scaledWeight := weight * scaleRatio
+		weightLevel += scaledWeight
+		probabilities[action] = weightLevel
+	}
+
+	return probabilities
+}
+
+func (br *botRunner) calcAction(actions []string) string {
+
+	// Select action randomly
+	rand.Seed(time.Now().UnixNano())
+
+	probabilities := br.calcActionProbabilities(actions)
+	randomNum := rand.Float64()
+
+	for action, probability := range probabilities {
+		if randomNum < probability {
+			return action
+		}
+	}
+
+	return actions[0]
+}
+
 func (br *botRunner) requestAI() error {
 
 	gs := br.tableInfo.State.GameState
@@ -101,14 +160,12 @@ func (br *botRunner) requestAI() error {
 		return nil
 	}
 
-	actionIdx := 0
-	if len(player.AllowedActions) > 1 {
-		// Select action randomly
-		rand.Seed(time.Now().UnixNano())
-		actionIdx = rand.Intn(len(player.AllowedActions) - 1)
-	}
+	//	actionIdx := 0
+	action := player.AllowedActions[0]
 
-	action := player.AllowedActions[actionIdx]
+	if len(player.AllowedActions) > 1 {
+		action = br.calcAction(player.AllowedActions)
+	}
 
 	// Calculate chips
 	switch action {
@@ -132,8 +189,6 @@ func (br *botRunner) requestAI() error {
 		return br.actions.Check()
 	case "allin":
 		return br.actions.Allin()
-	case "pass":
-		return br.actions.Pass()
 	}
 
 	return br.actions.Fold()
