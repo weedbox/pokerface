@@ -145,7 +145,7 @@ func (br *botRunner) calcAction(actions []string) string {
 		}
 	}
 
-	return actions[0]
+	return actions[len(actions)-1]
 }
 
 func (br *botRunner) requestAI() error {
