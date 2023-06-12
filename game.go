@@ -12,6 +12,7 @@ import (
 var (
 	ErrNoDeck                      = errors.New("game: no deck")
 	ErrNotEnoughBackroll           = errors.New("game: backroll is not enough")
+	ErrNoDealer                    = errors.New("game: no dealer")
 	ErrInsufficientNumberOfPlayers = errors.New("game: insufficient number of players")
 	ErrUnknownRound                = errors.New("game: unknown round")
 	ErrNotFoundDealer              = errors.New("game: not found dealer")
@@ -535,6 +536,33 @@ func (g *game) GetAvailableActions(p Player) []string {
 
 func (g *game) Start() error {
 
+	// Check the number of players
+	if g.GetPlayerCount() < 2 {
+		return ErrInsufficientNumberOfPlayers
+	}
+
+	// Check backroll and dealer
+	hasDealer := false
+	for idx, p := range g.gs.Players {
+
+		if p.Bankroll <= 0 {
+			return ErrNotEnoughBackroll
+		}
+
+		if g.Player(idx).CheckPosition("dealer") {
+			hasDealer = true
+		}
+	}
+
+	if !hasDealer {
+		return ErrNoDealer
+	}
+
+	// No desk was set
+	if len(g.gs.Meta.Deck) == 0 {
+		return ErrNoDeck
+	}
+
 	// Initializing game status
 	g.gs.Status.Pots = make([]*pot.Pot, 0)
 	g.gs.Status.Board = make([]string, 0)
@@ -545,24 +573,6 @@ func (g *game) Start() error {
 }
 
 func (g *game) Initialize() error {
-
-	// Check the number of players
-	if g.GetPlayerCount() < 2 {
-		return ErrInsufficientNumberOfPlayers
-	}
-
-	// Check backroll
-	for _, p := range g.gs.Players {
-
-		if p.Bankroll <= 0 {
-			return ErrNotEnoughBackroll
-		}
-	}
-
-	// No desk was set
-	if len(g.gs.Meta.Deck) == 0 {
-		return ErrNoDeck
-	}
 
 	// Shuffle cards
 	g.gs.Meta.Deck = ShuffleCards(g.gs.Meta.Deck)
