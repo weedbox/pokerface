@@ -609,13 +609,14 @@ func (g *game) nextRound() error {
 		return g.EmitEvent(GameEvent_GameCompleted, nil)
 	}
 
+	// Going to the next round
 	switch g.gs.Status.Round {
 	case "preflop":
-		return g.EmitEvent(GameEvent_FlopRoundEntered, nil)
+		return g.EnterFlopRound()
 	case "flop":
-		return g.EmitEvent(GameEvent_TurnRoundEntered, nil)
+		return g.EnterTurnRound()
 	case "turn":
-		return g.EmitEvent(GameEvent_RiverRoundEntered, nil)
+		return g.EnterRiverRound()
 	case "river":
 		return g.EmitEvent(GameEvent_GameCompleted, nil)
 	}
@@ -624,11 +625,23 @@ func (g *game) nextRound() error {
 }
 
 func (g *game) EnterPreflopRound() error {
+	g.gs.Status.Round = "preflop"
 	return g.EmitEvent(GameEvent_PreflopRoundEntered, nil)
 }
 
 func (g *game) EnterFlopRound() error {
+	g.gs.Status.Round = "flop"
 	return g.EmitEvent(GameEvent_FlopRoundEntered, nil)
+}
+
+func (g *game) EnterTurnRound() error {
+	g.gs.Status.Round = "turn"
+	return g.EmitEvent(GameEvent_TurnRoundEntered, nil)
+}
+
+func (g *game) EnterRiverRound() error {
+	g.gs.Status.Round = "river"
+	return g.EmitEvent(GameEvent_RiverRoundEntered, nil)
 }
 
 func (g *game) InitializeRound() error {

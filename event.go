@@ -184,7 +184,8 @@ func (g *game) onAnteRequested() error {
 
 	g.ResetAllPlayerStatus()
 
-	return g.EmitEvent(GameEvent_PreflopRoundEntered, nil)
+	return g.EnterPreflopRound()
+	// return g.EmitEvent(GameEvent_PreflopRoundEntered, nil)
 }
 
 func (g *game) onRoundStarted() error {
@@ -211,30 +212,18 @@ func (g *game) onRoundClosed() error {
 }
 
 func (g *game) onPreflopRoundEntered() error {
-
-	g.gs.Status.Round = "preflop"
-
 	return g.InitializeRound()
 }
 
 func (g *game) onFlopRoundEntered() error {
-
-	g.gs.Status.Round = "flop"
-
 	return g.InitializeRound()
 }
 
 func (g *game) onTurnRoundEntered() error {
-
-	g.gs.Status.Round = "turn"
-
 	return g.InitializeRound()
 }
 
 func (g *game) onRiverRoundEntered() error {
-
-	g.gs.Status.Round = "river"
-
 	return g.InitializeRound()
 }
 
