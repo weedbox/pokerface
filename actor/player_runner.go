@@ -68,15 +68,6 @@ func (pr *playerRunner) UpdateTableState(table *pokertable.Table) error {
 			return nil
 		}
 
-		// Game is closed
-		if pr.tableInfo.State.GameState.Status.CurrentEvent.Name == "GameClosed" {
-
-			// Stay idle
-			if pr.status == PlayerStatus_Idle {
-				pr.Idle()
-			}
-		}
-
 		// We have actions allowed by game engine
 		player := pr.tableInfo.State.GameState.GetPlayer(pr.gamePlayerIdx)
 		if len(player.AllowedActions) > 0 {
