@@ -105,7 +105,10 @@ func (pr *playerRunner) requestMove() error {
 			return
 		}
 
-		pr.Idle()
+		// Stay idle already
+		if pr.status == PlayerStatus_Idle {
+			pr.Idle()
+		}
 
 		// Do default actions if player has no response
 		pr.automate()
