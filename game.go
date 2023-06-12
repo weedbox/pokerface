@@ -37,7 +37,6 @@ type Game interface {
 	BecomeRaiser(Player) error
 	ResetAllPlayerStatus() error
 	StartAtDealer() (Player, error)
-	NextMovablePlayer() Player
 	GetPlayerCount() int
 	GetPlayers() []Player
 	SetCurrentPlayer(Player) error
@@ -306,32 +305,6 @@ func (g *game) NextPlayer() Player {
 	return nil
 }
 
-func (g *game) NextMovablePlayer() Player {
-
-	cur := g.gs.Status.CurrentPlayer
-	playerCount := g.GetPlayerCount()
-
-	for i := 1; i < playerCount; i++ {
-
-		// Find the next player
-		cur++
-
-		// The end of player list
-		if cur == playerCount {
-			cur = 0
-		}
-
-		p := g.gs.Players[cur]
-
-		// Find the player who did not fold
-		if !p.Fold {
-			return g.Player(p.Idx)
-		}
-	}
-
-	return nil
-}
-
 func (g *game) GetPlayerCount() int {
 	return len(g.gs.Players)
 }
@@ -541,21 +514,17 @@ func (g *game) Start() error {
 		return ErrInsufficientNumberOfPlayers
 	}
 
-	// Check backroll and dealer
-	hasDealer := false
-	for idx, p := range g.gs.Players {
+	// Require dealer
+	if g.dealer == nil {
+		return ErrNoDealer
+	}
+
+	// Check backroll
+	for _, p := range g.gs.Players {
 
 		if p.Bankroll <= 0 {
 			return ErrNotEnoughBackroll
 		}
-
-		if g.Player(idx).CheckPosition("dealer") {
-			hasDealer = true
-		}
-	}
-
-	if !hasDealer {
-		return ErrNoDealer
 	}
 
 	// No desk was set
@@ -834,10 +803,18 @@ func (g *game) PreparePreflopRound() error {
 
 	// Find the last player who has paid
 	var lp Player
-	for _, p := range g.GetPlayers() {
-		if p.State().Wager > 0 {
-			lp = p
+	for i, p := range g.GetPlayers() {
+
+		// First one is dealer, skip it
+		if i == 0 {
+			continue
 		}
+
+		if p.State().Wager == 0 {
+			break
+		}
+
+		lp = p
 	}
 
 	g.SetCurrentPlayer(lp)
