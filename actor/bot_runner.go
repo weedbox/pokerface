@@ -18,8 +18,8 @@ var (
 		{Action: "check", Weight: 0.1},
 		{Action: "call", Weight: 0.3},
 		{Action: "fold", Weight: 0.2},
-		{Action: "allin", Weight: 0.1},
-		{Action: "raise", Weight: 0.2},
+		{Action: "allin", Weight: 0.05},
+		{Action: "raise", Weight: 0.25},
 		{Action: "bet", Weight: 0.1},
 	}
 )
@@ -171,6 +171,11 @@ func (br *botRunner) requestAI() error {
 	case "bet":
 
 		minBet := gs.Status.MiniBet
+
+		if player.InitialStackSize <= minBet {
+			return br.actions.Bet(player.InitialStackSize)
+		}
+
 		chips := rand.Int63n(player.InitialStackSize-minBet) + minBet
 
 		return br.actions.Bet(chips)
