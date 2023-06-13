@@ -1,6 +1,8 @@
 package actor
 
 import (
+	"encoding/json"
+
 	"github.com/weedbox/pokertable"
 )
 
@@ -24,7 +26,22 @@ func (tea *tableEngineAdapter) SetActor(a Actor) {
 }
 
 func (tea *tableEngineAdapter) UpdateTableState(tableInfo *pokertable.Table) error {
-	return tea.actor.UpdateTableState(tableInfo)
+
+	// Clone to get a individual table structure
+	data, err := tableInfo.GetJSON()
+	if err != nil {
+		return err
+	}
+
+	var t pokertable.Table
+	err = json.Unmarshal([]byte(*data), &t)
+	if err != nil {
+		return err
+	}
+
+	tea.table = &t
+
+	return tea.actor.UpdateTableState(&t)
 }
 
 func (tea *tableEngineAdapter) Pass(playerID string) error {

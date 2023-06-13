@@ -33,10 +33,11 @@ type playerRunner struct {
 
 func NewPlayerRunner(playerID string) *playerRunner {
 	return &playerRunner{
-		playerID:         playerID,
-		timebank:         timebank.NewTimeBank(),
-		status:           PlayerStatus_Running,
-		suspendThreshold: 2,
+		playerID:            playerID,
+		timebank:            timebank.NewTimeBank(),
+		status:              PlayerStatus_Running,
+		suspendThreshold:    2,
+		onTableStateUpdated: func(*pokertable.Table) {},
 	}
 }
 
@@ -49,9 +50,6 @@ func (pr *playerRunner) UpdateTableState(table *pokertable.Table) error {
 
 	// Update seat index
 	pr.gamePlayerIdx = table.GamePlayerIndex(pr.playerID)
-
-	// Filtering private information fpr player
-	table.State.GameState.AsPlayer(pr.gamePlayerIdx)
 
 	pr.tableInfo = table
 
@@ -67,6 +65,9 @@ func (pr *playerRunner) UpdateTableState(table *pokertable.Table) error {
 		if pr.gamePlayerIdx == -1 {
 			return nil
 		}
+
+		// Filtering private information fpr player
+		table.State.GameState.AsPlayer(pr.gamePlayerIdx)
 
 		// We have actions allowed by game engine
 		player := pr.tableInfo.State.GameState.GetPlayer(pr.gamePlayerIdx)
