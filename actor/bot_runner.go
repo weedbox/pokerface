@@ -1,11 +1,13 @@
 package actor
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
 	"github.com/weedbox/pokerface"
 	"github.com/weedbox/pokertable"
+	"github.com/weedbox/timebank"
 )
 
 type ActionProbability struct {
@@ -29,12 +31,15 @@ type botRunner struct {
 	actions       Actions
 	playerID      string
 	gamePlayerIdx int
+	isHumanized   bool
+	timebank      *timebank.TimeBank
 	tableInfo     *pokertable.Table
 }
 
 func NewBotRunner(playerID string) *botRunner {
 	return &botRunner{
 		playerID: playerID,
+		timebank: timebank.NewTimeBank(),
 	}
 }
 
@@ -43,11 +48,28 @@ func (br *botRunner) SetActor(a Actor) {
 	br.actions = NewActions(a, br.playerID)
 }
 
+func (br *botRunner) Humanized(enabled bool) {
+	br.isHumanized = enabled
+}
+
 func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
+	/*
+		fmt.Println("=======")
+		fmt.Println(table.State.Status)
+		fmt.Println(pokertable.TableStateStatus_TableGamePlaying)
+
+		json, _ := table.GetJSON()
+		fmt.Println(json)
+	*/
+
+	br.tableInfo = table
+
+	if br.tableInfo.State.Status == pokertable.TableStateStatus_TableGameStandby {
+		return nil
+	}
 
 	// Update player index in game
 	br.gamePlayerIdx = table.GamePlayerIndex(br.playerID)
-	br.tableInfo = table
 
 	// Somehow, this player is not in the game.
 	// It probably has no chips already.
@@ -57,7 +79,7 @@ func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
 
 	// Game is running right now
 	switch br.tableInfo.State.Status {
-	case pokertable.TableStateStatus_TableGameMatchOpen:
+	case pokertable.TableStateStatus_TableGamePlaying:
 
 		// We have actions allowed by game engine
 		player := br.tableInfo.State.GameState.GetPlayer(br.gamePlayerIdx)
@@ -70,6 +92,7 @@ func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
 }
 
 func (br *botRunner) requestMove() error {
+	fmt.Println("=========")
 
 	gs := br.tableInfo.State.GameState
 
@@ -102,7 +125,25 @@ func (br *botRunner) requestMove() error {
 		}
 	}
 
-	return br.requestAI()
+	if !br.isHumanized {
+		return br.requestAI()
+	}
+	/*
+	   // For simulating human-like behavior, to incorporate random delays when performing actions.
+	   fmt.Println("=========")
+	   fmt.Println(br.tableInfo.Meta.CompetitionMeta.ActionTimeSecs)
+	   thinkingTime := rand.Intn(br.tableInfo.Meta.CompetitionMeta.ActionTimeSecs)
+	   return br.timebank.NewTask(time.Duration(thinkingTime)*time.Second, func(isCancelled bool) {
+
+	   		if isCancelled {
+	   			return
+	   		}
+
+	   		br.requestAI()
+	   	})
+	*/
+
+	return nil
 }
 
 func (br *botRunner) calcActionProbabilities(actions []string) map[string]float64 {
@@ -152,8 +193,6 @@ func (br *botRunner) requestAI() error {
 
 	gs := br.tableInfo.State.GameState
 	player := gs.Players[br.gamePlayerIdx]
-
-	//TODO: To simulate human-like behavior, it is necessary to incorporate random delays when performing actions.
 
 	// None of actions is allowed
 	if len(player.AllowedActions) == 0 {

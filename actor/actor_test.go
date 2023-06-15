@@ -27,34 +27,34 @@ func TestActor_Basic(t *testing.T) {
 					InitialLevel:    1,
 					Levels: []pokertable.BlindLevel{
 						{
-							Level:        1,
-							SBChips:      10,
-							BBChips:      20,
-							AnteChips:    0,
-							DurationMins: 10,
+							Level:    1,
+							SB:       10,
+							BB:       20,
+							Ante:     0,
+							Duration: 10,
 						},
 						{
-							Level:        2,
-							SBChips:      20,
-							BBChips:      30,
-							AnteChips:    0,
-							DurationMins: 10,
+							Level:    2,
+							SB:       20,
+							BB:       30,
+							Ante:     0,
+							Duration: 10,
 						},
 						{
-							Level:        3,
-							SBChips:      30,
-							BBChips:      40,
-							AnteChips:    0,
-							DurationMins: 10,
+							Level:    3,
+							SB:       30,
+							BB:       40,
+							Ante:     0,
+							Duration: 10,
 						},
 					},
 				},
-				MaxDurationMins:      60,
-				Rule:                 pokertable.CompetitionRule_Default,
-				Mode:                 pokertable.CompetitionMode_MTT,
-				TableMaxSeatCount:    9,
-				TableMinPlayingCount: 2,
-				MinChipsUnit:         10,
+				MaxDuration:         60,
+				Rule:                pokertable.CompetitionRule_Default,
+				Mode:                pokertable.CompetitionMode_MTT,
+				TableMaxSeatCount:   9,
+				TableMinPlayerCount: 2,
+				MinChipUnit:         10,
 			},
 		},
 	)
@@ -85,6 +85,9 @@ func TestActor_Basic(t *testing.T) {
 		actors = append(actors, a)
 	}
 
+	//	var wg sync.WaitGroup
+	//	wg.Add(1)
+
 	// Preparing table state updater
 	tableEngine.OnTableUpdated(func(table *pokertable.Table) {
 
@@ -92,6 +95,7 @@ func TestActor_Basic(t *testing.T) {
 		for _, a := range actors {
 			a.GetTable().UpdateTableState(table)
 		}
+
 	})
 
 	// Add player to table
@@ -101,6 +105,8 @@ func TestActor_Basic(t *testing.T) {
 	}
 
 	// Start game
-	err = tableEngine.StartGame(table.ID)
+	err = tableEngine.StartTableGame(table.ID)
 	assert.Nil(t, err)
+
+	// wg.Wait()
 }

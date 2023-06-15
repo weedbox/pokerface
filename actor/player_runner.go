@@ -58,7 +58,7 @@ func (pr *playerRunner) UpdateTableState(table *pokertable.Table) error {
 
 	// Game is running right now
 	switch pr.tableInfo.State.Status {
-	case pokertable.TableStateStatus_TableGameMatchOpen:
+	case pokertable.TableStateStatus_TableGamePlaying:
 
 		// Somehow, this player is not in the game.
 		// It probably has no chips already.
@@ -99,7 +99,7 @@ func (pr *playerRunner) requestMove() error {
 	}
 
 	// Setup timebank to wait for player
-	thinkingTime := time.Duration(pr.tableInfo.Meta.CompetitionMeta.ActionTimeSecs) * time.Second
+	thinkingTime := time.Duration(pr.tableInfo.Meta.CompetitionMeta.ActionTime) * time.Second
 	return pr.timebank.NewTask(thinkingTime, func(isCancelled bool) {
 
 		if isCancelled {

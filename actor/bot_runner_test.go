@@ -1,6 +1,7 @@
 package actor
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/google/uuid"
@@ -8,7 +9,7 @@ import (
 	pokertable "github.com/weedbox/pokertable"
 )
 
-func TestActor_ObserverRunner_PlayerAct(t *testing.T) {
+func TestActor_BotRunner_Humanize(t *testing.T) {
 
 	// Initializing table
 	tableEngine := pokertable.NewTableEngine()
@@ -80,21 +81,14 @@ func TestActor_ObserverRunner_PlayerAct(t *testing.T) {
 
 		// Initializing bot runner
 		bot := NewBotRunner(p.PlayerID)
+		bot.Humanized(true)
 		a.SetRunner(bot)
 
 		actors = append(actors, a)
 	}
 
-	// Initializing observer
-	a := NewActor()
-
-	tc := NewTableEngineAdapter(tableEngine, table)
-	a.SetAdapter(tc)
-
-	observer := NewObserverRunner()
-	a.SetRunner(observer)
-
-	actors = append(actors, a)
+	var wg sync.WaitGroup
+	wg.Add(1)
 
 	// Preparing table state updater
 	tableEngine.OnTableUpdated(func(table *pokertable.Table) {
@@ -102,6 +96,10 @@ func TestActor_ObserverRunner_PlayerAct(t *testing.T) {
 		// Update table state via adapter
 		for _, a := range actors {
 			a.GetTable().UpdateTableState(table)
+		}
+
+		if table.State.Status == pokertable.TableStateStatus_TablePausing {
+			wg.Done()
 		}
 	})
 
@@ -114,4 +112,6 @@ func TestActor_ObserverRunner_PlayerAct(t *testing.T) {
 	// Start game
 	err = tableEngine.StartTableGame(table.ID)
 	assert.Nil(t, err)
+
+	wg.Wait()
 }

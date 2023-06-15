@@ -1,6 +1,10 @@
 package actor
 
-import pokertable "github.com/weedbox/pokertable"
+import (
+	"time"
+
+	pokertable "github.com/weedbox/pokertable"
+)
 
 type Adapter interface {
 	SetActor(a Actor)
@@ -16,4 +20,5 @@ type Adapter interface {
 	Fold(playerID string) error
 	Allin(playerID string) error
 	Raise(playerID string, chipLevel int64) error
+	ExtendTime(playerID string, duration time.Duration) error
 }

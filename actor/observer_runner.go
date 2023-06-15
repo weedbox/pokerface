@@ -27,7 +27,7 @@ func (obr *observerRunner) UpdateTableState(tableInfo *pokertable.Table) error {
 	obr.tableInfo = tableInfo
 
 	// Filtering private information fobr observer
-	if tableInfo.State.Status == pokertable.TableStateStatus_TableGameMatchOpen {
+	if tableInfo.State.Status == pokertable.TableStateStatus_TableGamePlaying {
 		tableInfo.State.GameState.AsObserver()
 
 		obr.onGameStateUpdated(tableInfo)

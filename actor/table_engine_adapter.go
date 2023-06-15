@@ -2,6 +2,7 @@ package actor
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/weedbox/pokertable"
 )
@@ -34,7 +35,7 @@ func (tea *tableEngineAdapter) UpdateTableState(tableInfo *pokertable.Table) err
 	}
 
 	var t pokertable.Table
-	err = json.Unmarshal([]byte(*data), &t)
+	err = json.Unmarshal([]byte(data), &t)
 	if err != nil {
 		return err
 	}
@@ -78,4 +79,9 @@ func (tea *tableEngineAdapter) Allin(playerID string) error {
 
 func (tea *tableEngineAdapter) Raise(playerID string, chipLevel int64) error {
 	return tea.engine.PlayerRaise(tea.table.ID, playerID, chipLevel)
+}
+
+func (tea *tableEngineAdapter) ExtendTime(playerID string, duration time.Duration) error {
+	//TODO: need to be implemented
+	return nil
 }
