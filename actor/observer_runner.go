@@ -8,11 +8,13 @@ type observerRunner struct {
 	actor               Actor
 	tableInfo           *pokertable.Table
 	onTableStateUpdated func(*pokertable.Table)
+	onGameStateUpdated  func(*pokertable.Table)
 }
 
 func NewObserverRunner() *observerRunner {
 	return &observerRunner{
 		onTableStateUpdated: func(*pokertable.Table) {},
+		onGameStateUpdated:  func(*pokertable.Table) {},
 	}
 }
 
@@ -22,12 +24,14 @@ func (obr *observerRunner) SetActor(a Actor) {
 
 func (obr *observerRunner) UpdateTableState(tableInfo *pokertable.Table) error {
 
+	obr.tableInfo = tableInfo
+
 	// Filtering private information fobr observer
 	if tableInfo.State.Status == pokertable.TableStateStatus_TableGameMatchOpen {
 		tableInfo.State.GameState.AsObserver()
-	}
 
-	obr.tableInfo = tableInfo
+		obr.onGameStateUpdated(tableInfo)
+	}
 
 	// Emit event
 	obr.onTableStateUpdated(tableInfo)
@@ -37,5 +41,10 @@ func (obr *observerRunner) UpdateTableState(tableInfo *pokertable.Table) error {
 
 func (obr *observerRunner) OnTableStateUpdated(fn func(*pokertable.Table)) error {
 	obr.onTableStateUpdated = fn
+	return nil
+}
+
+func (obr *observerRunner) OnGameStateUpdated(fn func(*pokertable.Table)) error {
+	obr.onGameStateUpdated = fn
 	return nil
 }
