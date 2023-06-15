@@ -10,13 +10,13 @@ func TestTask(t *testing.T) {
 
 	tm := NewTaskManager()
 
-	task1 := NewTask(func(ct *CustomizedTask) bool {
+	task1 := NewTask("customized", "task1", func(ct *CustomizedTask) bool {
 		return true
 	})
 
 	tm.AddTask(task1)
 
-	task2 := NewTask(func(ct *CustomizedTask) bool {
+	task2 := NewTask("customized", "task2", func(ct *CustomizedTask) bool {
 		return true
 	})
 

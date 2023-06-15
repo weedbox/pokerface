@@ -1,12 +1,12 @@
 package task
 
 type TaskManager struct {
-	Tasks []Task `json:"tasks,omitempty"`
+	Tasks []interface{} `json:"tasks,omitempty"`
 }
 
 func NewTaskManager() *TaskManager {
 	return &TaskManager{
-		Tasks: make([]Task, 0),
+		Tasks: make([]interface{}, 0),
 	}
 }
 
@@ -21,8 +21,9 @@ func (tm *TaskManager) AddTask(task Task) {
 func (tm *TaskManager) GetTask(name string) Task {
 
 	for _, t := range tm.Tasks {
-		if t.GetName() == name {
-			return t
+		task := t.(Task)
+		if task.GetName() == name {
+			return task
 		}
 	}
 
@@ -35,7 +36,8 @@ func (tm *TaskManager) TaskCount() int {
 
 func (tm *TaskManager) GetAvailableTask() Task {
 
-	for _, task := range tm.Tasks {
+	for _, t := range tm.Tasks {
+		task := t.(Task)
 		if !task.IsCompleted() {
 			return task
 		}
@@ -64,7 +66,8 @@ func (tm *TaskManager) Execute() {
 
 func (tm *TaskManager) IsCompleted() bool {
 
-	for _, task := range tm.Tasks {
+	for _, t := range tm.Tasks {
+		task := t.(Task)
 		if !task.IsCompleted() {
 			return false
 		}

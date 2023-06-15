@@ -10,7 +10,7 @@ func TestWaitGroup(t *testing.T) {
 
 	tm := NewTaskManager()
 
-	wr := NewWaitReady()
+	wr := NewWaitReady("ready")
 	wr.PreparePlayerStates(2)
 
 	tm.AddTask(wr)
