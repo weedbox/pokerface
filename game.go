@@ -45,6 +45,7 @@ type Game interface {
 	GetAvailableActions(Player) []string
 	GetAlivePlayerCount() int
 	GetMovablePlayerCount() int
+	UpdateLastAction(source int, ptype string, value int64) error
 	Next() error
 	EmitEvent(event GameEvent, payload *EventPayload) error
 	PrintState() error
@@ -444,6 +445,25 @@ func (g *game) RequestPlayerAction() error {
 	return g.SetCurrentPlayer(p)
 }
 
+func (g *game) UpdateLastAction(source int, aType string, value int64) error {
+
+	if g.gs.Status.LastAction == nil {
+		g.gs.Status.LastAction = &Action{
+			Source: source,
+			Type:   aType,
+			Value:  value,
+		}
+
+		return nil
+	}
+
+	g.gs.Status.LastAction.Source = source
+	g.gs.Status.LastAction.Type = aType
+	g.gs.Status.LastAction.Value = value
+
+	return nil
+}
+
 func (g *game) GetAllowedActions(p Player) []string {
 
 	// player is movable for this round
@@ -581,6 +601,12 @@ func (g *game) RequestAnte() error {
 
 func (g *game) Next() error {
 
+	if g.gs.Status.CurrentEvent.Name != "RoundClosed" {
+		return ErrNotClosedRound
+	}
+
+	g.UpdateLastAction(-1, "next", 0)
+
 	switch g.gs.Status.Round {
 	case "preflop":
 		fallthrough
@@ -596,10 +622,6 @@ func (g *game) Next() error {
 }
 
 func (g *game) nextRound() error {
-
-	if g.gs.Status.CurrentEvent.Name != "RoundClosed" {
-		return ErrNotClosedRound
-	}
 
 	g.ResetRoundStatus()
 	g.ResetAllPlayerStatus()

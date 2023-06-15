@@ -31,6 +31,12 @@ type Event struct {
 	Payload *EventPayload `json:"payload,omitempty"`
 }
 
+type Action struct {
+	Source int    `json:"source"`
+	Type   string `json:"type"`
+	Value  int64  `json:"value,omitempty"`
+}
+
 type Status struct {
 	MiniBet             int64      `json:"mini_bet"`
 	Pots                []*pot.Pot `json:"pots"`
@@ -44,6 +50,7 @@ type Status struct {
 	CurrentRaiser       int        `json:"current_raiser"`
 	CurrentPlayer       int        `json:"current_player"`
 	CurrentEvent        *Event     `json:"current_event"`
+	LastAction          *Action    `json:"last_action,omitempty"`
 }
 
 type PlayerState struct {

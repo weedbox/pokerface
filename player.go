@@ -132,6 +132,8 @@ func (p *player) Pass() error {
 
 	p.state.Acted = true
 
+	p.game.UpdateLastAction(p.idx, "pass", 0)
+
 	return p.game.Resume()
 }
 
@@ -201,10 +203,25 @@ func (p *player) Pay(chips int64) error {
 	wp := t.(*task.WaitPay)
 	wp.Pay(p.idx, chips)
 
-	// Keep going
-	p.game.Resume()
+	gs := p.game.GetState()
+	if gs.Status.CurrentEvent.Name == "Prepared" {
+		p.game.UpdateLastAction(p.idx, "ante", chips)
+	} else if gs.Status.CurrentEvent.Name == "RoundInitialized" {
 
-	return nil
+		// Pay for blinds
+		if p.CheckPosition("dealer") {
+			p.game.UpdateLastAction(p.idx, "dealer_blind", chips)
+		} else if p.CheckPosition("sb") {
+			p.game.UpdateLastAction(p.idx, "small_blind", chips)
+		} else {
+			p.game.UpdateLastAction(p.idx, "big_blind", chips)
+		}
+	} else {
+		p.game.UpdateLastAction(p.idx, "pay", chips)
+	}
+
+	// Keep going
+	return p.game.Resume()
 }
 
 func (p *player) Fold() error {
@@ -217,6 +234,8 @@ func (p *player) Fold() error {
 
 	p.state.DidAction = "fold"
 	p.state.Acted = true
+
+	p.game.UpdateLastAction(p.idx, "fold", 0)
 
 	return p.game.Resume()
 }
@@ -238,6 +257,8 @@ func (p *player) Call() error {
 
 	p.pay(delta)
 
+	p.game.UpdateLastAction(p.idx, "call", delta)
+
 	return p.game.Resume()
 }
 
@@ -251,6 +272,8 @@ func (p *player) Check() error {
 
 	p.state.DidAction = "check"
 	p.state.Acted = true
+
+	p.game.UpdateLastAction(p.idx, "check", 0)
 
 	return p.game.Resume()
 }
@@ -269,6 +292,8 @@ func (p *player) Bet(chips int64) error {
 	p.pay(chips)
 
 	p.game.GetState().Status.PreviousRaiseSize = chips
+
+	p.game.UpdateLastAction(p.idx, "bet", chips)
 
 	return p.game.Resume()
 }
@@ -307,6 +332,8 @@ func (p *player) Raise(chipLevel int64) error {
 
 	p.pay(required)
 
+	p.game.UpdateLastAction(p.idx, "raise", required)
+
 	return p.game.Resume()
 }
 
@@ -322,6 +349,8 @@ func (p *player) Allin() error {
 	p.state.Acted = true
 
 	p.pay(p.state.StackSize)
+
+	p.game.UpdateLastAction(p.idx, "allin", p.state.InitialStackSize)
 
 	return p.game.Resume()
 }
