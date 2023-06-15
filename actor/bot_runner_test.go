@@ -1,7 +1,6 @@
 package actor
 
 import (
-	"sync"
 	"testing"
 
 	"github.com/google/uuid"
@@ -87,8 +86,8 @@ func TestActor_BotRunner_Humanize(t *testing.T) {
 		actors = append(actors, a)
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(1)
+	//	var wg sync.WaitGroup
+	//	wg.Add(1)
 
 	// Preparing table state updater
 	tableEngine.OnTableUpdated(func(table *pokertable.Table) {
@@ -98,8 +97,13 @@ func TestActor_BotRunner_Humanize(t *testing.T) {
 			a.GetTable().UpdateTableState(table)
 		}
 
-		if table.State.Status == pokertable.TableStateStatus_TablePausing {
-			wg.Done()
+		if table.State.Status == pokertable.TableStateStatus_TableGameSettled {
+			if table.State.GameState.Status.CurrentEvent.Name == "GameClosed" {
+				t.Log("GameClosed", table.State.GameState.GameID)
+
+				//				json, _ := table.GetJSON()
+				//				t.Log(json)
+			}
 		}
 	})
 
@@ -113,5 +117,5 @@ func TestActor_BotRunner_Humanize(t *testing.T) {
 	err = tableEngine.StartTableGame(table.ID)
 	assert.Nil(t, err)
 
-	wg.Wait()
+	// wg.Wait()
 }

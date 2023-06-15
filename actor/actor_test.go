@@ -91,9 +91,21 @@ func TestActor_Basic(t *testing.T) {
 	// Preparing table state updater
 	tableEngine.OnTableUpdated(func(table *pokertable.Table) {
 
+		//		json, _ := table.GetJSON()
+		//		fmt.Println(json)
+
 		// Update table state via adapter
 		for _, a := range actors {
 			a.GetTable().UpdateTableState(table)
+		}
+
+		if table.State.Status == pokertable.TableStateStatus_TableGameSettled {
+			if table.State.GameState.Status.CurrentEvent.Name == "GameClosed" {
+				t.Log("GameClosed", table.State.GameState.GameID)
+
+				//				json, _ := table.GetJSON()
+				//				t.Log(json)
+			}
 		}
 
 	})

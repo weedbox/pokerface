@@ -1,7 +1,6 @@
 package actor
 
 import (
-	"fmt"
 	"math/rand"
 	"time"
 
@@ -53,14 +52,6 @@ func (br *botRunner) Humanized(enabled bool) {
 }
 
 func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
-	/*
-		fmt.Println("=======")
-		fmt.Println(table.State.Status)
-		fmt.Println(pokertable.TableStateStatus_TableGamePlaying)
-
-		json, _ := table.GetJSON()
-		fmt.Println(json)
-	*/
 
 	br.tableInfo = table
 
@@ -92,7 +83,6 @@ func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
 }
 
 func (br *botRunner) requestMove() error {
-	fmt.Println("=========")
 
 	gs := br.tableInfo.State.GameState
 
@@ -125,25 +115,20 @@ func (br *botRunner) requestMove() error {
 		}
 	}
 
-	if !br.isHumanized {
+	if !br.isHumanized || br.tableInfo.Meta.CompetitionMeta.ActionTime == 0 {
 		return br.requestAI()
 	}
-	/*
-	   // For simulating human-like behavior, to incorporate random delays when performing actions.
-	   fmt.Println("=========")
-	   fmt.Println(br.tableInfo.Meta.CompetitionMeta.ActionTimeSecs)
-	   thinkingTime := rand.Intn(br.tableInfo.Meta.CompetitionMeta.ActionTimeSecs)
-	   return br.timebank.NewTask(time.Duration(thinkingTime)*time.Second, func(isCancelled bool) {
 
-	   		if isCancelled {
-	   			return
-	   		}
+	// For simulating human-like behavior, to incorporate random delays when performing actions.
+	thinkingTime := rand.Intn(br.tableInfo.Meta.CompetitionMeta.ActionTime)
+	return br.timebank.NewTask(time.Duration(thinkingTime)*time.Second, func(isCancelled bool) {
 
-	   		br.requestAI()
-	   	})
-	*/
+		if isCancelled {
+			return
+		}
 
-	return nil
+		br.requestAI()
+	})
 }
 
 func (br *botRunner) calcActionProbabilities(actions []string) map[string]float64 {
