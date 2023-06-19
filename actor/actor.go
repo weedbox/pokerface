@@ -1,6 +1,10 @@
 package actor
 
-import pokertable "github.com/weedbox/pokertable"
+import (
+	"fmt"
+
+	pokertable "github.com/weedbox/pokertable"
+)
 
 type Actor interface {
 	SetRunner(r Runner) error
@@ -41,6 +45,12 @@ func (a *actor) GetRunner() Runner {
 }
 
 func (a *actor) UpdateTableState(tableInfo *pokertable.Table) error {
+
 	a.tableInfo = tableInfo
-	return a.runner.UpdateTableState(tableInfo)
+	err := a.runner.UpdateTableState(tableInfo)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return nil
 }

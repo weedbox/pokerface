@@ -1,6 +1,7 @@
 package actor
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/google/uuid"
@@ -67,8 +68,55 @@ func TestActor_ObserverRunner_PlayerAct(t *testing.T) {
 		{PlayerID: "Fred", RedeemChips: 3000},
 	}
 
-	// Preparing actors
 	actors := make([]Actor, 0)
+
+	// Initializing observer
+	a := NewActor()
+
+	tc := NewTableEngineAdapter(tableEngine, table)
+	a.SetAdapter(tc)
+
+	observer := NewObserverRunner()
+	a.SetRunner(observer)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	observer.OnTableStateUpdated(func(table *pokertable.Table) {
+
+		if table.State.Status == pokertable.TableStateStatus_TableGameSettled {
+			if table.State.GameState.Status.CurrentEvent.Name == "GameClosed" {
+				t.Log("GameClosed", table.State.GameState.GameID)
+
+				if len(table.AlivePlayers()) == 1 {
+					tableEngine.DeleteTable(table.ID)
+					wg.Done()
+					return
+				}
+			}
+		}
+
+		if table.State.Status == pokertable.TableStateStatus_TableGamePlaying {
+			gs := table.State.GameState
+
+			if gs.Status.LastAction == nil {
+				return
+			}
+
+			if gs.Status.LastAction.Type == "big_blind" {
+				//json, _ := table.GetJSON()
+				//t.Log(json)
+
+			}
+
+			t.Log(gs.Status.LastAction.Type, gs.Status.LastAction.Source, gs.Status.LastAction.Value)
+		}
+
+	})
+
+	actors = append(actors, a)
+
+	// Preparing players
 	for _, p := range players {
 
 		// Create new actor
@@ -84,17 +132,6 @@ func TestActor_ObserverRunner_PlayerAct(t *testing.T) {
 
 		actors = append(actors, a)
 	}
-
-	// Initializing observer
-	a := NewActor()
-
-	tc := NewTableEngineAdapter(tableEngine, table)
-	a.SetAdapter(tc)
-
-	observer := NewObserverRunner()
-	a.SetRunner(observer)
-
-	actors = append(actors, a)
 
 	// Preparing table state updater
 	tableEngine.OnTableUpdated(func(table *pokertable.Table) {
@@ -114,4 +151,6 @@ func TestActor_ObserverRunner_PlayerAct(t *testing.T) {
 	// Start game
 	err = tableEngine.StartTableGame(table.ID)
 	assert.Nil(t, err)
+
+	wg.Wait()
 }

@@ -1,6 +1,7 @@
 package actor
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/google/uuid"
@@ -12,6 +13,10 @@ func TestActor_Basic(t *testing.T) {
 
 	// Initializing table
 	tableEngine := pokertable.NewTableEngine()
+
+	//Workaround
+	tableEngine.OnTableUpdated(func(table *pokertable.Table) {})
+
 	table, err := tableEngine.CreateTable(
 		pokertable.TableSetting{
 			ShortID:        "ABC123",
@@ -31,30 +36,31 @@ func TestActor_Basic(t *testing.T) {
 							SB:       10,
 							BB:       20,
 							Ante:     0,
-							Duration: 10,
+							Duration: 1,
 						},
 						{
 							Level:    2,
 							SB:       20,
 							BB:       30,
 							Ante:     0,
-							Duration: 10,
+							Duration: 1,
 						},
 						{
 							Level:    3,
 							SB:       30,
 							BB:       40,
 							Ante:     0,
-							Duration: 10,
+							Duration: 1,
 						},
 					},
 				},
-				MaxDuration:         60,
+				MaxDuration:         10,
 				Rule:                pokertable.CompetitionRule_Default,
 				Mode:                pokertable.CompetitionMode_MTT,
 				TableMaxSeatCount:   9,
 				TableMinPlayerCount: 2,
 				MinChipUnit:         10,
+				ActionTime:          10,
 			},
 		},
 	)
@@ -85,14 +91,13 @@ func TestActor_Basic(t *testing.T) {
 		actors = append(actors, a)
 	}
 
-	//	var wg sync.WaitGroup
-	//	wg.Add(1)
+	var wg sync.WaitGroup
+	wg.Add(1)
 
 	// Preparing table state updater
 	tableEngine.OnTableUpdated(func(table *pokertable.Table) {
 
-		//		json, _ := table.GetJSON()
-		//		fmt.Println(json)
+		t.Log("UPDATED")
 
 		// Update table state via adapter
 		for _, a := range actors {
@@ -102,6 +107,12 @@ func TestActor_Basic(t *testing.T) {
 		if table.State.Status == pokertable.TableStateStatus_TableGameSettled {
 			if table.State.GameState.Status.CurrentEvent.Name == "GameClosed" {
 				t.Log("GameClosed", table.State.GameState.GameID)
+
+				if len(table.AlivePlayers()) == 1 {
+					tableEngine.DeleteTable(table.ID)
+					wg.Done()
+					return
+				}
 
 				//				json, _ := table.GetJSON()
 				//				t.Log(json)
@@ -120,5 +131,5 @@ func TestActor_Basic(t *testing.T) {
 	err = tableEngine.StartTableGame(table.ID)
 	assert.Nil(t, err)
 
-	// wg.Wait()
+	wg.Wait()
 }
