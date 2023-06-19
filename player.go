@@ -209,12 +209,12 @@ func (p *player) Pay(chips int64) error {
 	} else if gs.Status.CurrentEvent.Name == "RoundInitialized" {
 
 		// Pay for blinds
-		if p.CheckPosition("dealer") {
-			p.game.UpdateLastAction(p.idx, "dealer_blind", chips)
+		if p.CheckPosition("bb") {
+			p.game.UpdateLastAction(p.idx, "big_blind", chips)
 		} else if p.CheckPosition("sb") {
 			p.game.UpdateLastAction(p.idx, "small_blind", chips)
 		} else {
-			p.game.UpdateLastAction(p.idx, "big_blind", chips)
+			p.game.UpdateLastAction(p.idx, "dealer_blind", chips)
 		}
 	} else {
 		p.game.UpdateLastAction(p.idx, "pay", chips)
