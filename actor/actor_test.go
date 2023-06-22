@@ -14,9 +14,6 @@ func TestActor_Basic(t *testing.T) {
 	// Initializing table
 	tableEngine := pokertable.NewTableEngine()
 
-	//Workaround
-	tableEngine.OnTableUpdated(func(table *pokertable.Table) {})
-
 	table, err := tableEngine.CreateTable(
 		pokertable.TableSetting{
 			ShortID:        "ABC123",

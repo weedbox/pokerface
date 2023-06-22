@@ -121,6 +121,10 @@ func (br *botRunner) requestMove() error {
 
 	// For simulating human-like behavior, to incorporate random delays when performing actions.
 	thinkingTime := rand.Intn(br.tableInfo.Meta.CompetitionMeta.ActionTime)
+	if thinkingTime == 0 {
+		return br.requestAI()
+	}
+
 	return br.timebank.NewTask(time.Duration(thinkingTime)*time.Second, func(isCancelled bool) {
 
 		if isCancelled {

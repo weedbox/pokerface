@@ -56,6 +56,7 @@ func TestActor_BotRunner_Humanize(t *testing.T) {
 				TableMaxSeatCount:   9,
 				TableMinPlayerCount: 2,
 				MinChipUnit:         10,
+				ActionTime:          1,
 			},
 		},
 	)
@@ -104,6 +105,7 @@ func TestActor_BotRunner_Humanize(t *testing.T) {
 
 				if len(table.AlivePlayers()) == 1 {
 					tableEngine.DeleteTable(table.ID)
+					t.Log("Table deleted")
 					wg.Done()
 					return
 				}
