@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.8.4
-	github.com/weedbox/pokertable v0.0.0-20230619145544-a7c7f4ae915a
+	github.com/weedbox/pokertable v0.0.0-20230621122628-b21e12e170f5
 	github.com/weedbox/timebank v0.0.0-20230618191725-4dc85789aaa4
 )
 

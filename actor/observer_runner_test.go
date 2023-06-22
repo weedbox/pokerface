@@ -109,7 +109,7 @@ func TestActor_ObserverRunner_PlayerAct(t *testing.T) {
 
 			}
 
-			t.Log(gs.Status.LastAction.Type, gs.Status.LastAction.Source, gs.Status.LastAction.Value)
+			//t.Log(gs.Status.LastAction.Type, gs.Status.LastAction.Source, gs.Status.LastAction.Value)
 		}
 
 	})

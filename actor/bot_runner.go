@@ -1,7 +1,6 @@
 package actor
 
 import (
-	"fmt"
 	"math/rand"
 	"time"
 
@@ -91,7 +90,6 @@ func (br *botRunner) requestMove() error {
 
 	// Do ready() and pay() automatically
 	if gs.HasAction(br.gamePlayerIdx, "ready") {
-		fmt.Println("READY")
 		return br.actions.Ready()
 	} else if gs.HasAction(br.gamePlayerIdx, "pass") {
 		return br.actions.Pass()
@@ -100,7 +98,6 @@ func (br *botRunner) requestMove() error {
 		// Pay for ante and blinds
 		switch gs.Status.CurrentEvent.Name {
 		case pokerface.GameEventSymbols[pokerface.GameEvent_Prepared]:
-			fmt.Println("PAY ANTE")
 
 			// Ante
 			return br.actions.Pay(gs.Meta.Ante)
@@ -109,10 +106,8 @@ func (br *botRunner) requestMove() error {
 
 			// blinds
 			if gs.HasPosition(br.gamePlayerIdx, "sb") {
-				fmt.Println("PAY SB")
 				return br.actions.Pay(gs.Meta.Blind.SB)
 			} else if gs.HasPosition(br.gamePlayerIdx, "bb") {
-				fmt.Println("PAY BB")
 				return br.actions.Pay(gs.Meta.Blind.BB)
 			}
 
@@ -188,8 +183,6 @@ func (br *botRunner) requestAI() error {
 	if len(player.AllowedActions) == 0 {
 		return nil
 	}
-
-	fmt.Println(player.Idx, player.AllowedActions)
 
 	action := player.AllowedActions[0]
 
