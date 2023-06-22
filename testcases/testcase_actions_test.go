@@ -66,7 +66,11 @@ func Test_Actions(t *testing.T) {
 	assert.Nil(t, g.PayAnte())
 
 	// Blinds
+	assert.Equal(t, true, g.SmallBlind().CheckAction("pay"))
+	assert.Equal(t, false, g.BigBlind().CheckAction("pay"))
 	assert.Nil(t, g.Pay(5))
+	assert.Equal(t, false, g.SmallBlind().CheckAction("pay"))
+	assert.Equal(t, true, g.BigBlind().CheckAction("pay"))
 	assert.Nil(t, g.Pay(10))
 
 	// Round: Preflop

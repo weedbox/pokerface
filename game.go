@@ -435,8 +435,6 @@ func (g *game) RequestPlayerAction() error {
 	// next player
 	p := g.NextPlayer()
 
-	//fmt.Printf("===================== [%s] cur=%d, actionCount=%d, raiser=%d\n", g.gs.Status.Round, p.SeatIndex(), p.State().ActionCount, g.gs.Status.CurrentRaiser)
-
 	// Run around already, no one need to act
 	if p.State().Acted {
 		return g.EmitEvent(GameEvent_RoundClosed, nil)
@@ -800,6 +798,9 @@ func (g *game) PreparePreflopRound() error {
 		switch t.GetName() {
 		case "db":
 
+			// Reset allowed action states of players
+			g.ResetAllPlayerAllowedActions()
+
 			// Start at dealer
 			p := g.Dealer()
 			p.AllowActions([]string{
@@ -807,12 +808,20 @@ func (g *game) PreparePreflopRound() error {
 			})
 			g.setCurrentPlayer(p)
 		case "sb":
+
+			// Reset allowed action states of players
+			g.ResetAllPlayerAllowedActions()
+
 			p := g.SmallBlind()
 			p.AllowActions([]string{
 				"pay",
 			})
 			g.setCurrentPlayer(p)
 		case "bb":
+
+			// Reset allowed action states of players
+			g.ResetAllPlayerAllowedActions()
+
 			p := g.BigBlind()
 			p.AllowActions([]string{
 				"pay",

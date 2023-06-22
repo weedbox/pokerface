@@ -14,6 +14,7 @@ var (
 type Player interface {
 	State() *PlayerState
 	SeatIndex() int
+	CheckAction(action string) bool
 	CheckPosition(pos string) bool
 	AllowActions(actions []string) error
 	ResetAllowedActions() error
