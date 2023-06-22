@@ -202,6 +202,8 @@ func (g *game) onRoundPrepared() error {
 
 func (g *game) onRoundClosed() error {
 
+	g.ResetAllPlayerAllowedActions()
+
 	// Update pots
 	err := g.updatePots()
 	if err != nil {
