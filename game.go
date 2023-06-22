@@ -104,7 +104,7 @@ func (g *game) LoadState(gs *GameState) error {
 		g.addPlayer(ps)
 	}
 
-	return g.Resume()
+	return nil
 }
 
 func (g *game) Resume() error {
@@ -300,6 +300,7 @@ func (g *game) NextPlayer() Player {
 		}
 
 		p := g.gs.Players[cur]
+
 		return g.Player(p.Idx)
 	}
 
