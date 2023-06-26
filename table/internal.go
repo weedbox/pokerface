@@ -65,20 +65,7 @@ func (t *table) run(delay int) error {
 	if len(t.sm.GetPlayableSeats()) < t.options.MinPlayers {
 		return ErrGameConditionsNotMet
 	}
-	/*
-		var wg sync.WaitGroup
-		wg.Add(1)
-		err = t.tb.NewTask(time.Duration(delay)*time.Second, func(isCancelled bool) {
 
-			if isCancelled {
-				return
-			}
-
-			wg.Done()
-		})
-
-		wg.Wait()
-	*/
 	if delay > 0 {
 		<-time.After(time.Duration(delay) * time.Second)
 	}

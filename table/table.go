@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/weedbox/syncsaga"
-	"github.com/weedbox/timebank"
 )
 
 var (
@@ -55,7 +54,6 @@ type table struct {
 	ts             *State
 	rg             *syncsaga.ReadyGroup
 	sm             *SeatManager
-	tb             *timebank.TimeBank
 	onStateUpdated func(*State)
 }
 
@@ -68,11 +66,10 @@ func WithBackend(b Backend) TableOpt {
 func NewTable(options *Options, opts ...TableOpt) *table {
 
 	t := &table{
-		options: options,
-		rg:      syncsaga.NewReadyGroup(),
-		sm:      NewSeatManager(options.MaxSeats),
-		ts:      NewState(),
-		//tb:             timebank.NewTimeBank(),
+		options:        options,
+		rg:             syncsaga.NewReadyGroup(),
+		sm:             NewSeatManager(options.MaxSeats),
+		ts:             NewState(),
 		onStateUpdated: func(*State) {},
 	}
 
