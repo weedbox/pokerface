@@ -51,8 +51,7 @@ func Test_PoorPlayer_DealerEnoughForAnteOnly(t *testing.T) {
 	assert.Nil(t, g.PayAnte())
 
 	// Blinds
-	assert.Nil(t, g.Pay(5))
-	assert.Nil(t, g.Pay(10))
+	assert.Nil(t, g.PayBlinds())
 
 	// Round: Preflop
 	assert.Nil(t, g.ReadyForAll()) // ready for the round
@@ -143,8 +142,7 @@ func Test_PoorPlayer_DealerEnoughForAnteAndBlindOnly(t *testing.T) {
 	assert.Nil(t, g.PayAnte())
 
 	// Blinds
-	assert.Nil(t, g.Pay(5))
-	assert.Nil(t, g.Pay(10))
+	assert.Nil(t, g.PayBlinds())
 
 	// Round: Preflop
 	assert.Nil(t, g.ReadyForAll()) // ready for the round

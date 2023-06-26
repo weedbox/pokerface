@@ -26,11 +26,6 @@ type Meta struct {
 	BurnCount              int                       `json:"burn_count"`
 }
 
-type Event struct {
-	Name    string        `json:"name,omitempty"`
-	Payload *EventPayload `json:"payload,omitempty"`
-}
-
 type Action struct {
 	Source int    `json:"source"`
 	Type   string `json:"type"`
@@ -49,7 +44,7 @@ type Status struct {
 	CurrentWager        int64      `json:"current_wager"`
 	CurrentRaiser       int        `json:"current_raiser"`
 	CurrentPlayer       int        `json:"current_player"`
-	CurrentEvent        *Event     `json:"current_event"`
+	CurrentEvent        string     `json:"current_event"`
 	LastAction          *Action    `json:"last_action,omitempty"`
 }
 
@@ -87,7 +82,7 @@ func (gs *GameState) AsPlayer(idx int) {
 	gs.Meta.Deck = []string{}
 
 	// Do nothing if game has been closed already
-	if gs.Status.CurrentEvent.Name == "GameClosed" {
+	if gs.Status.CurrentEvent == "GameClosed" {
 
 		for _, p := range gs.Players {
 			if p.Idx == idx {
@@ -132,7 +127,12 @@ func (gs *GameState) GetPlayer(idx int) *PlayerState {
 
 func (gs *GameState) HasPosition(idx int, position string) bool {
 
-	for _, pos := range gs.Players[idx].Positions {
+	p := gs.GetPlayer(idx)
+	if p == nil {
+		return false
+	}
+
+	for _, pos := range p.Positions {
 		if pos == position {
 			return true
 		}
@@ -150,4 +150,15 @@ func (gs *GameState) HasAction(idx int, action string) bool {
 	}
 
 	return false
+}
+
+func (ps *PlayerState) AllowAction(action string) {
+
+	for _, aa := range ps.AllowedActions {
+		if aa == action {
+			return
+		}
+	}
+
+	ps.AllowedActions = append(ps.AllowedActions, action)
 }

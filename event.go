@@ -1,9 +1,5 @@
 package pokerface
 
-import (
-	"github.com/weedbox/pokerface/task"
-)
-
 type GameEvent int32
 
 const (
@@ -13,6 +9,11 @@ const (
 	GameEvent_Initialized
 	GameEvent_Prepared
 	GameEvent_AnteRequested
+	GameEvent_AntePaid
+	GameEvent_BlindsRequested
+	GameEvent_BlindsPaid
+	GameEvent_ReadyRequested
+	GameEvent_Readiness
 
 	// Rounds
 	GameEvent_PreflopRoundEntered
@@ -36,6 +37,11 @@ var GameEventSymbols = map[GameEvent]string{
 	GameEvent_Initialized:         "Initialized",
 	GameEvent_Prepared:            "Prepared",
 	GameEvent_AnteRequested:       "AnteRequested",
+	GameEvent_AntePaid:            "AntePaid",
+	GameEvent_BlindsRequested:     "BlindsRequested",
+	GameEvent_BlindsPaid:          "BlindsPaid",
+	GameEvent_ReadyRequested:      "ReadyRequested",
+	GameEvent_Readiness:           "Readiness",
 	GameEvent_PreflopRoundEntered: "PreflopRoundEntered",
 	GameEvent_FlopRoundEntered:    "FlopRoundEntered",
 	GameEvent_TurnRoundEntered:    "TurnRoundEntered",
@@ -55,6 +61,11 @@ var GameEventBySymbol = map[string]GameEvent{
 	"Initialized":         GameEvent_Initialized,
 	"Prepared":            GameEvent_Prepared,
 	"AnteRequested":       GameEvent_AnteRequested,
+	"AntePaid":            GameEvent_AntePaid,
+	"BlindsRequested":     GameEvent_BlindsRequested,
+	"BlindsPaid":          GameEvent_BlindsPaid,
+	"ReadyRequested":      GameEvent_ReadyRequested,
+	"Readiness":           GameEvent_Readiness,
 	"PreflopRoundEntered": GameEvent_PreflopRoundEntered,
 	"FlopRoundEntered":    GameEvent_FlopRoundEntered,
 	"TurnRoundEntered":    GameEvent_TurnRoundEntered,
@@ -70,13 +81,6 @@ var GameEventBySymbol = map[string]GameEvent{
 }
 
 type EventPayload struct {
-	Task task.TaskManager `json:"task"`
-}
-
-type RoundInitializedEventRuntime struct {
-	Dealer int64 `json:"dealer"`
-	SB     int64 `json:"sb"`
-	BB     int64 `json:"bb"`
 }
 
 func NewEventPayload() *EventPayload {
@@ -98,6 +102,21 @@ func (g *game) triggerEvent(event GameEvent) error {
 
 	case GameEvent_AnteRequested:
 		return g.onAnteRequested()
+
+	case GameEvent_AntePaid:
+		return g.onAntePaid()
+
+	case GameEvent_BlindsRequested:
+		return g.onBlindsRequested()
+
+	case GameEvent_BlindsPaid:
+		return g.onBlindsPaid()
+
+	case GameEvent_ReadyRequested:
+		return g.onReadyRequested()
+
+	case GameEvent_Readiness:
+		return g.onReadiness()
 
 	case GameEvent_RoundStarted:
 		return g.onRoundStarted()
@@ -138,22 +157,15 @@ func (g *game) triggerEvent(event GameEvent) error {
 	return nil
 }
 
-func (g *game) EmitEvent(event GameEvent, payload *EventPayload) error {
+func (g *game) EmitEvent(event GameEvent) error {
 
 	// Update current event
-	g.gs.Status.CurrentEvent.Name = GameEventSymbols[event]
-
-	if payload != nil {
-		g.gs.Status.CurrentEvent.Payload = payload
-	} else {
-		// Create a new payload for this event
-		g.gs.Status.CurrentEvent.Payload = NewEventPayload()
-	}
+	g.gs.Status.CurrentEvent = GameEventSymbols[event]
 
 	return g.triggerEvent(event)
 }
 
-func (g *game) GetEvent() *Event {
+func (g *game) GetEvent() string {
 	return g.gs.Status.CurrentEvent
 }
 
@@ -175,6 +187,10 @@ func (g *game) onPrepared() error {
 }
 
 func (g *game) onAnteRequested() error {
+	return nil
+}
+
+func (g *game) onAntePaid() error {
 
 	// Update pots
 	err := g.updatePots()
@@ -183,9 +199,30 @@ func (g *game) onAnteRequested() error {
 	}
 
 	g.ResetAllPlayerStatus()
+	g.ResetRoundStatus()
 
 	return g.EnterPreflopRound()
-	// return g.EmitEvent(GameEvent_PreflopRoundEntered, nil)
+}
+
+func (g *game) onBlindsRequested() error {
+	return nil
+}
+
+func (g *game) onBlindsPaid() error {
+	return g.PrepareRound()
+}
+
+func (g *game) onReadyRequested() error {
+	return nil
+}
+
+func (g *game) onReadiness() error {
+
+	if len(g.gs.Status.Round) == 0 {
+		return g.EmitEvent(GameEvent_Prepared)
+	}
+
+	return g.EmitEvent(GameEvent_RoundPrepared)
 }
 
 func (g *game) onRoundStarted() error {
@@ -193,11 +230,17 @@ func (g *game) onRoundStarted() error {
 }
 
 func (g *game) onRoundInitialized() error {
+
+	if g.gs.Status.Round == "preflop" {
+		// Request blinds
+		return g.RequestBlinds()
+	}
+
 	return g.PrepareRound()
 }
 
 func (g *game) onRoundPrepared() error {
-	return g.EmitEvent(GameEvent_RoundStarted, nil)
+	return g.StartRound()
 }
 
 func (g *game) onRoundClosed() error {
@@ -230,7 +273,7 @@ func (g *game) onRiverRoundEntered() error {
 }
 
 func (g *game) onGameCompleted() error {
-	return g.EmitEvent(GameEvent_SettlementRequested, nil)
+	return g.EmitEvent(GameEvent_SettlementRequested)
 }
 
 func (g *game) onSettlementRequested() error {
@@ -244,11 +287,11 @@ func (g *game) onSettlementRequested() error {
 		return err
 	}
 
-	return g.EmitEvent(GameEvent_SettlementCompleted, nil)
+	return g.EmitEvent(GameEvent_SettlementCompleted)
 }
 
 func (g *game) onSettlementCompleted() error {
-	return g.EmitEvent(GameEvent_GameClosed, nil)
+	return g.EmitEvent(GameEvent_GameClosed)
 }
 
 func (g *game) onGameClosed() error {

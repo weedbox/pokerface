@@ -96,7 +96,7 @@ func (br *botRunner) requestMove() error {
 	} else if gs.HasAction(br.gamePlayerIdx, "pay") {
 
 		// Pay for ante and blinds
-		switch gs.Status.CurrentEvent.Name {
+		switch gs.Status.CurrentEvent {
 		case pokerface.GameEventSymbols[pokerface.GameEvent_Prepared]:
 
 			// Ante

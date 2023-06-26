@@ -25,10 +25,16 @@ github.com/weedbox/pokertable v0.0.0-20230621122628-b21e12e170f5 h1:qcA2sFtsJLVc
 github.com/weedbox/pokertable v0.0.0-20230621122628-b21e12e170f5/go.mod h1:brpUlkkbPxS7t1Qa6otpNV+hfH+6umAFmjIizmKw7Dk=
 github.com/weedbox/syncsaga v0.0.0-20230618231706-9ada849f92ac h1:r/73CQIjpO2rrlKmKUh54OPV+6v22hojLDf2eZAL+cc=
 github.com/weedbox/syncsaga v0.0.0-20230618231706-9ada849f92ac/go.mod h1:7dU6cd1CGd21rLwlwD1hT2lZf24qgPeU+yZmn9fcFks=
+github.com/weedbox/syncsaga v0.0.0-20230626174843-43af3ced8402 h1:EnckEkoI6mHD3hUh5zAeR04HqygnhX1xUOmcsGw9IHA=
+github.com/weedbox/syncsaga v0.0.0-20230626174843-43af3ced8402/go.mod h1:R8dVqgFKlyeo6mJt5ZfEw3FvEdjYbJH34X6wMRfxpVg=
 github.com/weedbox/timebank v0.0.0-20230610090731-5f6d4b480f02 h1:+tUkr1MQc7EIaES6Aer3vkp2IXyDPZXb8KW4amBmfIM=
 github.com/weedbox/timebank v0.0.0-20230610090731-5f6d4b480f02/go.mod h1:7ZB83P7QCjvRQm4DsMFVIRxEeXaiH75BRMzI5SMBH6Y=
 github.com/weedbox/timebank v0.0.0-20230618191725-4dc85789aaa4 h1:RqX+BJNK1nAWCKqdGzLGdMoWw6WUOHLJ/UfMjYzEnyk=
 github.com/weedbox/timebank v0.0.0-20230618191725-4dc85789aaa4/go.mod h1:7ZB83P7QCjvRQm4DsMFVIRxEeXaiH75BRMzI5SMBH6Y=
+github.com/weedbox/timebank v0.0.0-20230626172307-e92dbb708378 h1:pCVZlG8cgop7xE1JoJPG6F7K2GMNfzlW3PZAUhWBtho=
+github.com/weedbox/timebank v0.0.0-20230626172307-e92dbb708378/go.mod h1:7ZB83P7QCjvRQm4DsMFVIRxEeXaiH75BRMzI5SMBH6Y=
+github.com/weedbox/timebank v0.0.0-20230626195305-39f7a14ece16 h1:1EP75xz9O0Pyynfn7udbfcErXaqnsmkn4sZox4tixpE=
+github.com/weedbox/timebank v0.0.0-20230626195305-39f7a14ece16/go.mod h1:7ZB83P7QCjvRQm4DsMFVIRxEeXaiH75BRMzI5SMBH6Y=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=

@@ -130,7 +130,7 @@ func (pr *playerRunner) automate() error {
 	}
 
 	// Pay for ante and blinds
-	switch gs.Status.CurrentEvent.Name {
+	switch gs.Status.CurrentEvent {
 	case pokerface.GameEventSymbols[pokerface.GameEvent_Prepared]:
 
 		// Ante

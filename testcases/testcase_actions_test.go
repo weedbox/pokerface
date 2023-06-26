@@ -7,7 +7,7 @@ import (
 	"github.com/weedbox/pokerface"
 )
 
-func Test_Actions(t *testing.T) {
+func Test_Actions_Basic(t *testing.T) {
 
 	pf := pokerface.NewPokerFace()
 
@@ -60,21 +60,22 @@ func Test_Actions(t *testing.T) {
 	assert.Nil(t, g.Start())
 
 	// Waiting for initial ready
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
 	assert.Nil(t, g.ReadyForAll())
 
 	// Ante
+	assert.Equal(t, "AnteRequested", g.GetState().Status.CurrentEvent)
 	assert.Nil(t, g.PayAnte())
 
 	// Blinds
-	assert.Equal(t, true, g.SmallBlind().CheckAction("pay"))
-	assert.Equal(t, false, g.BigBlind().CheckAction("pay"))
-	assert.Nil(t, g.Pay(5))
-	assert.Equal(t, false, g.SmallBlind().CheckAction("pay"))
-	assert.Equal(t, true, g.BigBlind().CheckAction("pay"))
-	assert.Nil(t, g.Pay(10))
+	assert.Equal(t, "BlindsRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.PayBlinds())
 
 	// Round: Preflop
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
 	assert.Nil(t, g.ReadyForAll()) // ready for the round
+
+	assert.Equal(t, "RoundStarted", g.GetState().Status.CurrentEvent)
 	assert.Nil(t, g.Call())
 	assert.Nil(t, g.Call())
 	assert.Nil(t, g.Call())
@@ -84,10 +85,13 @@ func Test_Actions(t *testing.T) {
 	assert.Nil(t, g.Call())  // Dealer
 	assert.Nil(t, g.Call())  // SB
 	assert.Nil(t, g.Check()) // BB
+	assert.Equal(t, "RoundClosed", g.GetState().Status.CurrentEvent)
 
 	// Round: Flop
 	assert.Nil(t, g.Next())
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
 	assert.Nil(t, g.ReadyForAll()) // ready for the round
+	assert.Equal(t, "RoundStarted", g.GetState().Status.CurrentEvent)
 	assert.Equal(t, true, g.GetCurrentPlayer().CheckPosition("sb"))
 	assert.Nil(t, g.Check()) // SB
 	assert.Nil(t, g.Check()) // BB
@@ -100,10 +104,13 @@ func Test_Actions(t *testing.T) {
 	assert.Nil(t, g.Call()) // Dealer
 	assert.Nil(t, g.Call()) // SB
 	assert.Nil(t, g.Call()) // BB
+	assert.Equal(t, "RoundClosed", g.GetState().Status.CurrentEvent)
 
 	// Round: Turn
 	assert.Nil(t, g.Next())
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
 	assert.Nil(t, g.ReadyForAll()) // ready for the round
+	assert.Equal(t, "RoundStarted", g.GetState().Status.CurrentEvent)
 	assert.Equal(t, true, g.GetCurrentPlayer().CheckPosition("sb"))
 	assert.Nil(t, g.Check())  // SB
 	assert.Nil(t, g.Bet(100)) // BB
@@ -117,10 +124,13 @@ func Test_Actions(t *testing.T) {
 	assert.Nil(t, g.Call()) // SB
 	assert.Nil(t, g.Call()) // BB
 	assert.Nil(t, g.Call())
+	assert.Equal(t, "RoundClosed", g.GetState().Status.CurrentEvent)
 
 	// Round: River
 	assert.Nil(t, g.Next())
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
 	assert.Nil(t, g.ReadyForAll()) // ready for the round
+	assert.Equal(t, "RoundStarted", g.GetState().Status.CurrentEvent)
 	assert.Equal(t, true, g.GetCurrentPlayer().CheckPosition("sb"))
 	assert.Nil(t, g.Check()) // SB
 	assert.Nil(t, g.Check()) // BB
@@ -131,9 +141,11 @@ func Test_Actions(t *testing.T) {
 	assert.Nil(t, g.Check())
 	assert.Nil(t, g.Check())
 	assert.Nil(t, g.Check()) // Dealer
+	assert.Equal(t, "RoundClosed", g.GetState().Status.CurrentEvent)
 
 	// Game closed
 	assert.Nil(t, g.Next())
+	assert.Equal(t, "GameClosed", g.GetState().Status.CurrentEvent)
 }
 
 func Test_Actions_TwoPlayers(t *testing.T) {
@@ -173,8 +185,7 @@ func Test_Actions_TwoPlayers(t *testing.T) {
 	assert.Nil(t, g.PayAnte())
 
 	// Blinds
-	assert.Nil(t, g.Pay(5))
-	assert.Nil(t, g.Pay(10))
+	assert.Nil(t, g.PayBlinds())
 
 	// Round: Preflop
 	assert.Nil(t, g.ReadyForAll()) // ready for the round
@@ -254,8 +265,7 @@ func Test_Fold_RaiseInPreflop(t *testing.T) {
 	assert.Nil(t, g.PayAnte())
 
 	// Blinds
-	assert.Nil(t, g.Pay(5))
-	assert.Nil(t, g.Pay(10))
+	assert.Nil(t, g.PayBlinds())
 
 	// Round: Preflop
 	assert.Nil(t, g.ReadyForAll()) // ready for the round

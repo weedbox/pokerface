@@ -14,13 +14,6 @@ func PrepareAnte(t *testing.T, g pokerface.Game) {
 	}
 }
 
-func AllPlayersReady(t *testing.T, g pokerface.Game) {
-	for _, p := range g.GetPlayers() {
-		err := p.Ready()
-		assert.Nil(t, err)
-	}
-}
-
 func Test_Basic(t *testing.T) {
 
 	pf := pokerface.NewPokerFace()
@@ -50,12 +43,10 @@ func Test_Basic(t *testing.T) {
 
 	// Initializing game
 	g := pf.NewGame(opts)
-	err := g.Start()
-	assert.Nil(t, err)
+	assert.Nil(t, g.Start())
 
 	// Waiting for ready
 	for _, p := range g.GetPlayers() {
-		assert.Equal(t, "Initialized", g.GetState().Status.CurrentEvent.Name)
 		assert.Equal(t, 0, len(p.State().HoleCards))
 		assert.Equal(t, false, p.State().Fold)
 		assert.Equal(t, int64(0), p.State().Wager)
@@ -63,7 +54,6 @@ func Test_Basic(t *testing.T) {
 		assert.Equal(t, int64(players[p.SeatIndex()].Bankroll), p.State().Bankroll)
 		assert.Equal(t, int64(players[p.SeatIndex()].Bankroll), p.State().InitialStackSize)
 		assert.Equal(t, int64(players[p.SeatIndex()].Bankroll), p.State().StackSize)
-		assert.Equal(t, "ready", p.State().AllowedActions[0])
 
 		// Position checks
 		if p.SeatIndex() == 0 {
@@ -73,15 +63,16 @@ func Test_Basic(t *testing.T) {
 		} else if p.SeatIndex() == 2 {
 			assert.True(t, p.CheckPosition("bb"))
 		}
-
-		err := p.Ready()
-		assert.Nil(t, err)
 	}
+
+	// Waiting for ready
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.ReadyForAll())
 
 	//g.PrintState()
 
 	// ante
-	assert.Equal(t, "Prepared", g.GetState().Status.CurrentEvent.Name)
+	assert.Equal(t, "AnteRequested", g.GetState().Status.CurrentEvent)
 
 	for _, p := range g.GetPlayers() {
 		assert.Equal(t, false, p.State().Acted)
@@ -92,52 +83,35 @@ func Test_Basic(t *testing.T) {
 		assert.Equal(t, int64(players[p.SeatIndex()].Bankroll), p.State().Bankroll)
 		assert.Equal(t, int64(players[p.SeatIndex()].Bankroll), p.State().InitialStackSize)
 		assert.Equal(t, int64(players[p.SeatIndex()].Bankroll), p.State().StackSize)
-		assert.Equal(t, "pay", p.State().AllowedActions[0])
-		err := p.Pay(opts.Ante)
-		assert.Nil(t, err)
 	}
+
+	assert.Nil(t, g.PayAnte())
 
 	// Entering Preflop
 	t.Log("Entering \"Prflop\" round")
-	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
 	assert.Equal(t, "preflop", g.GetState().Status.Round)
 
 	// Blinds
+	assert.Equal(t, "BlindsRequested", g.GetState().Status.CurrentEvent)
 	for _, p := range g.GetPlayers() {
 		assert.Equal(t, false, p.State().Acted)
 		assert.Equal(t, 2, len(p.State().HoleCards))
 		assert.Equal(t, false, p.State().Fold)
 		assert.Equal(t, int64(0), p.State().Wager)
 		assert.Equal(t, int64(10), p.State().Pot)
-
-		if p.SeatIndex() == 1 {
-			assert.Equal(t, "pay", p.State().AllowedActions[0])
-
-			// Small blind
-			err := p.Pay(5)
-			assert.Nil(t, err)
-		} else if p.SeatIndex() == 2 {
-			assert.Equal(t, "pay", p.State().AllowedActions[0])
-
-			// Big blind
-			err := p.Pay(10)
-			assert.Nil(t, err)
-		}
 	}
+
+	assert.Nil(t, g.PayBlinds())
 
 	// Current wager on the table should be equal to big blind
 	assert.Equal(t, int64(10), g.GetState().Status.CurrentWager)
 	assert.Equal(t, 2, g.GetState().Status.CurrentRaiser)
 
-	// get ready
-	for _, p := range g.GetPlayers() {
-		assert.Equal(t, "ready", p.State().AllowedActions[0])
-		err := p.Ready()
-		assert.Nil(t, err)
-	}
+	// Waiting for ready
+	assert.Nil(t, g.ReadyForAll())
 
 	// Starting player loop
-	assert.Equal(t, "RoundStarted", g.GetState().Status.CurrentEvent.Name)
+	assert.Equal(t, "RoundStarted", g.GetState().Status.CurrentEvent)
 
 	// Dealer
 	cp := g.GetCurrentPlayer()
@@ -148,8 +122,7 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "raise", cp.State().AllowedActions[3])
 
 	// Dealer: call
-	err = cp.Call()
-	assert.Nil(t, err)
+	assert.Nil(t, cp.Call())
 
 	// SB
 	cp = g.GetCurrentPlayer()
@@ -160,8 +133,7 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "raise", cp.State().AllowedActions[3])
 
 	// SB: call
-	err = cp.Call()
-	assert.Nil(t, err)
+	assert.Nil(t, cp.Call())
 
 	// BB
 	cp = g.GetCurrentPlayer()
@@ -171,29 +143,23 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "raise", cp.State().AllowedActions[2])
 
 	// SB: check
-	err = cp.Check()
-	assert.Nil(t, err)
+	assert.Nil(t, cp.Check())
 
 	// Entering Flop
-	err = g.Next()
-	assert.Nil(t, err)
+	assert.Nil(t, g.Next())
 
 	t.Log("Entering \"Flop\" round")
-	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
 	assert.Equal(t, "flop", g.GetState().Status.Round)
 	assert.Equal(t, int64(30+3*g.GetState().Meta.Ante), g.GetState().Status.Pots[0].Total)
 	assert.Equal(t, int64(10+g.GetState().Meta.Ante), g.GetState().Status.Pots[0].Wager)
 	assert.Equal(t, 3, len(g.GetState().Status.Pots[0].Contributors))
 
-	// get ready
-	for _, p := range g.GetPlayers() {
-		assert.Equal(t, "ready", p.State().AllowedActions[0])
-		err := p.Ready()
-		assert.Nil(t, err)
-	}
+	// Waiting for ready
+	assert.Nil(t, g.ReadyForAll())
 
 	// Starting player loop
-	assert.Equal(t, "RoundStarted", g.GetState().Status.CurrentEvent.Name)
+	assert.Equal(t, "RoundStarted", g.GetState().Status.CurrentEvent)
 
 	// SB
 	cp = g.GetCurrentPlayer()
@@ -206,8 +172,7 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "bet", cp.State().AllowedActions[2])
 
 	// SB: check
-	err = cp.Check()
-	assert.Nil(t, err)
+	assert.Nil(t, cp.Check())
 
 	// BB
 	cp = g.GetCurrentPlayer()
@@ -220,8 +185,7 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "bet", cp.State().AllowedActions[2])
 
 	// BB: check
-	err = cp.Check()
-	assert.Nil(t, err)
+	assert.Nil(t, cp.Check())
 
 	// Dealer
 	cp = g.GetCurrentPlayer()
@@ -234,27 +198,21 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "bet", cp.State().AllowedActions[2])
 
 	// Dealer: check
-	err = cp.Check()
-	assert.Nil(t, err)
+	assert.Nil(t, cp.Check())
 
 	// Entering Turn
-	err = g.Next()
-	assert.Nil(t, err)
+	assert.Nil(t, g.Next())
 
 	t.Log("Entering \"Turn\" round")
-	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
 	assert.Equal(t, "turn", g.GetState().Status.Round)
 
-	// get ready
-	for _, p := range g.GetPlayers() {
-		assert.Equal(t, "ready", p.State().AllowedActions[0])
-		err := p.Ready()
-		assert.Nil(t, err)
-	}
+	// Waiting for ready
+	assert.Nil(t, g.ReadyForAll())
 
 	// Starting player loop
 	t.Log("Round is ready")
-	assert.Equal(t, "RoundStarted", g.GetState().Status.CurrentEvent.Name)
+	assert.Equal(t, "RoundStarted", g.GetState().Status.CurrentEvent)
 
 	// SB
 	cp = g.GetCurrentPlayer()
@@ -267,8 +225,7 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "bet", cp.State().AllowedActions[2])
 
 	// SB: check
-	err = cp.Check()
-	assert.Nil(t, err)
+	assert.Nil(t, cp.Check())
 
 	// BB
 	cp = g.GetCurrentPlayer()
@@ -281,8 +238,7 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "bet", cp.State().AllowedActions[2])
 
 	// BB: bet 30
-	err = cp.Bet(30)
-	assert.Nil(t, err)
+	assert.Nil(t, cp.Bet(30))
 
 	// Dealer
 	cp = g.GetCurrentPlayer()
@@ -297,8 +253,7 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "raise", cp.State().AllowedActions[3])
 
 	// Dealer: raise to 60 (+30)
-	err = cp.Raise(60)
-	assert.Nil(t, err)
+	assert.Nil(t, cp.Raise(60))
 
 	// SB
 	cp = g.GetCurrentPlayer()
@@ -313,8 +268,7 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "raise", cp.State().AllowedActions[3])
 
 	// SB: call
-	err = cp.Call()
-	assert.Nil(t, err)
+	assert.Nil(t, cp.Call())
 
 	// BB
 	cp = g.GetCurrentPlayer()
@@ -329,46 +283,36 @@ func Test_Basic(t *testing.T) {
 	assert.Equal(t, "raise", cp.State().AllowedActions[3])
 
 	// BB: call
-	err = cp.Call()
-	assert.Nil(t, err)
+	assert.Nil(t, cp.Call())
 
 	// Entering River
-	err = g.Next()
-	assert.Nil(t, err)
+	assert.Nil(t, g.Next())
 
 	t.Log("Entering \"River\" round")
-	assert.Equal(t, "RoundInitialized", g.GetState().Status.CurrentEvent.Name)
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
 	assert.Equal(t, "river", g.GetState().Status.Round)
 	assert.Equal(t, int64(210+3*g.GetState().Meta.Ante), g.GetState().Status.Pots[0].Total)
 	assert.Equal(t, int64(70+g.GetState().Meta.Ante), g.GetState().Status.Pots[0].Wager)
 	assert.Equal(t, 3, len(g.GetState().Status.Pots[0].Contributors))
 
-	// get ready
-	for _, p := range g.GetPlayers() {
-		assert.Equal(t, "ready", p.State().AllowedActions[0])
-		err := p.Ready()
-		assert.Nil(t, err)
-	}
+	// Waiting for ready
+	assert.Nil(t, g.ReadyForAll())
 
 	// SB
 	cp = g.GetCurrentPlayer()
-	err = cp.Check()
-	assert.Nil(t, err)
+	assert.Nil(t, cp.Check())
 
 	// BB
 	cp = g.GetCurrentPlayer()
-	err = cp.Check()
-	assert.Nil(t, err)
+	assert.Nil(t, cp.Check())
 
 	// Dealer
 	cp = g.GetCurrentPlayer()
-	err = cp.Check()
-	assert.Nil(t, err)
+	assert.Nil(t, cp.Check())
 
 	// Next
-	err = g.Next()
-	assert.Nil(t, err)
-	assert.Equal(t, "GameClosed", g.GetState().Status.CurrentEvent.Name)
+	assert.Nil(t, g.Next())
+	assert.Equal(t, "GameClosed", g.GetState().Status.CurrentEvent)
 
 	//g.PrintState()
 }
@@ -421,21 +365,20 @@ func Test_Basic_NinePlayers(t *testing.T) {
 
 	// Initializing game
 	g := pf.NewGame(opts)
-	err := g.Start()
-	assert.Nil(t, err)
+	assert.Nil(t, g.Start())
 
 	// Waiting for ready
-	AllPlayersReady(t, g)
+	assert.Nil(t, g.ReadyForAll())
 
 	// Ante
-	PrepareAnte(t, g)
+	//PrepareAnte(t, g)
+	assert.Nil(t, g.PayAnte())
 
 	// Blinds
-	g.GetCurrentPlayer().Pay(5)
-	g.GetCurrentPlayer().Pay(10)
+	assert.Nil(t, g.PayBlinds())
 
-	// Get ready for preflop
-	AllPlayersReady(t, g)
+	// Waiting for ready
+	assert.Nil(t, g.ReadyForAll())
 
 	// Preflop
 	g.GetCurrentPlayer().Call()
@@ -449,9 +392,8 @@ func Test_Basic_NinePlayers(t *testing.T) {
 	g.GetCurrentPlayer().Check() // BB
 
 	// Flop
-	err = g.Next()
-	assert.Nil(t, err)
-	AllPlayersReady(t, g)
+	assert.Nil(t, g.Next())
+	assert.Nil(t, g.ReadyForAll())
 	g.GetCurrentPlayer().Check() // SB
 	g.GetCurrentPlayer().Check() // BB
 	g.GetCurrentPlayer().Bet(100)
@@ -465,9 +407,8 @@ func Test_Basic_NinePlayers(t *testing.T) {
 	g.GetCurrentPlayer().Call() // BB
 
 	// Turn
-	err = g.Next()
-	assert.Nil(t, err)
-	AllPlayersReady(t, g)
+	assert.Nil(t, g.Next())
+	assert.Nil(t, g.ReadyForAll())
 	g.GetCurrentPlayer().Check()  // SB
 	g.GetCurrentPlayer().Bet(100) // BB
 	g.GetCurrentPlayer().Raise(200)
@@ -482,9 +423,8 @@ func Test_Basic_NinePlayers(t *testing.T) {
 	g.GetCurrentPlayer().Call()
 
 	// River
-	err = g.Next()
-	assert.Nil(t, err)
-	AllPlayersReady(t, g)
+	assert.Nil(t, g.Next())
+	assert.Nil(t, g.ReadyForAll())
 	g.GetCurrentPlayer().Check() // SB
 	g.GetCurrentPlayer().Check() // BB
 	g.GetCurrentPlayer().Check()
@@ -496,6 +436,5 @@ func Test_Basic_NinePlayers(t *testing.T) {
 	g.GetCurrentPlayer().Check() // Dealer
 
 	// Game closed
-	err = g.Next()
-	assert.Nil(t, err)
+	assert.Nil(t, g.Next())
 }

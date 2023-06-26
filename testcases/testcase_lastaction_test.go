@@ -63,22 +63,14 @@ func Test_LastAction(t *testing.T) {
 	assert.Nil(t, g.ReadyForAll())
 
 	// Ante
-	assert.Equal(t, "Prepared", g.GetState().Status.CurrentEvent.Name)
+	assert.Equal(t, "AnteRequested", g.GetState().Status.CurrentEvent)
 	assert.Nil(t, g.PayAnte())
 	assert.Equal(t, 8, g.GetState().Status.LastAction.Source)
 	assert.Equal(t, "ante", g.GetState().Status.LastAction.Type)
 	assert.Equal(t, int64(10), g.GetState().Status.LastAction.Value)
 
 	// Blinds
-	assert.Nil(t, g.Pay(5))
-	assert.Equal(t, 1, g.GetState().Status.LastAction.Source)
-	assert.Equal(t, "small_blind", g.GetState().Status.LastAction.Type)
-	assert.Equal(t, int64(5), g.GetState().Status.LastAction.Value)
-
-	assert.Nil(t, g.Pay(10))
-	assert.Equal(t, 2, g.GetState().Status.LastAction.Source)
-	assert.Equal(t, "big_blind", g.GetState().Status.LastAction.Type)
-	assert.Equal(t, int64(10), g.GetState().Status.LastAction.Value)
+	assert.Nil(t, g.PayBlinds())
 
 	// Round: Preflop
 	assert.Nil(t, g.ReadyForAll()) // ready for the round

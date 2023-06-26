@@ -2,38 +2,58 @@ package pokerface
 
 func (g *game) ReadyForAll() error {
 
-	for _, p := range g.GetPlayers() {
-		err := p.Ready()
-		if err != nil {
-			return err
-		}
+	if g.gs.Status.CurrentEvent != "ReadyRequested" {
+		return ErrInvalidAction
 	}
 
-	return nil
+	return g.EmitEvent(GameEvent_Readiness)
 }
 
 func (g *game) Pass() error {
 	return g.GetCurrentPlayer().Pass()
 }
 
-func (g *game) Ready(playerIdx int) error {
-	return g.Player(playerIdx).Ready()
-}
-
 func (g *game) PayAnte() error {
 
 	if g.gs.Meta.Ante == 0 {
-		return nil
+		return ErrInvalidAction
+	}
+
+	if g.gs.Status.CurrentEvent != "AnteRequested" {
+		return ErrInvalidAction
 	}
 
 	for _, p := range g.GetPlayers() {
-		err := p.Pay(g.gs.Meta.Ante)
+		err := p.PayAnte()
 		if err != nil {
 			return err
 		}
 	}
 
-	return nil
+	return g.EmitEvent(GameEvent_AntePaid)
+}
+
+func (g *game) PayBlinds() error {
+
+	if g.gs.Status.CurrentEvent != "BlindsRequested" {
+		return ErrInvalidAction
+	}
+
+	for _, p := range g.GetPlayers() {
+		err := p.PayBlinds()
+		if err != nil {
+			return err
+		}
+	}
+
+	// Minimal raise size
+	if g.gs.Meta.Blind.BB > 0 {
+		g.gs.Status.PreviousRaiseSize = g.gs.Meta.Blind.BB
+	} else {
+		g.gs.Status.PreviousRaiseSize = g.gs.Meta.Blind.Dealer
+	}
+
+	return g.EmitEvent(GameEvent_BlindsPaid)
 }
 
 func (g *game) Pay(chips int64) error {

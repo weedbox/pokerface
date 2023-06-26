@@ -2,8 +2,6 @@ package pokerface
 
 import (
 	"errors"
-
-	"github.com/weedbox/pokerface/task"
 )
 
 var (
@@ -19,9 +17,10 @@ type Player interface {
 	AllowActions(actions []string) error
 	ResetAllowedActions() error
 	Reset() error
-	Ready() error
 	Pass() error
 	Pay(chips int64) error
+	PayAnte() error
+	PayBlinds() error
 	Fold() error
 	Check() error
 	Call() error
@@ -101,30 +100,6 @@ func (p *player) CheckAction(action string) bool {
 	return false
 }
 
-func (p *player) Ready() error {
-
-	if !p.CheckAction("ready") {
-		return ErrInvalidAction
-	}
-
-	//fmt.Printf("[Player %d] Get ready\n", p.idx)
-
-	event := p.game.GetEvent()
-
-	// Getting current task
-	t := event.Payload.Task.GetAvailableTask()
-	if t.GetType() != "ready" {
-		return nil
-	}
-
-	// Update state to be ready
-	wr := t.(*task.WaitReady)
-	wr.Ready(p.idx)
-
-	// Keep going
-	return p.game.Resume()
-}
-
 func (p *player) Pass() error {
 
 	if !p.CheckAction("pass") {
@@ -138,7 +113,7 @@ func (p *player) Pass() error {
 	return p.game.Resume()
 }
 
-func (p *player) pay(chips int64) error {
+func (p *player) pay(chips int64, isWager bool) error {
 
 	if p.state.StackSize <= chips {
 
@@ -150,11 +125,13 @@ func (p *player) pay(chips int64) error {
 		p.state.Wager = p.state.InitialStackSize
 		p.state.StackSize = 0
 
-		if p.state.InitialStackSize > gs.Status.CurrentWager {
-			gs.Status.CurrentWager = p.state.InitialStackSize
+		if isWager {
+			if p.state.InitialStackSize > gs.Status.CurrentWager {
+				gs.Status.CurrentWager = p.state.InitialStackSize
 
-			// Become new raiser
-			p.game.BecomeRaiser(p)
+				// Become new raiser
+				p.game.BecomeRaiser(p)
+			}
 		}
 
 		return nil
@@ -167,13 +144,78 @@ func (p *player) pay(chips int64) error {
 	gs := p.game.GetState()
 	gs.Status.CurrentRoundPot += chips
 
-	// player raised
-	if gs.Status.CurrentWager < p.state.Wager {
-		gs.Status.CurrentWager = p.state.Wager
+	if isWager {
+		// player raised
+		if gs.Status.CurrentWager < p.state.Wager {
+			gs.Status.CurrentWager = p.state.Wager
 
-		// Become new raiser
-		p.game.BecomeRaiser(p)
+			// Become new raiser
+			p.game.BecomeRaiser(p)
+		}
 	}
+
+	return nil
+}
+
+func (p *player) PayAnte() error {
+
+	gs := p.game.GetState()
+
+	if gs.Meta.Ante == 0 {
+		return ErrInvalidAction
+	}
+
+	if gs.Status.CurrentEvent != "AnteRequested" {
+		return ErrInvalidAction
+	}
+
+	// Paid already
+	if p.State().Wager > 0 {
+		return ErrInvalidAction
+	}
+
+	err := p.pay(gs.Meta.Ante, false)
+	if err != nil {
+		return err
+	}
+
+	p.game.UpdateLastAction(p.idx, "ante", p.State().Wager)
+
+	return nil
+}
+
+func (p *player) PayBlinds() error {
+
+	gs := p.game.GetState()
+
+	if gs.Status.CurrentEvent != "BlindsRequested" {
+		return ErrInvalidAction
+	}
+
+	// Pay for blinds
+	chips := gs.Meta.Blind.Dealer
+	action := "dealer_blind"
+	if gs.Meta.Blind.BB > 0 && p.CheckPosition("bb") {
+		chips = gs.Meta.Blind.BB
+		action = "big_blind"
+	} else if gs.Meta.Blind.SB > 0 && p.CheckPosition("sb") {
+		chips = gs.Meta.Blind.SB
+		action = "small_blind"
+	} else if gs.Meta.Blind.Dealer > 0 && p.CheckPosition("dealer") {
+		chips = gs.Meta.Blind.Dealer
+		action = "dealer_blind"
+	}
+
+	if p.State().StackSize < chips {
+		chips = p.State().StackSize
+	}
+
+	err := p.pay(chips, true)
+	if err != nil {
+		return err
+	}
+
+	p.game.UpdateLastAction(p.idx, action, chips)
 
 	return nil
 }
@@ -186,28 +228,15 @@ func (p *player) Pay(chips int64) error {
 
 	//fmt.Printf("[Player %d] Pay %d\n", p.idx, chips)
 
-	event := p.game.GetEvent()
-
-	// Getting current task
-	t := event.Payload.Task.GetAvailableTask()
-	if t.GetType() != "pay" {
-		return nil
-	}
-
 	// pay for wager
-	err := p.pay(chips)
+	err := p.pay(chips, true)
 	if err != nil {
 		return err
 	}
 
-	// Update task state
-	wp := t.(*task.WaitPay)
-	wp.Pay(p.idx, chips)
-
+	// Update last action
 	gs := p.game.GetState()
-	if gs.Status.CurrentEvent.Name == "Prepared" {
-		p.game.UpdateLastAction(p.idx, "ante", chips)
-	} else if gs.Status.CurrentEvent.Name == "RoundInitialized" {
+	if gs.Status.CurrentEvent == "RoundInitialized" {
 
 		// Pay for blinds
 		if p.CheckPosition("bb") {
@@ -256,7 +285,7 @@ func (p *player) Call() error {
 	p.state.DidAction = "call"
 	p.state.Acted = true
 
-	p.pay(delta)
+	p.pay(delta, true)
 
 	p.game.UpdateLastAction(p.idx, "call", delta)
 
@@ -290,7 +319,7 @@ func (p *player) Bet(chips int64) error {
 	p.state.DidAction = "bet"
 	p.state.Acted = true
 
-	p.pay(chips)
+	p.pay(chips, true)
 
 	p.game.GetState().Status.PreviousRaiseSize = chips
 
@@ -331,7 +360,7 @@ func (p *player) Raise(chipLevel int64) error {
 	// Update raise size
 	gs.Status.PreviousRaiseSize = chipLevel - gs.Status.CurrentWager
 
-	p.pay(required)
+	p.pay(required, true)
 
 	p.game.UpdateLastAction(p.idx, "raise", required)
 
@@ -349,7 +378,7 @@ func (p *player) Allin() error {
 	p.state.DidAction = "allin"
 	p.state.Acted = true
 
-	p.pay(p.state.StackSize)
+	p.pay(p.state.StackSize, true)
 
 	p.game.UpdateLastAction(p.idx, "allin", p.state.InitialStackSize)
 

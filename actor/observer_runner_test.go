@@ -85,7 +85,7 @@ func TestActor_ObserverRunner_PlayerAct(t *testing.T) {
 	observer.OnTableStateUpdated(func(table *pokertable.Table) {
 
 		if table.State.Status == pokertable.TableStateStatus_TableGameSettled {
-			if table.State.GameState.Status.CurrentEvent.Name == "GameClosed" {
+			if table.State.GameState.Status.CurrentEvent == "GameClosed" {
 				t.Log("GameClosed", table.State.GameState.GameID)
 
 				if len(table.AlivePlayers()) == 1 {
