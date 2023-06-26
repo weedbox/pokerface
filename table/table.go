@@ -113,7 +113,9 @@ func (t *table) Start() error {
 	t.ts.StartTime = time.Now().Unix()
 	t.ts.EndTime = t.ts.StartTime + int64(t.options.Duration)
 
-	return t.nextGame(0)
+	go t.nextGame(0)
+
+	return nil
 }
 
 func (t *table) Close() error {

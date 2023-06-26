@@ -39,6 +39,10 @@ func (t *table) updateStates(gs *pokerface.GameState) error {
 
 	go t.onStateUpdated(&state)
 
+	if t.ts.Status == "idle" {
+		t.nextGame(t.options.Interval)
+	}
+
 	return nil
 }
 
@@ -88,6 +92,11 @@ func (t *table) nextGame(delay int) error {
 	}
 
 	if err != nil {
+
+		if delay > 0 {
+			<-time.After(time.Duration(delay) * time.Second)
+		}
+
 		t.updateStates(nil)
 	}
 
@@ -125,7 +134,6 @@ func (t *table) startGame() error {
 	t.g.OnStateUpdated(func(gs *pokerface.GameState) {
 		//fmt.Println(gs.Status.CurrentEvent.Name)
 		t.updateStates(gs)
-		t.nextGame(t.options.Interval)
 	})
 
 	err := t.g.Start()
