@@ -134,6 +134,20 @@ func Test_Table_Basic(t *testing.T) {
 
 	assert.Equal(t, "closed", table.GetState().Status)
 	assert.Equal(t, opts.MaxGames, table.GetGameCount())
+
+	// Check player results
+	seats := table.sm.GetSeats()
+	for _, rs := range table.GetState().GameState.Result.Players {
+		for _, s := range seats {
+			if s.Player == nil {
+				continue
+			}
+
+			if s.Player.GameIdx == rs.Idx {
+				assert.Equal(t, rs.Final, s.Player.Bankroll)
+			}
+		}
+	}
 }
 
 func Test_Table_Join_Slowly(t *testing.T) {

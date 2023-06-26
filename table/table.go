@@ -157,7 +157,7 @@ func (t *table) GetPlayerIdx(playerID string) int {
 		}
 
 		if s.Player.ID == playerID {
-			return s.ID
+			return s.Player.GameIdx
 		}
 	}
 

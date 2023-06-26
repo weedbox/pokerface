@@ -120,6 +120,7 @@ func (sm *SeatManager) join(seatID int, p *PlayerInfo) error {
 		return ErrNotAvailable
 	}
 
+	p.SeatID = s.ID
 	s.Player = p
 	sm.playerCount++
 
@@ -133,6 +134,7 @@ func (sm *SeatManager) leave(seatID int) error {
 		return ErrEmptySeat
 	}
 
+	s.Player.SeatID = -1
 	s.Player = nil
 	sm.playerCount--
 

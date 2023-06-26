@@ -31,6 +31,8 @@ func (s *State) PrintState() error {
 
 type PlayerInfo struct {
 	ID        string   `json:"id"`
+	SeatID    int      `json:"seat_id"`
+	GameIdx   int      `json:"game_idx"`
 	Positions []string `json:"positions"`
 	Bankroll  int64    `json:"bankroll"`
 }

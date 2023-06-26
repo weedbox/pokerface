@@ -24,6 +24,34 @@ func (t *table) setupPosition() error {
 	return nil
 }
 
+func (t *table) updatePlayerStates(ts *State) error {
+
+	if ts.GameState == nil {
+		return nil
+	}
+
+	if ts.GameState.Status.CurrentEvent != "GameClosed" {
+		return nil
+	}
+
+	// Updating player states
+	seats := t.sm.GetSeats()
+	for _, rs := range ts.GameState.Result.Players {
+
+		for _, s := range seats {
+			if s.Player == nil {
+				continue
+			}
+
+			if s.Player.GameIdx == rs.Idx {
+				s.Player.Bankroll = rs.Final
+			}
+		}
+	}
+
+	return nil
+}
+
 func (t *table) updateStates(gs *pokerface.GameState) error {
 
 	t.ts.GameState = gs
@@ -36,6 +64,8 @@ func (t *table) updateStates(gs *pokerface.GameState) error {
 
 	var state State
 	json.Unmarshal(data, &state)
+
+	t.updatePlayerStates(&state)
 
 	go t.onStateUpdated(&state)
 
@@ -122,7 +152,8 @@ func (t *table) startGame() error {
 
 	// Preparing players
 	seats := t.sm.GetPlayableSeats()
-	for _, s := range seats {
+	for i, s := range seats {
+		s.Player.GameIdx = i
 		opts.Players = append(opts.Players, &pokerface.PlayerSetting{
 			Bankroll:  s.Player.Bankroll,
 			Positions: s.Player.Positions,
