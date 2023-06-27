@@ -29,6 +29,12 @@ func (s *State) PrintState() error {
 	return nil
 }
 
+func (s *State) ResetPositions() {
+	for _, p := range s.Players {
+		p.Positions = make([]string, 0)
+	}
+}
+
 type PlayerInfo struct {
 	ID        string   `json:"id"`
 	SeatID    int      `json:"seat_id"`

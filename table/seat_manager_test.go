@@ -12,7 +12,7 @@ func Test_SeatManager_Join(t *testing.T) {
 	sm := NewSeatManager(9)
 
 	for i := 1; i < 10; i++ {
-		err := sm.Join(i-1, &PlayerInfo{
+		_, err := sm.Join(i-1, &PlayerInfo{
 			ID:        fmt.Sprintf("Player %d", i),
 			Positions: make([]string, 0),
 		})
@@ -27,7 +27,7 @@ func Test_SeatManager_Join(t *testing.T) {
 	assert.Equal(t, 0, len(as))
 
 	// Attempt to specify seat which is unavailable
-	err := sm.Join(1, &PlayerInfo{
+	_, err := sm.Join(1, &PlayerInfo{
 		ID:        fmt.Sprintf("Player %d", 1),
 		Positions: make([]string, 0),
 	})
@@ -39,7 +39,7 @@ func Test_SeatManager_Join_Random(t *testing.T) {
 	sm := NewSeatManager(9)
 
 	for i := 1; i < 10; i++ {
-		err := sm.Join(-1, &PlayerInfo{
+		_, err := sm.Join(-1, &PlayerInfo{
 			ID:        fmt.Sprintf("Player %d", i),
 			Positions: make([]string, 0),
 		})
@@ -60,7 +60,7 @@ func Test_SeatManager_Next(t *testing.T) {
 	sm := NewSeatManager(9)
 
 	for i := 1; i < 10; i++ {
-		err := sm.Join(-1, &PlayerInfo{
+		_, err := sm.Join(-1, &PlayerInfo{
 			ID:        fmt.Sprintf("Player %d", i),
 			Positions: make([]string, 0),
 		})
@@ -91,11 +91,11 @@ func Test_SeatManager_Next(t *testing.T) {
 
 		seats := sm.GetSeats()
 		assert.Equal(t, sm.GetDealer(), seats[dealerIdx])
-		assert.Equal(t, true, seats[dealerIdx].Player.CheckPosition("dealer"))
+		assert.Equal(t, seats[dealerIdx], sm.dealer)
 		assert.Equal(t, sm.GetSmallBlind(), seats[sbIdx])
-		assert.Equal(t, true, seats[sbIdx].Player.CheckPosition("sb"))
+		assert.Equal(t, seats[sbIdx], sm.sb)
 		assert.Equal(t, sm.GetBigBlind(), seats[bbIdx])
-		assert.Equal(t, true, seats[bbIdx].Player.CheckPosition("bb"))
+		assert.Equal(t, seats[bbIdx], sm.bb)
 	}
 }
 
@@ -104,7 +104,7 @@ func Test_SeatManager_Next_TwoPlayer(t *testing.T) {
 	sm := NewSeatManager(9)
 
 	for i := 1; i < 3; i++ {
-		err := sm.Join(i-1, &PlayerInfo{
+		_, err := sm.Join(i-1, &PlayerInfo{
 			ID:        fmt.Sprintf("Player %d", i),
 			Positions: make([]string, 0),
 		})
@@ -131,12 +131,11 @@ func Test_SeatManager_Next_TwoPlayer(t *testing.T) {
 
 		// Dealer is the small blind
 		assert.Equal(t, sm.GetDealer(), seats[dealerIdx])
-		assert.Equal(t, true, seats[dealerIdx].Player.CheckPosition("dealer"))
+		assert.Equal(t, seats[dealerIdx], sm.dealer)
 		assert.Equal(t, sm.GetSmallBlind(), seats[dealerIdx])
-		assert.Equal(t, true, seats[dealerIdx].Player.CheckPosition("sb"))
-
+		assert.Equal(t, seats[dealerIdx], sm.sb)
 		assert.Equal(t, sm.GetBigBlind(), seats[bbIdx])
-		assert.Equal(t, true, seats[bbIdx].Player.CheckPosition("bb"))
+		assert.Equal(t, seats[bbIdx], sm.bb)
 	}
 }
 

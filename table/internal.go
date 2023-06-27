@@ -42,6 +42,33 @@ func (t *table) setupPosition() error {
 		return err
 	}
 
+	// Updating seat and position information for players
+	t.ts.ResetPositions()
+
+	seats := t.sm.GetSeats()
+	for _, s := range seats {
+
+		if s.Player == nil {
+			continue
+		}
+
+		p := t.GetPlayerByID(s.Player.ID)
+
+		positions := make([]string, 0)
+
+		if s == t.sm.dealer {
+			positions = append(positions, "dealer")
+		}
+
+		if s == t.sm.sb {
+			positions = append(positions, "sb")
+		} else if s == t.sm.bb {
+			positions = append(positions, "bb")
+		}
+
+		p.Positions = positions
+	}
+
 	t.inPosition = true
 
 	return nil

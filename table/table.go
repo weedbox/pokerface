@@ -25,6 +25,7 @@ type Table interface {
 	GetState() *State
 	GetGame() Game
 	GetGameCount() int
+	GetPlayerByID(playerID string) *PlayerInfo
 	GetPlayerIdx(playerID string) int
 
 	SetAnte(chips int64)
@@ -151,12 +152,13 @@ func (t *table) Pause() error {
 
 func (t *table) Join(seatID int, p *PlayerInfo) error {
 
-	err := t.sm.Join(seatID, p)
+	sid, err := t.sm.Join(seatID, p)
 	if err != nil {
 		return err
 	}
 
-	t.ts.Players[p.SeatID] = p
+	p.SeatID = sid
+	t.ts.Players[sid] = p
 
 	return nil
 }
@@ -173,15 +175,25 @@ func (t *table) Leave(seatID int) error {
 	return nil
 }
 
-func (t *table) GetPlayerIdx(playerID string) int {
+func (t *table) GetPlayerByID(playerID string) *PlayerInfo {
 
 	for _, p := range t.ts.Players {
 		if p.ID == playerID {
-			return p.GameIdx
+			return p
 		}
 	}
 
-	return -1
+	return nil
+}
+
+func (t *table) GetPlayerIdx(playerID string) int {
+
+	p := t.GetPlayerByID(playerID)
+	if p == nil {
+		return -1
+	}
+
+	return p.GameIdx
 }
 
 // Actions

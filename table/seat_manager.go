@@ -88,43 +88,20 @@ func (sm *SeatManager) renewSeatStatus() error {
 		s.IsActivated = true
 	}
 
-	// Update position state of all players
-	for _, s := range sm.seats {
-
-		if s.Player == nil {
-			continue
-		}
-
-		positions := make([]string, 0)
-
-		if s == sm.dealer {
-			positions = append(positions, "dealer")
-		}
-
-		if s == sm.sb {
-			positions = append(positions, "sb")
-		} else if s == sm.bb {
-			positions = append(positions, "bb")
-		}
-
-		s.Player.Positions = positions
-	}
-
 	return nil
 }
 
-func (sm *SeatManager) join(seatID int, p *PlayerInfo) error {
+func (sm *SeatManager) join(seatID int, p *PlayerInfo) (int, error) {
 
 	s := sm.GetSeat(seatID)
 	if s.Player != nil {
-		return ErrNotAvailable
+		return -1, ErrNotAvailable
 	}
 
-	p.SeatID = s.ID
 	s.Player = p
 	sm.playerCount++
 
-	return nil
+	return s.ID, nil
 }
 
 func (sm *SeatManager) leave(seatID int) error {
@@ -134,7 +111,6 @@ func (sm *SeatManager) leave(seatID int) error {
 		return ErrEmptySeat
 	}
 
-	s.Player.SeatID = -1
 	s.Player = nil
 	sm.playerCount--
 
@@ -325,10 +301,10 @@ func (sm *SeatManager) GetPlayableSeatCount() int {
 	return count
 }
 
-func (sm *SeatManager) Join(seatID int, p *PlayerInfo) error {
+func (sm *SeatManager) Join(seatID int, p *PlayerInfo) (int, error) {
 
 	if seatID >= sm.max {
-		return ErrInvalidSeat
+		return -1, ErrInvalidSeat
 	}
 
 	// Specific seat
@@ -339,7 +315,7 @@ func (sm *SeatManager) Join(seatID int, p *PlayerInfo) error {
 	// Getting available seats
 	s, as := sm.GetAvailableSeats()
 	if len(s) == 0 && len(as) == 0 {
-		return ErrNoAvailableSeat
+		return -1, ErrNoAvailableSeat
 	}
 
 	// Select a seat from list randomly
