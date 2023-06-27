@@ -159,19 +159,23 @@ func (t *table) nextGame(delay int) error {
 func (t *table) startGame() error {
 
 	// Preparing options
-	opts := pokerface.NewStardardGameOptions()
-	opts.Ante = t.options.Ante
-	opts.Blind.Dealer = t.options.Blind.Dealer
-	opts.Blind.SB = t.options.Blind.SB
-	opts.Blind.BB = t.options.Blind.BB
+	var opts *pokerface.GameOptions
 
 	// Preparing deck
 	switch t.options.GameType {
 	case "short_deck":
+		opts = pokerface.NewStardardGameOptions()
 		opts.Deck = pokerface.NewShortDeckCards()
 	default:
+		opts = pokerface.NewStardardGameOptions()
 		opts.Deck = pokerface.NewStandardDeckCards()
 	}
+
+	// Preparing options
+	opts.Ante = t.options.Ante
+	opts.Blind.Dealer = t.options.Blind.Dealer
+	opts.Blind.SB = t.options.Blind.SB
+	opts.Blind.BB = t.options.Blind.BB
 
 	// Preparing players
 	seats := t.sm.GetPlayableSeats()
