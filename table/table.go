@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/weedbox/syncsaga"
+	"github.com/weedbox/timebank"
 )
 
 var (
@@ -54,6 +55,7 @@ type table struct {
 	ts             *State
 	rg             *syncsaga.ReadyGroup
 	sm             *SeatManager
+	tb             *timebank.TimeBank
 	onStateUpdated func(*State)
 }
 
@@ -70,6 +72,7 @@ func NewTable(options *Options, opts ...TableOpt) *table {
 		rg:             syncsaga.NewReadyGroup(),
 		sm:             NewSeatManager(options.MaxSeats),
 		ts:             NewState(),
+		tb:             timebank.NewTimeBank(),
 		onStateUpdated: func(*State) {},
 	}
 
@@ -131,12 +134,17 @@ func (t *table) Resume() error {
 		return nil
 	}
 
-	return t.run(0)
+	t.ts.Status = "idle"
+
+	return t.nextGame(0)
 }
 
 func (t *table) Pause() error {
 
 	t.isPaused = true
+	t.ts.Status = "pause"
+
+	t.tb.Cancel()
 
 	return nil
 }
@@ -179,6 +187,10 @@ func (t *table) GetPlayerIdx(playerID string) int {
 // Actions
 func (t *table) Ready(playerID string) error {
 
+	if t.isPaused {
+		return nil
+	}
+
 	idx := t.GetPlayerIdx(playerID)
 	if idx == -1 {
 		return ErrPlayerNotInGame
@@ -193,6 +205,10 @@ func (t *table) Ready(playerID string) error {
 }
 
 func (t *table) Pass(playerID string) error {
+
+	if t.isPaused {
+		return nil
+	}
 
 	idx := t.GetPlayerIdx(playerID)
 	if idx == -1 {
@@ -209,6 +225,10 @@ func (t *table) Pass(playerID string) error {
 
 func (t *table) Pay(playerID string, chips int64) error {
 
+	if t.isPaused {
+		return nil
+	}
+
 	idx := t.GetPlayerIdx(playerID)
 	if idx == -1 {
 		return ErrPlayerNotInGame
@@ -223,6 +243,10 @@ func (t *table) Pay(playerID string, chips int64) error {
 }
 
 func (t *table) Fold(playerID string) error {
+
+	if t.isPaused {
+		return nil
+	}
 
 	idx := t.GetPlayerIdx(playerID)
 	if idx == -1 {
@@ -239,6 +263,10 @@ func (t *table) Fold(playerID string) error {
 
 func (t *table) Check(playerID string) error {
 
+	if t.isPaused {
+		return nil
+	}
+
 	idx := t.GetPlayerIdx(playerID)
 	if idx == -1 {
 		return ErrPlayerNotInGame
@@ -253,6 +281,10 @@ func (t *table) Check(playerID string) error {
 }
 
 func (t *table) Call(playerID string) error {
+
+	if t.isPaused {
+		return nil
+	}
 
 	idx := t.GetPlayerIdx(playerID)
 	if idx == -1 {
@@ -269,6 +301,10 @@ func (t *table) Call(playerID string) error {
 
 func (t *table) Allin(playerID string) error {
 
+	if t.isPaused {
+		return nil
+	}
+
 	idx := t.GetPlayerIdx(playerID)
 	if idx == -1 {
 		return ErrPlayerNotInGame
@@ -284,6 +320,10 @@ func (t *table) Allin(playerID string) error {
 
 func (t *table) Bet(playerID string, chips int64) error {
 
+	if t.isPaused {
+		return nil
+	}
+
 	idx := t.GetPlayerIdx(playerID)
 	if idx == -1 {
 		return ErrPlayerNotInGame
@@ -298,6 +338,10 @@ func (t *table) Bet(playerID string, chips int64) error {
 }
 
 func (t *table) Raise(playerID string, chipLevel int64) error {
+
+	if t.isPaused {
+		return nil
+	}
 
 	idx := t.GetPlayerIdx(playerID)
 	if idx == -1 {

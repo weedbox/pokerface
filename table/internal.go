@@ -2,10 +2,33 @@ package table
 
 import (
 	"encoding/json"
+	"sync"
 	"time"
 
 	"github.com/weedbox/pokerface"
 )
+
+func (t *table) delay(interval int, fn func() error) error {
+
+	var err error
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	t.tb.NewTask(time.Duration(interval)*time.Second, func(isCancelled bool) {
+
+		defer wg.Done()
+
+		if isCancelled {
+			return
+		}
+
+		err = fn()
+	})
+
+	wg.Wait()
+
+	return err
+}
 
 func (t *table) setupPosition() error {
 
@@ -70,7 +93,10 @@ func (t *table) updateStates(gs *pokerface.GameState) error {
 	go t.onStateUpdated(&state)
 
 	if t.ts.Status == "idle" {
-		t.nextGame(t.options.Interval)
+		//fmt.Println("Attempt to start the next game")
+		t.delay(t.options.Interval, func() error {
+			return t.nextGame(t.options.Interval)
+		})
 	}
 
 	return nil
@@ -100,15 +126,17 @@ func (t *table) run(delay int) error {
 		return ErrGameConditionsNotMet
 	}
 
-	if delay > 0 {
-		<-time.After(time.Duration(delay) * time.Second)
-	}
-
-	// Starting a new game
-	return t.startGame()
+	return t.delay(delay, func() error {
+		// Starting a new game
+		return t.startGame()
+	})
 }
 
 func (t *table) nextGame(delay int) error {
+
+	if t.isPaused {
+		return nil
+	}
 
 	err := t.run(delay)
 
@@ -122,11 +150,6 @@ func (t *table) nextGame(delay int) error {
 	}
 
 	if err != nil {
-
-		if delay > 0 {
-			<-time.After(time.Duration(delay) * time.Second)
-		}
-
 		t.updateStates(nil)
 	}
 
