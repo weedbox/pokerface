@@ -1,7 +1,6 @@
 package actor
 
 import (
-	"fmt"
 	"math/rand"
 	"time"
 
@@ -180,15 +179,6 @@ func (br *botRunner) calcAction(actions []string) string {
 }
 
 func (br *botRunner) requestAI() error {
-
-	defer func() {
-		err := recover()
-		if err != nil {
-			fmt.Println(err)
-			data, _ := br.tableInfo.GetGameStateJSON()
-			fmt.Println(string(data))
-		}
-	}()
 
 	gs := br.tableInfo.State.GameState
 	player := gs.Players[br.gamePlayerIdx]
