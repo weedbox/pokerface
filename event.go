@@ -80,13 +80,6 @@ var GameEventBySymbol = map[string]GameEvent{
 	"GameClosed":          GameEvent_GameClosed,
 }
 
-type EventPayload struct {
-}
-
-func NewEventPayload() *EventPayload {
-	return &EventPayload{}
-}
-
 func (g *game) triggerEvent(event GameEvent) error {
 
 	switch event {
