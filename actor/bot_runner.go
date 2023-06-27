@@ -1,6 +1,7 @@
 package actor
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -97,12 +98,12 @@ func (br *botRunner) requestMove() error {
 
 		// Pay for ante and blinds
 		switch gs.Status.CurrentEvent {
-		case pokerface.GameEventSymbols[pokerface.GameEvent_Prepared]:
+		case pokerface.GameEventSymbols[pokerface.GameEvent_AnteRequested]:
 
 			// Ante
 			return br.actions.Pay(gs.Meta.Ante)
 
-		case pokerface.GameEventSymbols[pokerface.GameEvent_RoundInitialized]:
+		case pokerface.GameEventSymbols[pokerface.GameEvent_BlindsRequested]:
 
 			// blinds
 			if gs.HasPosition(br.gamePlayerIdx, "sb") {
@@ -180,6 +181,15 @@ func (br *botRunner) calcAction(actions []string) string {
 
 func (br *botRunner) requestAI() error {
 
+	defer func() {
+		err := recover()
+		if err != nil {
+			fmt.Println(err)
+			data, _ := br.tableInfo.GetGameStateJSON()
+			fmt.Println(string(data))
+		}
+	}()
+
 	gs := br.tableInfo.State.GameState
 	player := gs.Players[br.gamePlayerIdx]
 
@@ -212,8 +222,8 @@ func (br *botRunner) requestAI() error {
 		maxChipLevel := player.InitialStackSize
 		minChipLevel := gs.Status.CurrentWager + gs.Status.PreviousRaiseSize
 
-		if maxChipLevel == minChipLevel {
-			return br.actions.Raise(minChipLevel)
+		if maxChipLevel <= minChipLevel {
+			return br.actions.Raise(maxChipLevel)
 		}
 
 		chips := rand.Int63n(maxChipLevel-minChipLevel) + minChipLevel
