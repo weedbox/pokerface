@@ -142,22 +142,34 @@ func (t *table) Pause() error {
 }
 
 func (t *table) Join(seatID int, p *PlayerInfo) error {
-	return t.sm.Join(seatID, p)
+
+	err := t.sm.Join(seatID, p)
+	if err != nil {
+		return err
+	}
+
+	t.ts.Players[p.SeatID] = p
+
+	return nil
 }
 
 func (t *table) Leave(seatID int) error {
-	return t.sm.Leave(seatID)
+
+	err := t.sm.Leave(seatID)
+	if err != nil {
+		return err
+	}
+
+	delete(t.ts.Players, seatID)
+
+	return nil
 }
 
 func (t *table) GetPlayerIdx(playerID string) int {
 
-	for _, s := range t.sm.seats {
-		if s.Player == nil {
-			continue
-		}
-
-		if s.Player.ID == playerID {
-			return s.Player.GameIdx
+	for _, p := range t.ts.Players {
+		if p.ID == playerID {
+			return p.GameIdx
 		}
 	}
 
