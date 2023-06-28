@@ -6,6 +6,8 @@ func (g *game) ReadyForAll() error {
 		return ErrInvalidAction
 	}
 
+	g.ResetAllPlayerAllowedActions()
+
 	return g.EmitEvent(GameEvent_Readiness)
 }
 
@@ -30,6 +32,8 @@ func (g *game) PayAnte() error {
 		}
 	}
 
+	g.ResetAllPlayerAllowedActions()
+
 	return g.EmitEvent(GameEvent_AntePaid)
 }
 
@@ -52,6 +56,8 @@ func (g *game) PayBlinds() error {
 	} else {
 		g.gs.Status.PreviousRaiseSize = g.gs.Meta.Blind.Dealer
 	}
+
+	g.ResetAllPlayerAllowedActions()
 
 	return g.EmitEvent(GameEvent_BlindsPaid)
 }
