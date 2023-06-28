@@ -3,6 +3,7 @@ package table
 import (
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -239,6 +240,112 @@ func Test_Table_Join_Slowly(t *testing.T) {
 		ID:       "player_2",
 		Bankroll: 10000,
 	})
+
+	wg.Wait()
+
+	assert.Equal(t, "closed", table.GetState().Status)
+	assert.Equal(t, opts.MaxGames, table.GetGameCount())
+}
+
+func Test_Table_Join_Pause(t *testing.T) {
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	backend := NewNativeBackend()
+	opts := NewOptions()
+	opts.Interval = 3 // delay 3 secs for next game
+	opts.MaxGames = 1 // Only one game
+
+	table := NewTable(opts, WithBackend(backend))
+	table.SetAnte(10)
+
+	table.Join(0, &PlayerInfo{
+		ID:       "player_1",
+		Bankroll: 10000,
+	})
+
+	roundRunner := func(ts *State) {
+
+		//t.Log(ts.GameState.Status.Round)
+
+		switch ts.GameState.Status.Round {
+		case "preflop":
+			assert.Nil(t, table.Call("player_1"))  // Dealer & SB
+			assert.Nil(t, table.Check("player_2")) // BB
+		case "flop":
+			assert.Nil(t, table.Check("player_2")) // BB
+			assert.Nil(t, table.Check("player_1")) // Dealer & SB
+		case "turn":
+			assert.Nil(t, table.Check("player_2")) // BB
+			assert.Nil(t, table.Check("player_1")) // Dealer & SB
+		case "river":
+			assert.Nil(t, table.Check("player_2")) // BB
+			assert.Nil(t, table.Check("player_1")) // Dealer & SB
+		}
+	}
+
+	roundStates := map[string]bool{
+		"preflop": false,
+		"flop":    false,
+		"turn":    false,
+		"river":   false,
+	}
+
+	table.OnStateUpdated(func(ts *State) {
+
+		if ts.GameState == nil {
+			return
+		}
+
+		assert.True(t, ts.GameState.HasPosition(0, "dealer"))
+		assert.True(t, ts.GameState.HasPosition(0, "sb"))
+		assert.True(t, ts.GameState.HasPosition(1, "bb"))
+
+		//t.Log("OnStateUpdated >", ts.GameState.Status.CurrentEvent)
+
+		switch ts.GameState.Status.CurrentEvent {
+		case "ReadyRequested":
+			assert.Nil(t, table.Ready("player_1"))
+			assert.Nil(t, table.Ready("player_2"))
+		case "AnteRequested":
+			assert.Nil(t, table.Pay("player_1", 10))
+			assert.Nil(t, table.Pay("player_2", 10))
+		case "BlindsRequested":
+			assert.Nil(t, table.Pay("player_1", 5))
+			assert.Nil(t, table.Pay("player_2", 10))
+		case "RoundStarted":
+
+			if !roundStates[ts.GameState.Status.Round] {
+				roundStates[ts.GameState.Status.Round] = true
+				roundRunner(ts)
+
+			}
+
+		case "GameClosed":
+			assert.NotNil(t, ts.GameState.Result)
+			wg.Done()
+		}
+	})
+
+	// Starting table
+	assert.Equal(t, "idle", table.GetState().Status)
+	assert.Nil(t, table.Start())
+
+	// Still idle because insufficient number of players
+	assert.Equal(t, "idle", table.GetState().Status)
+
+	table.Pause()
+
+	// Add second player and game should be started in 3 seconds
+	table.Join(1, &PlayerInfo{
+		ID:       "player_2",
+		Bankroll: 10000,
+	})
+
+	time.Sleep(5 * time.Second)
+
+	table.Resume()
 
 	wg.Wait()
 

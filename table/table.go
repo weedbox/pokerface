@@ -136,6 +136,7 @@ func (t *table) Resume() error {
 		return nil
 	}
 
+	t.isPaused = false
 	t.ts.Status = "idle"
 
 	return t.nextGame(0)
