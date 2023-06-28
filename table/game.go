@@ -68,7 +68,7 @@ func (g *game) runStateUpdater() {
 
 func (g *game) handleState(gs *pokerface.GameState) {
 
-	switch g.gs.Status.CurrentEvent {
+	switch gs.Status.CurrentEvent {
 	case "GameClosed":
 		close(g.incomingStates)
 	case "RoundClosed":
