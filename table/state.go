@@ -17,6 +17,12 @@ type State struct {
 	GameState *pokerface.GameState `json:"game_state"`
 }
 
+func NewState() *State {
+	return &State{
+		Players: make(map[int]*PlayerInfo),
+	}
+}
+
 func (s *State) PrintState() error {
 
 	data, err := json.Marshal(s)
@@ -41,12 +47,6 @@ type PlayerInfo struct {
 	GameIdx   int      `json:"game_idx"`
 	Positions []string `json:"positions"`
 	Bankroll  int64    `json:"bankroll"`
-}
-
-func NewState() *State {
-	return &State{
-		Players: make(map[int]*PlayerInfo),
-	}
 }
 
 func (pi *PlayerInfo) CheckPosition(pos string) bool {

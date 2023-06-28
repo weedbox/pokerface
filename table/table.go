@@ -26,6 +26,7 @@ type Table interface {
 	GetGame() Game
 	GetGameCount() int
 	GetPlayerByID(playerID string) *PlayerInfo
+	GetPlayerByGameIdx(idx int) *PlayerInfo
 	GetPlayerIdx(playerID string) int
 
 	SetAnte(chips int64)
@@ -179,6 +180,17 @@ func (t *table) GetPlayerByID(playerID string) *PlayerInfo {
 
 	for _, p := range t.ts.Players {
 		if p.ID == playerID {
+			return p
+		}
+	}
+
+	return nil
+}
+
+func (t *table) GetPlayerByGameIdx(idx int) *PlayerInfo {
+
+	for _, p := range t.ts.Players {
+		if p.GameIdx == idx {
 			return p
 		}
 	}

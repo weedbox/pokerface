@@ -85,18 +85,14 @@ func (t *table) updatePlayerStates(ts *State) error {
 	}
 
 	// Updating player states
-	seats := t.sm.GetSeats()
 	for _, rs := range ts.GameState.Result.Players {
 
-		for _, s := range seats {
-			if s.Player == nil {
-				continue
-			}
-
-			if s.Player.GameIdx == rs.Idx {
-				s.Player.Bankroll = rs.Final
-			}
+		p := t.GetPlayerByGameIdx(rs.Idx)
+		if p == nil {
+			continue
 		}
+
+		p.Bankroll = rs.Final
 	}
 
 	return nil
