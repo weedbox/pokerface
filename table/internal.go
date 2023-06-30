@@ -84,7 +84,7 @@ func (t *table) updatePlayerStates(ts *State) error {
 		return nil
 	}
 
-	// Updating player states
+	// Updating player states with settlement
 	for _, rs := range ts.GameState.Result.Players {
 
 		p := t.GetPlayerByGameIdx(rs.Idx)
@@ -93,6 +93,11 @@ func (t *table) updatePlayerStates(ts *State) error {
 		}
 
 		p.Bankroll = rs.Final
+
+		// Reserve the seat because player is unplayable
+		if p.Bankroll == 0 {
+			t.sm.Reserve(p.SeatID)
+		}
 	}
 
 	return nil

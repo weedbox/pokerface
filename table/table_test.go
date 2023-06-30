@@ -41,6 +41,12 @@ func Test_Table_Basic(t *testing.T) {
 		Bankroll: 10000,
 	})
 
+	table.Activate(0)
+	table.Activate(1)
+	table.Activate(2)
+	table.Activate(3)
+	table.Activate(4)
+
 	roundRunner := func(ts *State) {
 
 		//t.Log(ts.GameState.Status.Round)
@@ -165,6 +171,8 @@ func Test_Table_Join_Slowly(t *testing.T) {
 		Bankroll: 10000,
 	})
 
+	table.Activate(0)
+
 	roundRunner := func(ts *State) {
 
 		//t.Log(ts.GameState.Status.Round)
@@ -241,6 +249,8 @@ func Test_Table_Join_Slowly(t *testing.T) {
 		Bankroll: 10000,
 	})
 
+	table.Activate(1)
+
 	wg.Wait()
 
 	assert.Equal(t, "closed", table.GetState().Status)
@@ -264,6 +274,8 @@ func Test_Table_Join_Pause(t *testing.T) {
 		ID:       "player_1",
 		Bankroll: 10000,
 	})
+
+	table.Activate(0)
 
 	roundRunner := func(ts *State) {
 
@@ -342,6 +354,7 @@ func Test_Table_Join_Pause(t *testing.T) {
 		ID:       "player_2",
 		Bankroll: 10000,
 	})
+	table.Activate(1)
 
 	time.Sleep(5 * time.Second)
 

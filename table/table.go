@@ -162,6 +162,20 @@ func (t *table) Reserve(seatID int) error {
 
 func (t *table) Join(seatID int, p *PlayerInfo) error {
 
+	// Find the player before joining
+	var found *PlayerInfo
+	for _, ps := range t.ts.Players {
+		if ps.ID == p.ID {
+			found = ps
+		}
+	}
+
+	// Player is gsetting back to seat
+	if found != nil {
+		// Activate the seat
+		return t.Activate(found.SeatID)
+	}
+
 	sid, err := t.sm.Join(seatID, p)
 	if err != nil {
 		return err
