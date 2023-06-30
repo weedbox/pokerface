@@ -152,6 +152,14 @@ func (t *table) Pause() error {
 	return nil
 }
 
+func (t *table) Activate(seatID int) error {
+	return t.sm.Activate(seatID)
+}
+
+func (t *table) Reserve(seatID int) error {
+	return t.sm.Reserve(seatID)
+}
+
 func (t *table) Join(seatID int, p *PlayerInfo) error {
 
 	sid, err := t.sm.Join(seatID, p)

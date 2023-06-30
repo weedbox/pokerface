@@ -6,6 +6,7 @@ import (
 )
 
 var (
+	ErrNotFoundSeat                = errors.New("seat_manager: not found seat")
 	ErrNoAvailableSeat             = errors.New("seat_manager: no available seat")
 	ErrNotAvailable                = errors.New("seat_manager: not available")
 	ErrInvalidSeat                 = errors.New("seat_manager: invalid seat")
@@ -14,9 +15,10 @@ var (
 )
 
 type Seat struct {
-	ID          int
-	Player      *PlayerInfo
-	IsActivated bool
+	ID         int
+	Player     *PlayerInfo
+	IsActive   bool
+	IsReserved bool
 }
 
 type SeatManager struct {
@@ -39,9 +41,10 @@ func NewSeatManager(max int) *SeatManager {
 	// Initializing seats
 	for i := 0; i < max; i++ {
 		sm.seats[i] = &Seat{
-			ID:          i,
-			Player:      nil,
-			IsActivated: true,
+			ID:         i,
+			Player:     nil,
+			IsActive:   true,
+			IsReserved: false,
 		}
 	}
 
@@ -78,14 +81,14 @@ func (sm *SeatManager) renewSeatStatus() error {
 		}
 
 		if s.Player == nil {
-			s.IsActivated = false
+			s.IsActive = false
 		}
 	}
 
 	// Activate the rest of seats
 	seats = seats[1:]
 	for _, s := range seats {
-		s.IsActivated = true
+		s.IsActive = true
 	}
 
 	return nil
@@ -98,6 +101,7 @@ func (sm *SeatManager) join(seatID int, p *PlayerInfo) (int, error) {
 		return -1, ErrNotAvailable
 	}
 
+	s.IsReserved = true
 	s.Player = p
 	sm.playerCount++
 
@@ -112,6 +116,7 @@ func (sm *SeatManager) leave(seatID int) error {
 	}
 
 	s.Player = nil
+	s.IsReserved = false
 	sm.playerCount--
 
 	return nil
@@ -122,7 +127,7 @@ func (sm *SeatManager) findActivePlayer(seats []*Seat) (*Seat, int) {
 	for i, s := range seats {
 
 		// Ignore seat which is not activated and empty
-		if !s.IsActivated || s.Player == nil {
+		if !s.IsActive || s.IsReserved || s.Player == nil {
 			continue
 		}
 
@@ -162,7 +167,7 @@ func (sm *SeatManager) NextDealer() *Seat {
 				break
 			}
 
-			s.IsActivated = true
+			s.IsActive = true
 		}
 
 		sm.dealer = dealer
@@ -171,7 +176,7 @@ func (sm *SeatManager) NextDealer() *Seat {
 
 	// Not found the next dealer, because all of player has been left except new players who is inactive
 	for _, s := range seats {
-		s.IsActivated = true
+		s.IsActive = true
 	}
 
 	// Try again. It should get a new dealer as long as more than one players out there
@@ -236,11 +241,11 @@ func (sm *SeatManager) GetAvailableSeats() ([]int, []int) {
 
 	for _, s := range sm.seats {
 
-		if s.Player != nil {
+		if s.IsReserved || s.Player != nil {
 			continue
 		}
 
-		if s.IsActivated {
+		if s.IsActive {
 			seats = append(seats, s.ID)
 		} else {
 			alternateSeats = append(alternateSeats, s.ID)
@@ -266,7 +271,7 @@ func (sm *SeatManager) GetActiveSeats() []*Seat {
 	seats := make([]*Seat, 0)
 	for i := 0; i < sm.max; i++ {
 		s := sm.seats[i]
-		if s.IsActivated {
+		if s.IsActive {
 			seats = append(seats, s)
 		}
 	}
@@ -280,7 +285,7 @@ func (sm *SeatManager) GetPlayableSeats() []*Seat {
 
 	seats := make([]*Seat, 0)
 	for _, s := range origSeats {
-		if s.IsActivated && s.Player != nil {
+		if !s.IsReserved && s.IsActive && s.Player != nil {
 			seats = append(seats, s)
 		}
 	}
@@ -293,12 +298,36 @@ func (sm *SeatManager) GetPlayableSeatCount() int {
 	count := 0
 	for i := 0; i < sm.max; i++ {
 		s := sm.seats[i]
-		if s.IsActivated && s.Player != nil {
+		if s.IsActive && !s.IsReserved && s.Player != nil {
 			count++
 		}
 	}
 
 	return count
+}
+
+func (sm *SeatManager) Activate(seatID int) error {
+
+	seat := sm.GetSeat(seatID)
+	if seat == nil {
+		return ErrNotFoundSeat
+	}
+
+	seat.IsReserved = false
+
+	return nil
+}
+
+func (sm *SeatManager) Reserve(seatID int) error {
+
+	seat := sm.GetSeat(seatID)
+	if seat == nil {
+		return ErrNotFoundSeat
+	}
+
+	seat.IsReserved = true
+
+	return nil
 }
 
 func (sm *SeatManager) Join(seatID int, p *PlayerInfo) (int, error) {
