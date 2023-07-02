@@ -240,8 +240,9 @@ func Test_Table_Join_Slowly(t *testing.T) {
 	assert.Equal(t, "idle", table.GetState().Status)
 	assert.Nil(t, table.Start())
 
-	// Still idle because insufficient number of players
-	assert.Equal(t, "idle", table.GetState().Status)
+	// game is not started because insufficient number of players
+
+	<-time.After(time.Second)
 
 	// Add second player and game should be started in 3 seconds
 	table.Join(1, &PlayerInfo{
@@ -344,10 +345,8 @@ func Test_Table_Join_Pause(t *testing.T) {
 	assert.Equal(t, "idle", table.GetState().Status)
 	assert.Nil(t, table.Start())
 
-	// Still idle because insufficient number of players
-	assert.Equal(t, "idle", table.GetState().Status)
-
 	table.Pause()
+	assert.Equal(t, "pause", table.GetState().Status)
 
 	// Add second player and game should be started in 3 seconds
 	table.Join(1, &PlayerInfo{

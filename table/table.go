@@ -9,10 +9,12 @@ import (
 )
 
 var (
+	ErrRunningAlready       = errors.New("table: running already")
 	ErrPlayerNotInGame      = errors.New("table: player not in the game")
 	ErrTimesUp              = errors.New("table: time's up")
 	ErrGameConditionsNotMet = errors.New("table: game conditions not met")
 	ErrMaxGamesExceeded     = errors.New("table: reach the maximum number of games")
+	ErrGameCancelled        = errors.New("table: game was cancelled")
 )
 
 type TableOpt func(*table)
@@ -50,10 +52,12 @@ type Table interface {
 type table struct {
 	g              Game
 	b              Backend
+	isRunning      bool
 	isPaused       bool
 	inPosition     bool
 	options        *Options
 	gameCount      int
+	gameLoop       chan int
 	ts             *State
 	rg             *syncsaga.ReadyGroup
 	sm             *SeatManager
@@ -75,6 +79,7 @@ func NewTable(options *Options, opts ...TableOpt) *table {
 		sm:             NewSeatManager(options.MaxSeats),
 		ts:             NewState(),
 		tb:             timebank.NewTimeBank(),
+		gameLoop:       make(chan int, 1024),
 		onStateUpdated: func(*State) {},
 	}
 
@@ -115,11 +120,24 @@ func (t *table) SetBlinds(dealer int64, sb int64, bb int64) {
 
 func (t *table) Start() error {
 
+	if t.isRunning {
+		return nil
+	}
+
+	t.isRunning = true
 	t.ts.StartTime = time.Now().Unix()
 	t.ts.EndTime = t.ts.StartTime + int64(t.options.Duration)
 
-	go t.nextGame(0)
+	go t.tableLoop()
 
+	//go t.nextGame(0)
+	t.NewGame(0)
+
+	return nil
+}
+
+func (t *table) NewGame(interval int) error {
+	t.gameLoop <- interval
 	return nil
 }
 
@@ -139,10 +157,18 @@ func (t *table) Resume() error {
 	t.isPaused = false
 	t.ts.Status = "idle"
 
-	return t.nextGame(0)
+	if t.isRunning {
+		return t.NewGame(0)
+	}
+
+	return nil
 }
 
 func (t *table) Pause() error {
+
+	if t.isPaused {
+		return nil
+	}
 
 	t.isPaused = true
 	t.ts.Status = "pause"
@@ -153,7 +179,22 @@ func (t *table) Pause() error {
 }
 
 func (t *table) Activate(seatID int) error {
-	return t.sm.Activate(seatID)
+
+	err := t.sm.Activate(seatID)
+	if err != nil {
+		return nil
+	}
+
+	if !t.isRunning || t.ts.Status != "idle" {
+		return nil
+	}
+
+	if t.sm.GetPlayableSeatCount() >= t.options.InitialPlayers {
+		// Strarting game right now
+		t.NewGame(0)
+	}
+
+	return nil
 }
 
 func (t *table) Reserve(seatID int) error {

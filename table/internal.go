@@ -8,6 +8,49 @@ import (
 	"github.com/weedbox/pokerface"
 )
 
+func (t *table) tableLoop() {
+
+	for interval := range t.gameLoop {
+
+		err := t.delay(interval, func() error {
+			return t.nextGame()
+		})
+
+		switch err {
+		case ErrMaxGamesExceeded:
+			t.ts.Status = "closed"
+			t.updateStates(nil)
+			return
+		case ErrTimesUp:
+			t.ts.Status = "closed"
+			t.updateStates(nil)
+			return
+		}
+
+		if err := t.checkEndConditions(); err != nil {
+			t.ts.Status = "closed"
+			t.updateStates(nil)
+			return
+		}
+
+		switch err {
+		case ErrInsufficientNumberOfPlayers:
+			// Waiting for more players
+			t.ts.Status = "idle"
+			continue
+		case ErrGameCancelled:
+			// Do nothing
+			continue
+		}
+
+		// Continue to the next game
+		t.ts.Status = "pending"
+		t.NewGame(t.options.Interval)
+	}
+
+	t.isRunning = false
+}
+
 func (t *table) delay(interval int, fn func() error) error {
 
 	var err error
@@ -19,6 +62,7 @@ func (t *table) delay(interval int, fn func() error) error {
 		defer wg.Done()
 
 		if isCancelled {
+			err = ErrGameCancelled
 			return
 		}
 
@@ -118,29 +162,16 @@ func (t *table) updateStates(gs *pokerface.GameState) error {
 
 	t.updatePlayerStates(&state)
 
-	go t.onStateUpdated(&state)
-
-	if t.ts.Status == "idle" {
-		//fmt.Println("Attempt to start the next game")
-		t.delay(t.options.Interval, func() error {
-			return t.nextGame(t.options.Interval)
-		})
-	}
+	// Event
+	t.onStateUpdated(&state)
 
 	return nil
 }
 
-func (t *table) run(delay int) error {
-
-	t.ts.Status = "preparing"
+func (t *table) checkEndConditions() error {
 
 	if t.options.MaxGames > 0 && t.options.MaxGames == t.gameCount {
 		return ErrMaxGamesExceeded
-	}
-
-	err := t.setupPosition()
-	if err != nil {
-		return err
 	}
 
 	// Check remaining time
@@ -149,39 +180,35 @@ func (t *table) run(delay int) error {
 		return ErrTimesUp
 	}
 
-	// Check the number of player
-	if len(t.sm.GetPlayableSeats()) < t.options.MinPlayers {
-		return ErrGameConditionsNotMet
-	}
-
-	return t.delay(delay, func() error {
-		// Starting a new game
-		return t.startGame()
-	})
+	return nil
 }
 
-func (t *table) nextGame(delay int) error {
+func (t *table) nextGame() error {
 
 	if t.isPaused {
-		return nil
+		return ErrGameCancelled
 	}
 
-	err := t.run(delay)
+	t.ts.Status = "preparing"
 
-	switch err {
-	case ErrMaxGamesExceeded:
-		fallthrough
-	case ErrTimesUp:
-		t.ts.Status = "closed"
-	default:
-		t.ts.Status = "idle"
+	if err := t.checkEndConditions(); err != nil {
+		return err
 	}
 
+	err := t.setupPosition()
 	if err != nil {
-		t.updateStates(nil)
+		return err
 	}
 
-	return err
+	// Check the number of player
+	playableCount := t.sm.GetPlayableSeatCount()
+	if t.gameCount == 0 && playableCount < t.options.InitialPlayers {
+		return ErrInsufficientNumberOfPlayers
+	} else if playableCount < t.options.MinPlayers {
+		return ErrInsufficientNumberOfPlayers
+	}
+
+	return t.startGame()
 }
 
 func (t *table) startGame() error {
@@ -218,7 +245,7 @@ func (t *table) startGame() error {
 	// Create a new game with backend
 	t.g = NewGame(t.b, opts)
 	t.g.OnStateUpdated(func(gs *pokerface.GameState) {
-		//fmt.Println(gs.Status.CurrentEvent.Name)
+		//fmt.Println(gs.Status.CurrentEvent)
 		t.updateStates(gs)
 	})
 
