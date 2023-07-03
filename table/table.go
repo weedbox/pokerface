@@ -90,6 +90,7 @@ func NewTable(options *Options, opts ...TableOpt) *table {
 		opt(t)
 	}
 
+	t.ts.Options = options
 	t.ts.Status = "idle"
 
 	return t

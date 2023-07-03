@@ -66,6 +66,7 @@ func Test_NativeTableAdapter_Basic(t *testing.T) {
 
 		if s.Status == "closed" {
 			t.Log("TableClosed")
+			assert.Less(t, nt.GetPlayablePlayerCount(), nt.GetState().Options.MinPlayers)
 			wg.Done()
 		}
 	})

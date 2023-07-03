@@ -13,7 +13,7 @@ type State struct {
 	StartTime int64                `json:"start_time"`
 	EndTime   int64                `json:"end_time"`
 	Status    string               `json:"status"`
-	Options   Options              `json:"options"`
+	Options   *Options             `json:"options"`
 	Players   map[int]*PlayerInfo  `json:"player"`
 	GameState *pokerface.GameState `json:"game_state"`
 }
