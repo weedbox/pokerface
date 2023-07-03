@@ -12,8 +12,9 @@ type State struct {
 	GameType  string               `json:"game_type"`
 	StartTime int64                `json:"start_time"`
 	EndTime   int64                `json:"end_time"`
-	Players   map[int]*PlayerInfo  `json:"player"`
 	Status    string               `json:"status"`
+	Options   Options              `json:"options"`
+	Players   map[int]*PlayerInfo  `json:"player"`
 	GameState *pokerface.GameState `json:"game_state"`
 }
 
@@ -21,6 +22,13 @@ func NewState() *State {
 	return &State{
 		Players: make(map[int]*PlayerInfo),
 	}
+}
+
+func (s *State) GetJSON() []byte {
+
+	data, _ := json.Marshal(s)
+
+	return data
 }
 
 func (s *State) PrintState() error {

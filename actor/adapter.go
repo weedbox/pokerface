@@ -9,6 +9,7 @@ import (
 type Adapter interface {
 	SetActor(a Actor)
 	UpdateTableState(t *pokertable.Table) error
+	GetGamePlayerIndex(playerID string) int
 
 	// Player actions
 	Pass(playerID string) error

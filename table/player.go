@@ -5,6 +5,7 @@ type PlayerInfo struct {
 	SeatID    int      `json:"seat_id"`
 	GameIdx   int      `json:"game_idx"`
 	Positions []string `json:"positions"`
+	Playable  bool     `json:"playable"`
 	Bankroll  int64    `json:"bankroll"`
 }
 

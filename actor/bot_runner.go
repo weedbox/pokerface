@@ -60,7 +60,8 @@ func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
 	}
 
 	// Update player index in game
-	br.gamePlayerIdx = table.GamePlayerIndex(br.playerID)
+	//br.gamePlayerIdx = table.GamePlayerIndex(br.playerID)
+	br.gamePlayerIdx = br.actor.GetTable().GetGamePlayerIndex(br.playerID)
 
 	// Somehow, this player is not in the game.
 	// It probably has no chips already.

@@ -11,6 +11,7 @@ type Options struct {
 	Duration       int                    `json:"duration"`
 	Interval       int                    `json:"interval"`
 	ActionTime     int                    `json:"action_time"`
+	Joinable       bool                   `json:"joinable"`
 	Ante           int64                  `json:"ante"`
 	Blind          pokerface.BlindSetting `json:"blind"`
 }
@@ -25,6 +26,7 @@ func NewOptions() *Options {
 		Duration:       60 * 60, // one hour
 		Interval:       0,       // 0 secs by default
 		ActionTime:     10,      // 10 secs
+		Joinable:       true,
 		Ante:           0,
 		Blind: pokerface.BlindSetting{
 			Dealer: 0,

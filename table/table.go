@@ -10,6 +10,7 @@ import (
 
 var (
 	ErrRunningAlready       = errors.New("table: running already")
+	ErrNotJoinable          = errors.New("table: table is not joinable")
 	ErrPlayerNotInGame      = errors.New("table: player not in the game")
 	ErrTimesUp              = errors.New("table: time's up")
 	ErrGameConditionsNotMet = errors.New("table: game conditions not met")
@@ -27,12 +28,14 @@ type Table interface {
 	GetState() *State
 	GetGame() Game
 	GetGameCount() int
+	GetPlayablePlayerCount() int
 	GetPlayerByID(playerID string) *PlayerInfo
 	GetPlayerByGameIdx(idx int) *PlayerInfo
 	GetPlayerIdx(playerID string) int
 
 	SetAnte(chips int64)
 	SetBlinds(dealer int64, sb int64, bb int64)
+	SetJoinable(enabled bool)
 
 	// Event
 	OnStateUpdated(func(*State))
@@ -118,6 +121,10 @@ func (t *table) SetBlinds(dealer int64, sb int64, bb int64) {
 	t.options.Blind.BB = bb
 }
 
+func (t *table) SetJoinable(enabled bool) {
+	t.options.Joinable = enabled
+}
+
 func (t *table) Start() error {
 
 	if t.isRunning {
@@ -201,7 +208,7 @@ func (t *table) Reserve(seatID int) error {
 	return t.sm.Reserve(seatID)
 }
 
-func (t *table) Join(seatID int, p *PlayerInfo) error {
+func (t *table) Join(seatID int, p *PlayerInfo) (int, error) {
 
 	// Find the player before joining
 	var found *PlayerInfo
@@ -214,18 +221,27 @@ func (t *table) Join(seatID int, p *PlayerInfo) error {
 	// Player is gsetting back to seat
 	if found != nil {
 		// Activate the seat
-		return t.Activate(found.SeatID)
+		err := t.Activate(found.SeatID)
+		if err != nil {
+			return -1, err
+		}
+
+		return found.SeatID, nil
+	}
+
+	if !t.options.Joinable {
+		return -1, ErrNotJoinable
 	}
 
 	sid, err := t.sm.Join(seatID, p)
 	if err != nil {
-		return err
+		return -1, err
 	}
 
 	p.SeatID = sid
 	t.ts.Players[sid] = p
 
-	return nil
+	return sid, nil
 }
 
 func (t *table) Leave(seatID int) error {
@@ -238,6 +254,10 @@ func (t *table) Leave(seatID int) error {
 	delete(t.ts.Players, seatID)
 
 	return nil
+}
+
+func (t *table) GetPlayablePlayerCount() int {
+	return t.sm.GetPlayableSeatCount()
 }
 
 func (t *table) GetPlayerByID(playerID string) *PlayerInfo {

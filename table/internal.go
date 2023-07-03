@@ -25,16 +25,15 @@ func (t *table) tableLoop() {
 			t.ts.Status = "closed"
 			t.updateStates(nil)
 			return
-		}
-
-		if err := t.checkEndConditions(); err != nil {
-			t.ts.Status = "closed"
-			t.updateStates(nil)
-			return
-		}
-
-		switch err {
 		case ErrInsufficientNumberOfPlayers:
+
+			// Nobody can join so so table should be closed
+			if !t.options.Joinable {
+				t.ts.Status = "closed"
+				t.updateStates(nil)
+				return
+			}
+
 			// Waiting for more players
 			t.ts.Status = "idle"
 			continue
@@ -97,7 +96,9 @@ func (t *table) setupPosition() error {
 		}
 
 		p := t.GetPlayerByID(s.Player.ID)
+		p.Playable = false
 
+		// Update position
 		positions := make([]string, 0)
 
 		if s == t.sm.dealer {
@@ -111,6 +112,11 @@ func (t *table) setupPosition() error {
 		}
 
 		p.Positions = positions
+
+		// Update states
+		if !s.IsReserved && s.IsActive {
+			p.Playable = true
+		}
 	}
 
 	t.inPosition = true
@@ -208,7 +214,23 @@ func (t *table) nextGame() error {
 		return ErrInsufficientNumberOfPlayers
 	}
 
-	return t.startGame()
+	err = t.startGame()
+	if err != nil {
+		return err
+	}
+
+	// Check conditions again
+	if err := t.checkEndConditions(); err != nil {
+		return err
+	}
+
+	// Preparing new positions
+	err = t.setupPosition()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (t *table) startGame() error {
@@ -232,6 +254,11 @@ func (t *table) startGame() error {
 	opts.Blind.SB = t.options.Blind.SB
 	opts.Blind.BB = t.options.Blind.BB
 
+	// Clean legacy status
+	for _, p := range t.ts.Players {
+		p.GameIdx = -1
+	}
+
 	// Preparing players
 	seats := t.sm.GetPlayableSeats()
 	for i, s := range seats {
@@ -244,9 +271,16 @@ func (t *table) startGame() error {
 
 	// Create a new game with backend
 	t.g = NewGame(t.b, opts)
+
+	closed := make(chan struct{})
+
 	t.g.OnStateUpdated(func(gs *pokerface.GameState) {
-		//fmt.Println(gs.Status.CurrentEvent)
+		//fmt.Println(gs.GameID, gs.Status.CurrentEvent)
 		t.updateStates(gs)
+
+		if gs.Status.CurrentEvent == "GameClosed" {
+			closed <- struct{}{}
+		}
 	})
 
 	err := t.g.Start()
@@ -256,6 +290,10 @@ func (t *table) startGame() error {
 
 	t.gameCount++
 	t.ts.Status = "playing"
+
+	<-closed
+
+	t.inPosition = false
 
 	return nil
 }
