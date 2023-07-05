@@ -11,6 +11,7 @@ import (
 var (
 	ErrRunningAlready       = errors.New("table: running already")
 	ErrNotJoinable          = errors.New("table: table is not joinable")
+	ErrNotFoundPlayer       = errors.New("table: not found player")
 	ErrPlayerNotInGame      = errors.New("table: player not in the game")
 	ErrTimesUp              = errors.New("table: time's up")
 	ErrGameConditionsNotMet = errors.New("table: game conditions not met")
@@ -25,6 +26,15 @@ type Table interface {
 	Close() error
 	Resume() error
 	Pause() error
+
+	// Player management
+	Join(seatID int, p *PlayerInfo) (int, error)
+	Leave(seatID int) error
+	Reserve(seatID int) error
+	Activate(seatID int) error
+	ActivateByPlayerID(playerID string) error
+
+	// Getter
 	GetState() *State
 	GetGame() Game
 	GetGameCount() int
@@ -33,6 +43,7 @@ type Table interface {
 	GetPlayerByGameIdx(idx int) *PlayerInfo
 	GetPlayerIdx(playerID string) int
 
+	// Setter
 	SetAnte(chips int64)
 	SetBlinds(dealer int64, sb int64, bb int64)
 	SetJoinable(enabled bool)
@@ -209,30 +220,31 @@ func (t *table) Reserve(seatID int) error {
 	return t.sm.Reserve(seatID)
 }
 
-func (t *table) Join(seatID int, p *PlayerInfo) (int, error) {
+func (t *table) ActivateByPlayerID(playerID string) error {
 
 	// Find the player before joining
 	var found *PlayerInfo
 	for _, ps := range t.ts.Players {
-		if ps.ID == p.ID {
+		if ps.ID == playerID {
 			found = ps
 		}
 	}
 
-	// Player is gsetting back to seat
-	if found != nil {
-		// Activate the seat
-		err := t.Activate(found.SeatID)
-		if err != nil {
-			return -1, err
-		}
-
-		return found.SeatID, nil
+	// Player is getting back to seat
+	if found == nil {
+		return ErrNotFoundPlayer
 	}
 
-	if !t.options.Joinable {
-		return -1, ErrNotJoinable
+	// Activate the seat
+	err := t.Activate(found.SeatID)
+	if err != nil {
+		return err
 	}
+
+	return nil
+}
+
+func (t *table) Join(seatID int, p *PlayerInfo) (int, error) {
 
 	sid, err := t.sm.Join(seatID, p)
 	if err != nil {

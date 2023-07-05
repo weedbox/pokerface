@@ -129,6 +129,17 @@ func Test_Table_Basic(t *testing.T) {
 
 		case "GameClosed":
 			assert.NotNil(t, ts.GameState.Result)
+
+			// Check player results
+			for _, rs := range table.GetState().GameState.Result.Players {
+
+				for _, p := range table.GetState().Players {
+					if p.GameIdx == rs.Idx {
+						assert.Equal(t, rs.Final, p.Bankroll)
+					}
+				}
+			}
+
 			wg.Done()
 		}
 	})
@@ -141,16 +152,6 @@ func Test_Table_Basic(t *testing.T) {
 
 	assert.Equal(t, "closed", table.GetState().Status)
 	assert.Equal(t, opts.MaxGames, table.GetGameCount())
-
-	// Check player results
-	for _, rs := range table.GetState().GameState.Result.Players {
-
-		for _, p := range table.GetState().Players {
-			if p.GameIdx == rs.Idx {
-				assert.Equal(t, rs.Final, p.Bankroll)
-			}
-		}
-	}
 }
 
 func Test_Table_Join_Slowly(t *testing.T) {
