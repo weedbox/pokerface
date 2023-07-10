@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/weedbox/syncsaga"
 	"github.com/weedbox/timebank"
 )
@@ -101,6 +102,7 @@ func NewTable(options *Options, opts ...TableOpt) *table {
 		opt(t)
 	}
 
+	t.ts.ID = uuid.New().String()
 	t.ts.Options = options
 	t.ts.Status = "idle"
 

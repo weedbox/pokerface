@@ -37,27 +37,26 @@ func (ntb *NativeTableBackend) ActivateTable(tableID string) error {
 
 func (ntb *NativeTableBackend) BreakTable(tableID string) error {
 
-	_, ok := ntb.tables[tableID]
-	if !ok {
-		return ErrNotFoundTable
-	}
-
-	// TODO: implementation of breaking table
-
-	return nil
-}
-
-func (ntb *NativeTableBackend) ReserveSeat(tableID string, seatID int, p *PlayerInfo) error {
-
 	t, ok := ntb.tables[tableID]
 	if !ok {
 		return ErrNotFoundTable
 	}
 
-	_, err := t.Join(seatID, &table.PlayerInfo{
+	// TODO: implementation of breaking table
+	return t.Close()
+}
+
+func (ntb *NativeTableBackend) ReserveSeat(tableID string, seatID int, p *PlayerInfo) (int, error) {
+
+	t, ok := ntb.tables[tableID]
+	if !ok {
+		return -1, ErrNotFoundTable
+	}
+
+	seatID, err := t.Join(seatID, &table.PlayerInfo{
 		ID:       p.ID,
 		Bankroll: p.Bankroll,
 	})
 
-	return err
+	return seatID, err
 }

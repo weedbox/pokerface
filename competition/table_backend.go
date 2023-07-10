@@ -15,5 +15,5 @@ type TableBackend interface {
 	CreateTable(opts *table.Options) (*table.State, error)
 	ActivateTable(tableID string) error
 	BreakTable(tableID string) error
-	ReserveSeat(tableID string, seatID int, player *PlayerInfo) error
+	ReserveSeat(tableID string, seatID int, player *PlayerInfo) (int, error)
 }

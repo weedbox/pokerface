@@ -7,22 +7,26 @@ import (
 type TableManager interface {
 	Initialize() error
 	CreateTable() (*table.State, error)
+	BreakTable(tableID string) error
 	ActivateTable(tableID string) error
 	GetTableState(tableID string) *table.State
 	GetTableCount() int
 	DispatchPlayer(p *PlayerInfo) error
+	ReserveSeat(tableID string, seatID int, p *PlayerInfo) (int, error)
 }
 
 type tableManager struct {
 	options *Options
 	b       TableBackend
+	m       MatchBackend
 	tables  map[string]*table.State
 }
 
-func NewTableManager(options *Options, b TableBackend) *tableManager {
+func NewTableManager(options *Options, b TableBackend, m MatchBackend) TableManager {
 	return &tableManager{
 		options: options,
 		b:       b,
+		m:       m,
 		tables:  make(map[string]*table.State),
 	}
 }
@@ -31,15 +35,16 @@ func (tm *tableManager) Initialize() error {
 
 	// Only one static table
 	if tm.options.MaxTables == 1 {
+
+		// Create table immediately
 		ts, err := tm.CreateTable()
 		if err != nil {
 			return err
 		}
 
+		// Then activate
 		return tm.ActivateTable(ts.ID)
 	}
-
-	//TODO: Initializing dynamic allocation
 
 	return nil
 }
@@ -64,6 +69,10 @@ func (tm *tableManager) CreateTable() (*table.State, error) {
 	return ts, nil
 }
 
+func (tm *tableManager) BreakTable(tableID string) error {
+	return tm.b.BreakTable(tableID)
+}
+
 func (tm *tableManager) ActivateTable(tableID string) error {
 	return tm.b.ActivateTable(tableID)
 }
@@ -86,10 +95,21 @@ func (tm *tableManager) DispatchPlayer(p *PlayerInfo) error {
 
 	//TODO: replace this temporary solution
 	// Find the on table for dispatching player into it
-	for _, ts := range tm.tables {
-		p.Participated = true
-		return tm.b.ReserveSeat(ts.ID, -1, p)
-	}
+	/*
+		for _, ts := range tm.tables {
+			p.Participated = true
+			_, err := tm.ReserveSeat(ts.ID, -1, p)
+			if err != nil {
+				return err
+			}
+		}
+	*/
 
-	return nil
+	p.Participated = true
+
+	return tm.m.DispatchPlayer(p.ID)
+}
+
+func (tm *tableManager) ReserveSeat(tableID string, seatID int, p *PlayerInfo) (int, error) {
+	return tm.b.ReserveSeat(tableID, -1, p)
 }

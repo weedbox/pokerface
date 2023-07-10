@@ -3,9 +3,10 @@ package competition
 import "github.com/weedbox/pokerface"
 
 type Options struct {
-	GameType  string        `json:"game_type"`
-	MaxTables int           `json:"max_tables"`
-	Table     *TableOptions `json:"table"`
+	GameType              string        `json:"game_type"`
+	MaxTables             int           `json:"max_tables"`
+	TableAllocationPeriod int           `json:"table_allocation_period"`
+	Table                 *TableOptions `json:"table"`
 }
 
 type TableOptions struct {
@@ -21,8 +22,9 @@ type TableOptions struct {
 
 func NewOptions() *Options {
 	return &Options{
-		GameType:  "standard",
-		MaxTables: 1, // -1 or greater than 1 for dynamic table allocation
+		GameType:              "standard",
+		MaxTables:             1,  // -1 or greater than 1 for dynamic table allocation
+		TableAllocationPeriod: 10, // 10 seconds
 		Table: &TableOptions{
 			InitialPlayers: 2,
 			MinPlayers:     2,

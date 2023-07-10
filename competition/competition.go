@@ -16,12 +16,15 @@ var (
 )
 
 type Competition interface {
+	GetOptions() *Options
+	GetTableManager() TableManager
 }
 
 type competition struct {
 	options    *Options
 	tm         TableManager
 	tb         TableBackend
+	m          MatchBackend
 	players    []*PlayerInfo
 	s          *State
 	isRunning  bool
@@ -33,6 +36,12 @@ type CompetitionOpt func(*competition)
 func WithTableBackend(tb TableBackend) CompetitionOpt {
 	return func(c *competition) {
 		c.tb = tb
+	}
+}
+
+func WithMatchBackend(m MatchBackend) CompetitionOpt {
+	return func(c *competition) {
+		c.m = m
 	}
 }
 
@@ -53,9 +62,21 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 		c.tb = NewNativeTableBackend(table.NewNativeBackend())
 	}
 
-	c.tm = NewTableManager(options, c.tb)
+	if c.m == nil {
+		c.m = NewNativeMatchBackend(c)
+	}
+
+	c.tm = NewTableManager(options, c.tb, c.m)
 
 	return c
+}
+
+func (c *competition) GetTableManager() TableManager {
+	return c.tm
+}
+
+func (c *competition) GetOptions() *Options {
+	return c.options
 }
 
 func (c *competition) GetTableCount() int {
