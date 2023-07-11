@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/weedbox/pokerface"
+	"github.com/weedbox/pokerface/seat_manager"
 )
 
 func (t *table) tableLoop() {
@@ -82,6 +83,11 @@ func (t *table) setupPosition() error {
 	// Calculating positions for players
 	err := t.sm.Next()
 	if err != nil {
+
+		if err == seat_manager.ErrInsufficientNumberOfPlayers {
+			return ErrInsufficientNumberOfPlayers
+		}
+
 		return err
 	}
 
@@ -95,19 +101,19 @@ func (t *table) setupPosition() error {
 			continue
 		}
 
-		p := t.GetPlayerByID(s.Player.ID)
+		p := t.GetPlayerByID(s.Player.(*PlayerInfo).ID)
 		p.Playable = false
 
 		// Update position
 		positions := make([]string, 0)
 
-		if s == t.sm.dealer {
+		if s == t.sm.Dealer() {
 			positions = append(positions, "dealer")
 		}
 
-		if s == t.sm.sb {
+		if s == t.sm.SmallBlind() {
 			positions = append(positions, "sb")
-		} else if s == t.sm.bb {
+		} else if s == t.sm.BigBlind() {
 			positions = append(positions, "bb")
 		}
 
@@ -153,23 +159,29 @@ func (t *table) updatePlayerStates(ts *State) error {
 	return nil
 }
 
-func (t *table) updateStates(gs *pokerface.GameState) error {
-
-	t.ts.GameState = gs
+func (t *table) cloneState() *State {
 
 	// clone table state
 	data, err := json.Marshal(t.ts)
 	if err != nil {
-		return err
+		return nil
 	}
 
 	var state State
 	json.Unmarshal(data, &state)
 
-	t.updatePlayerStates(&state)
+	return &state
+}
 
-	// Event
-	t.onStateUpdated(&state)
+func (t *table) updateStates(gs *pokerface.GameState) error {
+
+	t.ts.GameState = gs
+
+	// clone table state
+	state := t.cloneState()
+
+	t.updatePlayerStates(state)
+	t.onStateUpdated(state)
 
 	return nil
 }
@@ -262,10 +274,10 @@ func (t *table) startGame() error {
 	// Preparing players
 	seats := t.sm.GetPlayableSeats()
 	for i, s := range seats {
-		s.Player.GameIdx = i
+		s.Player.(*PlayerInfo).GameIdx = i
 		opts.Players = append(opts.Players, &pokerface.PlayerSetting{
-			Bankroll:  s.Player.Bankroll,
-			Positions: s.Player.Positions,
+			Bankroll:  s.Player.(*PlayerInfo).Bankroll,
+			Positions: s.Player.(*PlayerInfo).Positions,
 		})
 	}
 

@@ -5,19 +5,21 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/weedbox/pokerface/seat_manager"
 	"github.com/weedbox/syncsaga"
 	"github.com/weedbox/timebank"
 )
 
 var (
-	ErrRunningAlready       = errors.New("table: running already")
-	ErrNotJoinable          = errors.New("table: table is not joinable")
-	ErrNotFoundPlayer       = errors.New("table: not found player")
-	ErrPlayerNotInGame      = errors.New("table: player not in the game")
-	ErrTimesUp              = errors.New("table: time's up")
-	ErrGameConditionsNotMet = errors.New("table: game conditions not met")
-	ErrMaxGamesExceeded     = errors.New("table: reach the maximum number of games")
-	ErrGameCancelled        = errors.New("table: game was cancelled")
+	ErrRunningAlready              = errors.New("table: running already")
+	ErrNotJoinable                 = errors.New("table: table is not joinable")
+	ErrNotFoundPlayer              = errors.New("table: not found player")
+	ErrPlayerNotInGame             = errors.New("table: player not in the game")
+	ErrTimesUp                     = errors.New("table: time's up")
+	ErrInsufficientNumberOfPlayers = errors.New("table: insufficient number of players")
+	ErrGameConditionsNotMet        = errors.New("table: game conditions not met")
+	ErrMaxGamesExceeded            = errors.New("table: reach the maximum number of games")
+	ErrGameCancelled               = errors.New("table: game was cancelled")
 )
 
 type TableOpt func(*table)
@@ -75,7 +77,7 @@ type table struct {
 	gameLoop       chan int
 	ts             *State
 	rg             *syncsaga.ReadyGroup
-	sm             *SeatManager
+	sm             *seat_manager.SeatManager
 	tb             *timebank.TimeBank
 	onStateUpdated func(*State)
 }
@@ -91,7 +93,7 @@ func NewTable(options *Options, opts ...TableOpt) *table {
 	t := &table{
 		options:        options,
 		rg:             syncsaga.NewReadyGroup(),
-		sm:             NewSeatManager(options.MaxSeats),
+		sm:             seat_manager.NewSeatManager(options.MaxSeats),
 		ts:             NewState(),
 		tb:             timebank.NewTimeBank(),
 		gameLoop:       make(chan int, 1024),
@@ -256,6 +258,10 @@ func (t *table) Join(seatID int, p *PlayerInfo) (int, error) {
 	p.SeatID = sid
 	t.ts.Players[sid] = p
 
+	// Event
+	state := t.cloneState()
+	t.onStateUpdated(state)
+
 	return sid, nil
 }
 
@@ -267,6 +273,10 @@ func (t *table) Leave(seatID int) error {
 	}
 
 	delete(t.ts.Players, seatID)
+
+	// Event
+	state := t.cloneState()
+	t.onStateUpdated(state)
 
 	return nil
 }
