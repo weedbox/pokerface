@@ -3,6 +3,7 @@ package seat_manager
 import (
 	"errors"
 	"math/rand"
+	"sync"
 )
 
 var (
@@ -17,16 +18,24 @@ var (
 type PlayerInfo interface{}
 
 type Seat struct {
-	ID         int
+	ID         int  `json:"id"`
+	IsActive   bool `json:"is_active"`
+	IsReserved bool `json:"is_reserved"`
 	Player     PlayerInfo
-	IsActive   bool
-	IsReserved bool
+}
+
+type SeatManagerState struct {
+	Max    int           `json:"max"`
+	Seats  map[int]*Seat `json:"seats"`
+	Dealer int           `json:"dealer"`
+	SB     int           `json:"sb"`
+	BB     int           `json:"bb"`
 }
 
 type SeatManager struct {
-	max         int
-	seats       map[int]*Seat
-	playerCount int
+	max   int
+	seats map[int]*Seat
+	mu    sync.RWMutex
 
 	dealer *Seat
 	sb     *Seat
@@ -41,37 +50,17 @@ func NewSeatManager(max int) *SeatManager {
 	}
 
 	// Initializing seats
-	for i := 0; i < max; i++ {
-		sm.seats[i] = &Seat{
-			ID:         i,
-			Player:     nil,
-			IsActive:   true,
-			IsReserved: false,
-		}
-	}
+	sm.Reset()
 
 	return sm
 }
 
-func (sm *SeatManager) Dealer() *Seat {
-	return sm.dealer
-}
-
-func (sm *SeatManager) SmallBlind() *Seat {
-	return sm.sb
-}
-
-func (sm *SeatManager) BigBlind() *Seat {
-	return sm.bb
-}
-
 func (sm *SeatManager) renewSeatStatus() error {
 
-	origSeats := sm.GetNormalizeSeats(sm.dealer.ID)
+	origSeats := sm.getNormalizeSeats(sm.dealer.ID)
 	seats := origSeats
 
-	//	if sm.playerCount == 2 {
-	if sm.GetPlayableSeatCount() == 2 {
+	if sm.getPlayableSeatCount() == 2 {
 		// dealer is SB as well
 		sm.sb = sm.dealer
 	} else {
@@ -110,28 +99,26 @@ func (sm *SeatManager) renewSeatStatus() error {
 
 func (sm *SeatManager) join(seatID int, p PlayerInfo) (int, error) {
 
-	s := sm.GetSeat(seatID)
+	s := sm.getSeat(seatID)
 	if s.Player != nil {
 		return -1, ErrNotAvailable
 	}
 
 	s.IsReserved = true
 	s.Player = p
-	sm.playerCount++
 
 	return s.ID, nil
 }
 
 func (sm *SeatManager) leave(seatID int) error {
 
-	s := sm.GetSeat(seatID)
+	s := sm.getSeat(seatID)
 	if s.Player == nil {
 		return ErrEmptySeat
 	}
 
 	s.Player = nil
 	s.IsReserved = false
-	sm.playerCount--
 
 	return nil
 }
@@ -152,20 +139,189 @@ func (sm *SeatManager) findActivePlayer(seats []*Seat) (*Seat, int) {
 	return nil, -1
 }
 
+func (sm *SeatManager) getSeat(id int) *Seat {
+
+	if s, ok := sm.seats[id]; ok {
+		return s
+	}
+
+	return nil
+}
+
+func (sm *SeatManager) getNormalizeSeats(startID int) []*Seat {
+
+	// Getting player list that specific seat should be the first element of it
+	cur := startID
+
+	seats := make([]*Seat, 0)
+	for i := 0; i < sm.max; i++ {
+
+		if s, ok := sm.seats[cur]; ok {
+			seats = append(seats, s)
+		}
+
+		// next player
+		cur++
+
+		// The end of seat list
+		if cur == sm.max {
+			cur = 0
+		}
+	}
+
+	return seats
+}
+
+func (sm *SeatManager) getActiveSeats() []*Seat {
+
+	seats := make([]*Seat, 0)
+	for i := 0; i < sm.max; i++ {
+		s := sm.seats[i]
+		if s.IsActive {
+			seats = append(seats, s)
+		}
+	}
+
+	return seats
+}
+
+func (sm *SeatManager) getPlayableSeats() []*Seat {
+
+	origSeats := sm.getNormalizeSeats(sm.dealer.ID)
+
+	seats := make([]*Seat, 0)
+	for _, s := range origSeats {
+		if !s.IsReserved && s.IsActive && s.Player != nil {
+			seats = append(seats, s)
+		}
+	}
+
+	return seats
+}
+
+func (sm *SeatManager) getPlayableSeatCount() int {
+
+	count := 0
+	for i := 0; i < sm.max; i++ {
+		s := sm.seats[i]
+		if s.IsActive && !s.IsReserved && s.Player != nil {
+			count++
+		}
+	}
+
+	return count
+}
+
+func (sm *SeatManager) getPlayerCount() int {
+
+	count := 0
+	for i := 0; i < sm.max; i++ {
+		s := sm.seats[i]
+		if s.Player != nil {
+			count++
+		}
+	}
+
+	return count
+}
+
+func (sm *SeatManager) getAvailableSeats() ([]int, []int) {
+
+	seats := make([]int, 0)
+	alternateSeats := make([]int, 0)
+
+	for _, s := range sm.seats {
+
+		if s.IsReserved || s.Player != nil {
+			continue
+		}
+
+		if s.IsActive {
+			seats = append(seats, s.ID)
+		} else {
+			alternateSeats = append(alternateSeats, s.ID)
+		}
+	}
+
+	return seats, alternateSeats
+}
+
+func (sm *SeatManager) getSeats() []*Seat {
+
+	seats := make([]*Seat, 0)
+	for i := 0; i < sm.max; i++ {
+		s := sm.seats[i]
+		seats = append(seats, s)
+	}
+
+	return seats
+}
+
+func (sm *SeatManager) Reset() {
+
+	for i := 0; i < sm.max; i++ {
+		sm.ResetSeat(i)
+	}
+}
+
+func (sm *SeatManager) ResetSeat(seatID int) {
+	sm.seats[seatID] = &Seat{
+		ID:         seatID,
+		Player:     nil,
+		IsActive:   true,
+		IsReserved: false,
+	}
+}
+
+func (sm *SeatManager) ApplyStates(state *SeatManagerState) error {
+
+	sm.max = state.Max
+	sm.seats = state.Seats
+	sm.dealer = nil
+	sm.sb = nil
+	sm.bb = nil
+
+	// Position states
+	if state.Dealer >= 0 {
+		sm.dealer = sm.seats[state.Dealer]
+	}
+
+	if state.SB >= 0 {
+		sm.sb = sm.seats[state.SB]
+	}
+
+	if state.BB >= 0 {
+		sm.bb = sm.seats[state.BB]
+	}
+
+	return nil
+}
+
+func (sm *SeatManager) Dealer() *Seat {
+	return sm.dealer
+}
+
+func (sm *SeatManager) SmallBlind() *Seat {
+	return sm.sb
+}
+
+func (sm *SeatManager) BigBlind() *Seat {
+	return sm.bb
+}
+
 func (sm *SeatManager) NextDealer() *Seat {
 
-	//	if sm.playerCount < 2 {
-	if sm.GetPlayableSeatCount() < 2 {
+	if sm.getPlayableSeatCount() < 2 {
 		return nil
 	}
 
 	var seats []*Seat
 	if sm.dealer == nil {
 		// from the first seat
-		seats = sm.GetNormalizeSeats(0)
+		seats = sm.getNormalizeSeats(0)
 	} else {
 		// From the current dealer
-		seats = sm.GetNormalizeSeats(sm.dealer.ID)
+		seats = sm.getNormalizeSeats(sm.dealer.ID)
 		seats = seats[1:]
 	}
 
@@ -199,130 +355,80 @@ func (sm *SeatManager) NextDealer() *Seat {
 	return sm.dealer
 }
 
-func (sm *SeatManager) GetDealer() *Seat {
-	return sm.dealer
-}
-
-func (sm *SeatManager) GetSmallBlind() *Seat {
-	return sm.sb
-}
-
-func (sm *SeatManager) GetBigBlind() *Seat {
-	return sm.bb
-}
-
-func (sm *SeatManager) GetPlayerCount() int {
-	return sm.playerCount
+func (sm *SeatManager) GetSeatCount() int {
+	return sm.max
 }
 
 func (sm *SeatManager) GetSeat(id int) *Seat {
 
-	if s, ok := sm.seats[id]; ok {
-		return s
-	}
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
 
-	return nil
+	return sm.getSeat(id)
 }
 
 func (sm *SeatManager) GetNormalizeSeats(startID int) []*Seat {
 
-	// Getting player list that specific seat should be the first element of it
-	cur := startID
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
 
-	seats := make([]*Seat, 0)
-	for i := 0; i < sm.max; i++ {
-
-		if s, ok := sm.seats[cur]; ok {
-			seats = append(seats, s)
-		}
-
-		// next player
-		cur++
-
-		// The end of seat list
-		if cur == sm.max {
-			cur = 0
-		}
-	}
-
-	return seats
+	return sm.getNormalizeSeats(startID)
 }
 
 func (sm *SeatManager) GetAvailableSeats() ([]int, []int) {
 
-	seats := make([]int, 0)
-	alternateSeats := make([]int, 0)
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
 
-	for _, s := range sm.seats {
-
-		if s.IsReserved || s.Player != nil {
-			continue
-		}
-
-		if s.IsActive {
-			seats = append(seats, s.ID)
-		} else {
-			alternateSeats = append(alternateSeats, s.ID)
-		}
-	}
-
-	return seats, alternateSeats
+	return sm.getAvailableSeats()
 }
 
 func (sm *SeatManager) GetSeats() []*Seat {
 
-	seats := make([]*Seat, 0)
-	for i := 0; i < sm.max; i++ {
-		s := sm.seats[i]
-		seats = append(seats, s)
-	}
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
 
-	return seats
+	return sm.getSeats()
 }
 
 func (sm *SeatManager) GetActiveSeats() []*Seat {
 
-	seats := make([]*Seat, 0)
-	for i := 0; i < sm.max; i++ {
-		s := sm.seats[i]
-		if s.IsActive {
-			seats = append(seats, s)
-		}
-	}
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
 
-	return seats
+	return sm.getActiveSeats()
 }
 
 func (sm *SeatManager) GetPlayableSeats() []*Seat {
 
-	origSeats := sm.GetNormalizeSeats(sm.dealer.ID)
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
 
-	seats := make([]*Seat, 0)
-	for _, s := range origSeats {
-		if !s.IsReserved && s.IsActive && s.Player != nil {
-			seats = append(seats, s)
-		}
-	}
-
-	return seats
+	return sm.getPlayableSeats()
 }
 
 func (sm *SeatManager) GetPlayableSeatCount() int {
 
-	count := 0
-	for i := 0; i < sm.max; i++ {
-		s := sm.seats[i]
-		if s.IsActive && !s.IsReserved && s.Player != nil {
-			count++
-		}
-	}
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
 
-	return count
+	return sm.getPlayableSeatCount()
+}
+
+func (sm *SeatManager) GetPlayerCount() int {
+
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+
+	return sm.getPlayerCount()
 }
 
 func (sm *SeatManager) Activate(seatID int) error {
 
-	seat := sm.GetSeat(seatID)
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
+	seat := sm.getSeat(seatID)
 	if seat == nil {
 		return ErrNotFoundSeat
 	}
@@ -334,7 +440,10 @@ func (sm *SeatManager) Activate(seatID int) error {
 
 func (sm *SeatManager) Reserve(seatID int) error {
 
-	seat := sm.GetSeat(seatID)
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
+	seat := sm.getSeat(seatID)
 	if seat == nil {
 		return ErrNotFoundSeat
 	}
@@ -346,6 +455,9 @@ func (sm *SeatManager) Reserve(seatID int) error {
 
 func (sm *SeatManager) Join(seatID int, p PlayerInfo) (int, error) {
 
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
 	if seatID >= sm.max {
 		return -1, ErrInvalidSeat
 	}
@@ -356,7 +468,7 @@ func (sm *SeatManager) Join(seatID int, p PlayerInfo) (int, error) {
 	}
 
 	// Getting available seats
-	s, as := sm.GetAvailableSeats()
+	s, as := sm.getAvailableSeats()
 	if len(s) == 0 && len(as) == 0 {
 		return -1, ErrNoAvailableSeat
 	}
@@ -379,10 +491,17 @@ func (sm *SeatManager) Join(seatID int, p PlayerInfo) (int, error) {
 }
 
 func (sm *SeatManager) Leave(seatID int) error {
+
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
 	return sm.leave(seatID)
 }
 
 func (sm *SeatManager) Next() error {
+
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
 
 	if sm.NextDealer() == nil {
 		return ErrInsufficientNumberOfPlayers

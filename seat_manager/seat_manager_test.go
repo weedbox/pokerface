@@ -119,11 +119,11 @@ func Test_SeatManager_Next(t *testing.T) {
 		assert.Nil(t, sm.Next())
 
 		seats := sm.GetSeats()
-		assert.Equal(t, sm.GetDealer(), seats[dealerIdx])
+		assert.Equal(t, sm.Dealer(), seats[dealerIdx])
 		assert.Equal(t, seats[dealerIdx], sm.dealer)
-		assert.Equal(t, sm.GetSmallBlind(), seats[sbIdx])
+		assert.Equal(t, sm.SmallBlind(), seats[sbIdx])
 		assert.Equal(t, seats[sbIdx], sm.sb)
-		assert.Equal(t, sm.GetBigBlind(), seats[bbIdx])
+		assert.Equal(t, sm.BigBlind(), seats[bbIdx])
 		assert.Equal(t, seats[bbIdx], sm.bb)
 	}
 }
@@ -160,11 +160,11 @@ func Test_SeatManager_Next_TwoPlayer(t *testing.T) {
 		seats := sm.GetSeats()
 
 		// Dealer is the small blind
-		assert.Equal(t, sm.GetDealer(), seats[dealerIdx])
+		assert.Equal(t, sm.Dealer(), seats[dealerIdx])
 		assert.Equal(t, seats[dealerIdx], sm.dealer)
-		assert.Equal(t, sm.GetSmallBlind(), seats[dealerIdx])
+		assert.Equal(t, sm.SmallBlind(), seats[dealerIdx])
 		assert.Equal(t, seats[dealerIdx], sm.sb)
-		assert.Equal(t, sm.GetBigBlind(), seats[bbIdx])
+		assert.Equal(t, sm.BigBlind(), seats[bbIdx])
 		assert.Equal(t, seats[bbIdx], sm.bb)
 	}
 }
@@ -202,9 +202,9 @@ func Test_SeatManager_GetAvailableSeats(t *testing.T) {
 	assert.Nil(t, sm.Next())
 
 	seats := sm.GetSeats()
-	assert.Equal(t, sm.GetDealer(), seats[0])
-	assert.Equal(t, sm.GetSmallBlind(), seats[2])
-	assert.Equal(t, sm.GetBigBlind(), seats[4])
+	assert.Equal(t, sm.Dealer(), seats[0])
+	assert.Equal(t, sm.SmallBlind(), seats[2])
+	assert.Equal(t, sm.BigBlind(), seats[4])
 
 	// Getting available seats again
 	s, as = sm.GetAvailableSeats()
@@ -272,9 +272,9 @@ func Test_SeatManager_AlternateSeats(t *testing.T) {
 
 	seats := sm.GetSeats()
 
-	assert.Equal(t, sm.GetDealer(), seats[2])
-	assert.Equal(t, sm.GetSmallBlind(), seats[4])
-	assert.Equal(t, sm.GetBigBlind(), seats[5])
+	assert.Equal(t, sm.Dealer(), seats[2])
+	assert.Equal(t, sm.SmallBlind(), seats[4])
+	assert.Equal(t, sm.BigBlind(), seats[5])
 
 	// Keep moving (Dealer=4,5,0,1)
 	assert.Nil(t, sm.Next())
@@ -283,9 +283,9 @@ func Test_SeatManager_AlternateSeats(t *testing.T) {
 	assert.Nil(t, sm.Next())
 
 	// Now Seat 1 and 3 can play
-	assert.Equal(t, sm.GetDealer(), seats[1])
-	assert.Equal(t, sm.GetSmallBlind(), seats[2])
-	assert.Equal(t, sm.GetBigBlind(), seats[3])
+	assert.Equal(t, sm.Dealer(), seats[1])
+	assert.Equal(t, sm.SmallBlind(), seats[2])
+	assert.Equal(t, sm.BigBlind(), seats[3])
 }
 
 func Test_SeatManager_AlternateSeats_Rejoin(t *testing.T) {
@@ -321,9 +321,9 @@ func Test_SeatManager_AlternateSeats_Rejoin(t *testing.T) {
 	assert.Nil(t, sm.Next())
 
 	seats := sm.GetSeats()
-	assert.Equal(t, sm.GetDealer(), seats[0])
-	assert.Equal(t, sm.GetSmallBlind(), seats[2])
-	assert.Equal(t, sm.GetBigBlind(), seats[4])
+	assert.Equal(t, sm.Dealer(), seats[0])
+	assert.Equal(t, sm.SmallBlind(), seats[2])
+	assert.Equal(t, sm.BigBlind(), seats[4])
 
 	// Player leaves
 	sm.Leave(4)
@@ -332,9 +332,9 @@ func Test_SeatManager_AlternateSeats_Rejoin(t *testing.T) {
 	assert.Nil(t, sm.Next())
 
 	seats = sm.GetSeats()
-	assert.Equal(t, sm.GetDealer(), seats[2])
-	assert.Equal(t, sm.GetSmallBlind(), seats[2])
-	assert.Equal(t, sm.GetBigBlind(), seats[0])
+	assert.Equal(t, sm.Dealer(), seats[2])
+	assert.Equal(t, sm.SmallBlind(), seats[2])
+	assert.Equal(t, sm.BigBlind(), seats[0])
 
 	// re-join
 	sm.Join(4, &TestPlayerInfo{
@@ -347,15 +347,15 @@ func Test_SeatManager_AlternateSeats_Rejoin(t *testing.T) {
 	assert.Nil(t, sm.Next())
 
 	seats = sm.GetSeats()
-	assert.Equal(t, sm.GetDealer(), seats[0])
-	assert.Equal(t, sm.GetSmallBlind(), seats[2])
-	assert.Equal(t, sm.GetBigBlind(), seats[4])
+	assert.Equal(t, sm.Dealer(), seats[0])
+	assert.Equal(t, sm.SmallBlind(), seats[2])
+	assert.Equal(t, sm.BigBlind(), seats[4])
 
 	// Dealer is 2 (new player can player now)
 	assert.Nil(t, sm.Next())
 
 	// Now Seat 4 can play
-	assert.Equal(t, sm.GetDealer(), seats[2])
-	assert.Equal(t, sm.GetSmallBlind(), seats[4])
-	assert.Equal(t, sm.GetBigBlind(), seats[0])
+	assert.Equal(t, sm.Dealer(), seats[2])
+	assert.Equal(t, sm.SmallBlind(), seats[4])
+	assert.Equal(t, sm.BigBlind(), seats[0])
 }
