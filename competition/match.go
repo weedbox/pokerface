@@ -1,8 +1,6 @@
 package competition
 
 import (
-	"fmt"
-
 	"github.com/weedbox/pokerface/match"
 	"github.com/weedbox/pokerface/table"
 )
@@ -44,7 +42,7 @@ func (nmtb *NativeMatchTableBackend) Allocate(maxSeats int) (*match.Table, error
 		return t, err
 	}
 
-	fmt.Printf("Allocated Table (id=%s, seats=%d)\n", ts.ID, maxSeats)
+	//fmt.Printf("Allocated Table (id=%s, seats=%d)\n", ts.ID, maxSeats)
 
 	return t, nil
 }
@@ -88,16 +86,16 @@ func (nmtb *NativeMatchTableBackend) EmitTableUpdated(newts *table.State) {
 	if ts == nil {
 		return
 	}
+	/*
+		fmt.Printf("TableUpdated (table=%s, players=%d)\n", ts.ID, len(ts.Players))
+		for _, p := range ts.Players {
+			fmt.Printf("  origin table (table=%s, seat=%d, id=%s)\n", ts.ID, p.SeatID, p.ID)
+		}
 
-	fmt.Printf("TableUpdated (table=%s, players=%d)\n", ts.ID, len(ts.Players))
-	for _, p := range ts.Players {
-		fmt.Printf("  origin table (table=%s, seat=%d, id=%s)\n", ts.ID, p.SeatID, p.ID)
-	}
-
-	for _, p := range newts.Players {
-		fmt.Printf("  new table (table=%s, seat=%d, id=%s)\n", newts.ID, p.SeatID, p.ID)
-	}
-
+		for _, p := range newts.Players {
+			fmt.Printf("  new table (table=%s, seat=%d, id=%s)\n", newts.ID, p.SeatID, p.ID)
+		}
+	*/
 	// Preparing seat changes
 	sc := match.NewSeatChanges()
 	for _, p := range ts.Players {
@@ -117,10 +115,26 @@ func (nmtb *NativeMatchTableBackend) EmitTableUpdated(newts *table.State) {
 		}
 	}
 
-	for seatID, _ := range sc.Seats {
-		fmt.Printf("    remove player (table=%s, seat=%d)\n", newts.ID, seatID)
+	// Update dealer, sb and bb
+	for _, np := range newts.Players {
+		if np.CheckPosition("dealer") {
+			sc.Dealer = np.SeatID
+		}
+
+		if np.CheckPosition("sb") {
+			sc.SB = np.SeatID
+		}
+
+		if np.CheckPosition("bb") {
+			sc.BB = np.SeatID
+		}
 	}
 
+	/*
+		for seatID, _ := range sc.Seats {
+			fmt.Printf("    remove player (table=%s, seat=%d)\n", newts.ID, seatID)
+		}
+	*/
 	nmtb.onTableUpdated(ts.ID, sc)
 }
 func (nmtb *NativeMatchTableBackend) OnTableUpdated(fn func(tableID string, sc *match.SeatChanges)) {
