@@ -14,6 +14,7 @@ type TableInfo struct {
 type TableBackend interface {
 	CreateTable(opts *table.Options) (*table.State, error)
 	ActivateTable(tableID string) error
-	BreakTable(tableID string) error
+	ReleaseTable(tableID string) error
 	ReserveSeat(tableID string, seatID int, player *PlayerInfo) (int, error)
+	OnTableUpdated(fn func(ts *table.State))
 }

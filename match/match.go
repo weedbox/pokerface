@@ -1,110 +1,191 @@
 package match
 
 import (
-	"time"
+	"errors"
+	"fmt"
+	"math"
+	"sync/atomic"
+)
 
-	"github.com/weedbox/pokerface/match/psae"
+type MatchStatus int
+
+const (
+	MatchStatus_Normal = iota
+	MatchStatus_AfterRegDeadline
+)
+
+var (
+	ErrNotFoundTable          = errors.New("match: not found table")
+	ErrNotFoundAvailableTable = errors.New("match: not found available table")
+	ErrAfterRegDealline       = errors.New("match: the final registration time has passed")
+	ErrMaxPlayersReached      = errors.New("match: the current number of players has reached the maximum limit")
 )
 
 type Match interface {
-	DisallowRegistration()
-	Join(playerID string) error
+	Options() *Options
+	Dispatcher() Dispatcher
+	WaitingRoom() WaitingRoom
+	QueueManager() QueueManager
+	TableBackend() TableBackend
+	Runner() Runner
+	TableMap() TableMap
 	Close() error
+
+	GetStatus() MatchStatus
+	IsLastTableStage() bool
+	Join(playerID string) error
+	BreakTable(tableID string) error
+	ApplySeatChanges(tableID string, sc *SeatChanges) error
+	GetPlayerCount() int64
+	PrintTables()
+	AllocateTableWithPlayers(players []string) error
 }
 
 type MatchOpt func(*match)
+
 type match struct {
-	engine psae.PSAE
-	b      Backend
+	options     *Options
+	status      MatchStatus
+	qm          QueueManager
+	wr          WaitingRoom
+	tm          TableMap
+	d           Dispatcher
+	tb          TableBackend
+	r           Runner
+	playerCount int64
+
+	onTableBroken  func(Match, *Table)
+	onPlayerJoined func(Match, *Table, int, string)
 }
 
-func WithBackend(b Backend) MatchOpt {
+func WithQueueManager(qm QueueManager) MatchOpt {
 	return func(m *match) {
-		m.b = b
+		m.qm = qm
 	}
 }
 
-func NewMatch(options *Options, opts ...MatchOpt) *match {
+func WithTableBackend(tb TableBackend) MatchOpt {
+	return func(m *match) {
+		m.tb = tb
+	}
+}
 
-	m := &match{}
+func WithRunner(r Runner) MatchOpt {
+	return func(m *match) {
+		m.r = r
+	}
+}
 
-	for _, opt := range opts {
-		opt(m)
+func WithPlayerJoinedCallback(fn func(Match, *Table, int, string)) MatchOpt {
+	return func(m *match) {
+		m.onPlayerJoined = fn
+	}
+}
+
+func WithTableBrokenCallback(fn func(Match, *Table)) MatchOpt {
+	return func(m *match) {
+		m.onTableBroken = fn
+	}
+}
+
+func NewMatch(options *Options, opts ...MatchOpt) Match {
+
+	m := &match{
+		options:        options,
+		status:         MatchStatus_Normal,
+		onTableBroken:  func(Match, *Table) {},
+		onPlayerJoined: func(Match, *Table, int, string) {},
 	}
 
-	// Preparing game configuration
-	g := psae.NewGame()
-	g.MaxPlayersPerTable = options.MaxSeats
-	g.MinInitialPlayers = options.MinInitialPlayers
-	g.TableLimit = options.MaxTables
-
-	if !options.Joinable {
-		g.Status = psae.GameStatus_AfterRegistrationDeadline
+	for _, o := range opts {
+		o(m)
 	}
 
-	// Create backend
-	b := m.initializeBackend()
+	m.wr = NewWaitingRoom(m)
 
-	// Initializing allocation engine
-	m.engine = psae.NewPSAE(
-		psae.WithBackend(b),
-		psae.WithRuntime(NewMatchRuntime()),
-		psae.WithWaitingRoom(psae.NewMemoryWaitingRoom(time.Second*time.Duration(options.WaitingPeriod))),
-		psae.WithGame(g),
-		//TODO: implement SeatMap with Redis
-		//TODO: implement WaitingRoom with Redis
-		//TODO: implement MatchQueue with JetStream
-		//TODO: implement DispatchQueue with JetStream
-		//TODO: implement ReleaseQueue with JetStream
-	)
+	// Table map
+	m.tm = NewTableMap(m)
+	m.tm.OnTableBroken(func(table *Table) {
+		m.onTableBroken(m, table)
+	})
+
+	m.tm.OnPlayerLeft(func(table *Table, seatID int, playerID string) {
+		atomic.AddInt64(&m.playerCount, -int64(1))
+	})
+
+	m.tm.OnPlayerJoined(func(table *Table, seatID int, playerID string) {
+		m.onPlayerJoined(m, table, seatID, playerID)
+	})
+
+	if m.qm == nil {
+		m.qm = NewNativeQueueManager()
+		err := m.qm.Connect()
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+	}
+
+	// Table backend
+	if m.tb == nil {
+		m.tb = NewDummyTableBackend()
+	}
+
+	m.tb.OnTableUpdated(func(tableID string, sc *SeatChanges) {
+		m.ApplySeatChanges(tableID, sc)
+	})
+
+	// Runner
+	if m.r == nil {
+		m.r = NewNativeRunner()
+	}
+
+	// Dispatcher
+	m.d = NewDispatcher(m)
+	m.d.OnFailure(func(err error, playerID string) {
+		fmt.Println(err)
+	})
+	m.d.Start()
 
 	return m
 }
 
-func (m *match) initializeBackend() *psae.Backend {
+func (m *match) Options() *Options {
+	return m.options
+}
 
-	b := psae.NewBackend()
+func (m *match) QueueManager() QueueManager {
+	return m.qm
+}
 
-	b.AllocateTable = func() (*psae.TableState, error) {
+func (m *match) WaitingRoom() WaitingRoom {
+	return m.wr
+}
 
-		tableID, err := m.b.AllocateTable()
-		if err != nil {
-			return nil, err
-		}
+func (m *match) Runner() Runner {
+	return m.r
+}
 
-		ts := &psae.TableState{
-			ID:             tableID,
-			Players:        make(map[string]*psae.Player),
-			Status:         psae.TableStatus_Ready,
-			TotalSeats:     m.engine.Game().MaxPlayersPerTable,
-			AvailableSeats: m.engine.Game().MaxPlayersPerTable,
-			Statistics: &psae.TableStatistics{
-				NoChanges: 0,
-			},
-		}
+func (m *match) TableBackend() TableBackend {
+	return m.tb
+}
 
-		return ts, nil
-	}
+func (m *match) TableMap() TableMap {
+	return m.tm
+}
 
-	b.JoinTable = func(tableID string, players []*psae.Player) error {
-		_, err := m.b.Join(tableID, players)
+func (m *match) Dispatcher() Dispatcher {
+	return m.d
+}
+
+func (m *match) Close() error {
+
+	err := m.d.Close()
+	if err != nil {
 		return err
 	}
 
-	b.BrokeTable = func(tableID string) error {
-		return m.b.BreakTable(tableID)
-	}
-
-	return b
-}
-
-func (m *match) Join(playerID string) error {
-
-	player := &psae.Player{
-		ID: playerID,
-	}
-
-	err := m.engine.Join(player)
+	err = m.qm.Close()
 	if err != nil {
 		return err
 	}
@@ -112,18 +193,99 @@ func (m *match) Join(playerID string) error {
 	return nil
 }
 
-func (m *match) Close() error {
-	return m.engine.Close()
+func (m *match) GetStatus() MatchStatus {
+	return m.status
 }
 
-func (m *match) DisallowRegistration() {
-	m.engine.DisallowRegistration()
+func (m *match) GetPlayerCount() int64 {
+	return atomic.LoadInt64(&m.playerCount)
 }
 
-func (m *match) GetTableState(tableId string) (*psae.TableState, error) {
-	return m.engine.GetTableState(tableId)
+func (m *match) Join(playerID string) error {
+
+	opts := m.Options()
+	if opts.MaxTables > 0 {
+		if opts.MaxTables*opts.MaxSeats <= int(m.GetPlayerCount()) {
+			return ErrMaxPlayersReached
+		}
+	}
+
+	if m.status == MatchStatus_AfterRegDeadline {
+		return nil
+	}
+
+	err := m.d.Dispatch(playerID)
+	if err != nil {
+		return err
+	}
+
+	atomic.AddInt64(&m.playerCount, int64(1))
+
+	return nil
 }
 
-func (m *match) UpdateTable(state *psae.TableState) (*psae.TableState, error) {
-	return m.engine.UpdateTableState(state)
+func (m *match) BreakTable(tableID string) error {
+	return m.tm.BreakTable(tableID)
+}
+
+func (m *match) ApplySeatChanges(tableID string, sc *SeatChanges) error {
+	return m.tm.ApplySeatChanges(tableID, sc)
+}
+
+func (m *match) IsLastTableStage() bool {
+
+	if m.status == MatchStatus_AfterRegDeadline {
+
+		tableCount := m.TableMap().Count()
+
+		// Final table
+		if tableCount == 1 {
+			return true
+		}
+
+		totalPlayers := m.GetPlayerCount()
+
+		// Only one table is required for the rest of players
+		proposedTableCount := math.Ceil(float64(totalPlayers) / float64(m.options.MaxSeats))
+		if proposedTableCount == 1 {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (m *match) PrintTables() {
+
+	tables, _ := m.TableMap().GetTables()
+
+	fmt.Printf("Current tables(%d):\n", len(tables))
+
+	i := 0
+	playerCount := 0
+	for _, table := range tables {
+
+		i++
+		playerCount += table.GetPlayerCount()
+		fmt.Printf("  table(%d) id=%s, player_count=%d, status=%d\n",
+			i,
+			table.ID(),
+			table.GetPlayerCount(),
+			table.GetStatus(),
+		)
+	}
+
+	fmt.Printf("Total players = %d\n", m.GetPlayerCount())
+	fmt.Printf("Waiting for dispatching = %d\n", m.Dispatcher().GetPendingCount())
+}
+
+func (m *match) AllocateTableWithPlayers(players []string) error {
+
+	// Create a new table for players
+	_, err := m.tm.CreateTable(players)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

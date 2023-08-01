@@ -15,6 +15,8 @@ var (
 	ErrEmptySeat                   = errors.New("seat_manager: empty seat")
 )
 
+type SeatManagerOpt func(*SeatManager)
+
 type PlayerInfo interface{}
 
 type Seat struct {
@@ -246,6 +248,19 @@ func (sm *SeatManager) getAvailableSeats() ([]int, []int) {
 	return seats, alternateSeats
 }
 
+func (sm *SeatManager) getAvailableSeatCount() int {
+
+	count := 0
+	for i := 0; i < sm.max; i++ {
+		s := sm.seats[i]
+		if s.IsActive && !s.IsReserved && s.Player == nil {
+			count++
+		}
+	}
+
+	return count
+}
+
 func (sm *SeatManager) getSeats() []*Seat {
 
 	seats := make([]*Seat, 0)
@@ -257,59 +272,7 @@ func (sm *SeatManager) getSeats() []*Seat {
 	return seats
 }
 
-func (sm *SeatManager) Reset() {
-
-	for i := 0; i < sm.max; i++ {
-		sm.ResetSeat(i)
-	}
-}
-
-func (sm *SeatManager) ResetSeat(seatID int) {
-	sm.seats[seatID] = &Seat{
-		ID:         seatID,
-		Player:     nil,
-		IsActive:   true,
-		IsReserved: false,
-	}
-}
-
-func (sm *SeatManager) ApplyStates(state *SeatManagerState) error {
-
-	sm.max = state.Max
-	sm.seats = state.Seats
-	sm.dealer = nil
-	sm.sb = nil
-	sm.bb = nil
-
-	// Position states
-	if state.Dealer >= 0 {
-		sm.dealer = sm.seats[state.Dealer]
-	}
-
-	if state.SB >= 0 {
-		sm.sb = sm.seats[state.SB]
-	}
-
-	if state.BB >= 0 {
-		sm.bb = sm.seats[state.BB]
-	}
-
-	return nil
-}
-
-func (sm *SeatManager) Dealer() *Seat {
-	return sm.dealer
-}
-
-func (sm *SeatManager) SmallBlind() *Seat {
-	return sm.sb
-}
-
-func (sm *SeatManager) BigBlind() *Seat {
-	return sm.bb
-}
-
-func (sm *SeatManager) NextDealer() *Seat {
+func (sm *SeatManager) nextDealer() *Seat {
 
 	if sm.getPlayableSeatCount() < 2 {
 		return nil
@@ -355,6 +318,87 @@ func (sm *SeatManager) NextDealer() *Seat {
 	return sm.dealer
 }
 
+func (sm *SeatManager) resetSeat(seatID int) {
+	sm.seats[seatID] = &Seat{
+		ID:         seatID,
+		Player:     nil,
+		IsActive:   true,
+		IsReserved: false,
+	}
+}
+
+func (sm *SeatManager) Reset() {
+
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
+	for i := 0; i < sm.max; i++ {
+		sm.resetSeat(i)
+	}
+}
+
+func (sm *SeatManager) SetDealer(seatID int) error {
+	sm.dealer = sm.seats[seatID]
+	return nil
+}
+
+func (sm *SeatManager) SetSmallBlind(seatID int) error {
+	sm.sb = sm.seats[seatID]
+	return nil
+}
+
+func (sm *SeatManager) SetBigBlind(seatID int) error {
+	sm.bb = sm.seats[seatID]
+	return nil
+}
+
+func (sm *SeatManager) ApplyStates(state *SeatManagerState) error {
+
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
+	sm.max = state.Max
+	sm.dealer = nil
+	sm.sb = nil
+	sm.bb = nil
+
+	// Update seats
+	for i := 0; i < sm.max; i++ {
+		newState := state.Seats[i]
+		s := sm.seats[i]
+		s.Player = newState.Player
+		s.IsActive = newState.IsActive
+		s.IsReserved = newState.IsReserved
+	}
+
+	// Position states
+	if state.Dealer >= 0 {
+		sm.dealer = sm.seats[state.Dealer]
+	}
+
+	if state.SB >= 0 {
+		sm.sb = sm.seats[state.SB]
+	}
+
+	if state.BB >= 0 {
+		sm.bb = sm.seats[state.BB]
+	}
+
+	return nil
+}
+
+func (sm *SeatManager) Dealer() *Seat {
+	return sm.dealer
+}
+
+func (sm *SeatManager) SmallBlind() *Seat {
+	return sm.sb
+}
+
+func (sm *SeatManager) BigBlind() *Seat {
+	return sm.bb
+}
+
 func (sm *SeatManager) GetSeatCount() int {
 	return sm.max
 }
@@ -381,6 +425,14 @@ func (sm *SeatManager) GetAvailableSeats() ([]int, []int) {
 	defer sm.mu.RUnlock()
 
 	return sm.getAvailableSeats()
+}
+
+func (sm *SeatManager) GetAvailableSeatCount() int {
+
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+
+	return sm.getAvailableSeatCount()
 }
 
 func (sm *SeatManager) GetSeats() []*Seat {
@@ -503,7 +555,7 @@ func (sm *SeatManager) Next() error {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
-	if sm.NextDealer() == nil {
+	if sm.nextDealer() == nil {
 		return ErrInsufficientNumberOfPlayers
 	}
 

@@ -1,4 +1,4 @@
-package psae
+package match
 
 import (
 	"container/list"
@@ -21,14 +21,18 @@ func (stack *Stack) List() *list.List {
 }
 
 func (stack *Stack) Push(value interface{}) {
+
 	stack.mu.Lock()
 	defer stack.mu.Unlock()
+
 	stack.list.PushBack(value)
 }
 
 func (stack *Stack) Pop() interface{} {
+
 	stack.mu.Lock()
 	defer stack.mu.Unlock()
+
 	e := stack.list.Back()
 	if e != nil {
 		stack.list.Remove(e)
@@ -37,7 +41,7 @@ func (stack *Stack) Pop() interface{} {
 	return nil
 }
 
-func (stack *Stack) Peak() interface{} {
+func (stack *Stack) Peek() interface{} {
 	e := stack.list.Back()
 	if e != nil {
 		return e.Value
@@ -47,6 +51,10 @@ func (stack *Stack) Peak() interface{} {
 }
 
 func (stack *Stack) Len() int {
+
+	stack.mu.RLock()
+	defer stack.mu.RUnlock()
+
 	return stack.list.Len()
 }
 

@@ -1,24 +1,36 @@
 package competition
 
 import (
+	"sync"
+
 	"github.com/weedbox/pokerface/table"
 )
 
 type NativeTableBackend struct {
-	geb    table.Backend
-	tables map[string]table.Table
+	geb            table.Backend
+	tables         map[string]table.Table
+	mu             sync.RWMutex
+	onTableUpdated func(ts *table.State)
 }
 
 func NewNativeTableBackend(geb table.Backend) TableBackend {
 	return &NativeTableBackend{
-		geb:    geb,
-		tables: make(map[string]table.Table),
+		geb:            geb,
+		tables:         make(map[string]table.Table),
+		onTableUpdated: func(ts *table.State) {},
 	}
 }
 
 func (ntb *NativeTableBackend) CreateTable(opts *table.Options) (*table.State, error) {
 
+	ntb.mu.Lock()
+	defer ntb.mu.Unlock()
+
 	t := table.NewTable(opts, table.WithBackend(ntb.geb))
+
+	t.OnStateUpdated(func(ts *table.State) {
+		go ntb.onTableUpdated(ts)
+	})
 
 	ntb.tables[t.GetState().ID] = t
 
@@ -26,6 +38,9 @@ func (ntb *NativeTableBackend) CreateTable(opts *table.Options) (*table.State, e
 }
 
 func (ntb *NativeTableBackend) ActivateTable(tableID string) error {
+
+	ntb.mu.RLock()
+	defer ntb.mu.RUnlock()
 
 	t, ok := ntb.tables[tableID]
 	if !ok {
@@ -35,18 +50,25 @@ func (ntb *NativeTableBackend) ActivateTable(tableID string) error {
 	return t.Start()
 }
 
-func (ntb *NativeTableBackend) BreakTable(tableID string) error {
+func (ntb *NativeTableBackend) ReleaseTable(tableID string) error {
+
+	ntb.mu.Lock()
+	defer ntb.mu.Unlock()
 
 	t, ok := ntb.tables[tableID]
 	if !ok {
 		return ErrNotFoundTable
 	}
 
-	// TODO: implementation of breaking table
+	delete(ntb.tables, tableID)
+
 	return t.Close()
 }
 
 func (ntb *NativeTableBackend) ReserveSeat(tableID string, seatID int, p *PlayerInfo) (int, error) {
+
+	ntb.mu.RLock()
+	defer ntb.mu.RUnlock()
 
 	t, ok := ntb.tables[tableID]
 	if !ok {
@@ -59,4 +81,8 @@ func (ntb *NativeTableBackend) ReserveSeat(tableID string, seatID int, p *Player
 	})
 
 	return seatID, err
+}
+
+func (ntb *NativeTableBackend) OnTableUpdated(fn func(ts *table.State)) {
+	ntb.onTableUpdated = fn
 }

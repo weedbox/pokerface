@@ -1,52 +1,56 @@
 package competition
 
 import (
+	"sync/atomic"
+
 	"github.com/weedbox/pokerface/table"
 )
 
 type TableManager interface {
 	Initialize() error
 	CreateTable() (*table.State, error)
-	BreakTable(tableID string) error
+	ReleaseTable(tableID string) error
 	ActivateTable(tableID string) error
+	GetTables() []*table.State
 	GetTableState(tableID string) *table.State
-	GetTableCount() int
-	DispatchPlayer(p *PlayerInfo) error
+	GetTableCount() int64
 	ReserveSeat(tableID string, seatID int, p *PlayerInfo) (int, error)
 }
 
 type tableManager struct {
 	options *Options
 	b       TableBackend
-	m       MatchBackend
 	tables  map[string]*table.State
+	count   int64
 }
 
-func NewTableManager(options *Options, b TableBackend, m MatchBackend) TableManager {
+func NewTableManager(options *Options, b TableBackend) TableManager {
 	return &tableManager{
 		options: options,
 		b:       b,
-		m:       m,
 		tables:  make(map[string]*table.State),
 	}
 }
 
 func (tm *tableManager) Initialize() error {
 
-	// Only one static table
-	if tm.options.MaxTables == 1 {
-
-		// Create table immediately
-		ts, err := tm.CreateTable()
-		if err != nil {
-			return err
-		}
-
-		// Then activate
-		return tm.ActivateTable(ts.ID)
-	}
-
 	return nil
+	/*
+	   // Only one static table
+	   if tm.options.MaxTables == 1 {
+
+	   		// Create table immediately
+	   		ts, err := tm.CreateTable()
+	   		if err != nil {
+	   			return err
+	   		}
+
+	   		// Then activate
+	   		return tm.ActivateTable(ts.ID)
+	   	}
+
+	   return nil
+	*/
 }
 
 func (tm *tableManager) CreateTable() (*table.State, error) {
@@ -66,11 +70,21 @@ func (tm *tableManager) CreateTable() (*table.State, error) {
 
 	tm.tables[ts.ID] = ts
 
+	atomic.AddInt64(&tm.count, 1)
+
 	return ts, nil
 }
 
-func (tm *tableManager) BreakTable(tableID string) error {
-	return tm.b.BreakTable(tableID)
+func (tm *tableManager) ReleaseTable(tableID string) error {
+
+	err := tm.b.ReleaseTable(tableID)
+	if err != nil {
+		return err
+	}
+
+	atomic.AddInt64(&tm.count, -1)
+
+	return nil
 }
 
 func (tm *tableManager) ActivateTable(tableID string) error {
@@ -87,27 +101,19 @@ func (tm *tableManager) GetTableState(tableID string) *table.State {
 	return ts
 }
 
-func (tm *tableManager) GetTableCount() int {
-	return len(tm.tables)
+func (tm *tableManager) GetTables() []*table.State {
+
+	tables := make([]*table.State, 0)
+
+	for _, ts := range tm.tables {
+		tables = append(tables, ts)
+	}
+
+	return tables
 }
 
-func (tm *tableManager) DispatchPlayer(p *PlayerInfo) error {
-
-	//TODO: replace this temporary solution
-	// Find the on table for dispatching player into it
-	/*
-		for _, ts := range tm.tables {
-			p.Participated = true
-			_, err := tm.ReserveSeat(ts.ID, -1, p)
-			if err != nil {
-				return err
-			}
-		}
-	*/
-
-	p.Participated = true
-
-	return tm.m.DispatchPlayer(p.ID)
+func (tm *tableManager) GetTableCount() int64 {
+	return atomic.LoadInt64(&tm.count)
 }
 
 func (tm *tableManager) ReserveSeat(tableID string, seatID int, p *PlayerInfo) (int, error) {

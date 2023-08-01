@@ -4,85 +4,125 @@ import (
 	"fmt"
 
 	"github.com/weedbox/pokerface/match"
-	"github.com/weedbox/pokerface/match/psae"
+	"github.com/weedbox/pokerface/table"
 )
 
-type MatchBackend interface {
-	AllocateTable() (string, error)
-	BreakTable(tableID string) error
-	Join(tableID string, players []*psae.Player) ([]int, error)
-	DispatchPlayer(playerID string) error
+type NativeMatchTableBackend struct {
+	c              Competition
+	onTableUpdated func(tableID string, sc *match.SeatChanges)
 }
 
-type NativeMatchBackend struct {
-	c Competition
-	m match.Match
-}
+func NewNativeMatchTableBackend(c Competition) *NativeMatchTableBackend {
 
-func NewNativeMatchBackend(c Competition) MatchBackend {
-
-	nmb := &NativeMatchBackend{
-		c: c,
+	nmtb := &NativeMatchTableBackend{
+		c:              c,
+		onTableUpdated: func(tableID string, sc *match.SeatChanges) {},
 	}
 
-	// Initializing match mechanism
-	opts := match.NewOptions()
-	opts.WaitingPeriod = c.GetOptions().TableAllocationPeriod
-	opts.MaxTables = c.GetOptions().MaxTables
-	opts.MaxSeats = c.GetOptions().Table.MaxSeats
+	c.TableBackend().OnTableUpdated(func(ts *table.State) {
+		nmtb.EmitTableUpdated(ts)
+	})
 
-	nmb.m = match.NewMatch(opts, match.WithBackend(nmb))
-
-	return nmb
+	return nmtb
 }
 
-func (nmb *NativeMatchBackend) AllocateTable() (string, error) {
+func (nmtb *NativeMatchTableBackend) Allocate(maxSeats int) (*match.Table, error) {
 
 	// Create a new table
-	ts, err := nmb.c.GetTableManager().CreateTable()
+	ts, err := nmtb.c.TableManager().CreateTable()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	fmt.Printf("AllocateTable (id=%s)\n", ts.ID)
+	// Preparing table state
+	t := match.NewTable(maxSeats)
+	t.SetID(ts.ID)
 
 	// Activate immediately
-	err = nmb.c.GetTableManager().ActivateTable(ts.ID)
+	err = nmtb.c.TableManager().ActivateTable(ts.ID)
 	if err != nil {
-		return ts.ID, err
+		return t, err
 	}
 
-	return ts.ID, nil
+	fmt.Printf("Allocated Table (id=%s, seats=%d)\n", ts.ID, maxSeats)
+
+	return t, nil
 }
 
-func (nmb *NativeMatchBackend) BreakTable(tableID string) error {
-
-	fmt.Printf("BreakTable (id=%s)\n", tableID)
-
-	return nmb.c.GetTableManager().BreakTable(tableID)
+func (nmtb *NativeMatchTableBackend) Release(tableID string) error {
+	return nmtb.c.TableManager().ReleaseTable(tableID)
 }
 
-func (nmb *NativeMatchBackend) Join(tableID string, players []*psae.Player) ([]int, error) {
+func (nmtb *NativeMatchTableBackend) Reserve(tableID string, seatID int, playerID string) error {
 
-	seats := make([]int, 0)
+	//fmt.Printf("Reseve Seat (table_id=%s, seat=%d, player=%s)\n", tableID, seatID, playerID)
 
-	// Attempt to reserve seats for players
-	for _, p := range players {
+	_, err := nmtb.c.ReserveSeat(tableID, -1, playerID)
+	if err != nil {
+		return err
+	}
 
-		seatID, err := nmb.c.GetTableManager().ReserveSeat(tableID, -1, &PlayerInfo{
-			ID: p.ID,
-		})
+	return nil
+}
 
-		seats = append(seats, seatID)
+func (nmtb *NativeMatchTableBackend) GetTable(tableID string) (*match.Table, error) {
 
-		if err != nil {
-			return seats, err
+	ts := nmtb.c.TableManager().GetTableState(tableID)
+
+	t := match.NewTable(ts.Options.MaxSeats)
+	t.SetID(ts.ID)
+
+	return t, nil
+}
+
+func (nmtb *NativeMatchTableBackend) EmitTableUpdated(newts *table.State) {
+
+	if newts.GameState == nil {
+		return
+	}
+
+	//newts.PrintState()
+
+	// Getting original table state
+	ts := nmtb.c.TableManager().GetTableState(newts.ID)
+	if ts == nil {
+		return
+	}
+
+	fmt.Printf("TableUpdated (table=%s, players=%d)\n", ts.ID, len(ts.Players))
+	for _, p := range ts.Players {
+		fmt.Printf("  origin table (table=%s, seat=%d, id=%s)\n", ts.ID, p.SeatID, p.ID)
+	}
+
+	for _, p := range newts.Players {
+		fmt.Printf("  new table (table=%s, seat=%d, id=%s)\n", newts.ID, p.SeatID, p.ID)
+	}
+
+	// Preparing seat changes
+	sc := match.NewSeatChanges()
+	for _, p := range ts.Players {
+
+		found := false
+		for _, np := range newts.Players {
+			if p.ID == np.ID {
+				found = true
+				break
+			}
+		}
+
+		// Unable to find the player indicates that the player has left the seat
+		if !found {
+			// Remove players
+			sc.Seats[p.SeatID] = "left"
 		}
 	}
 
-	return seats, nil
-}
+	for seatID, _ := range sc.Seats {
+		fmt.Printf("    remove player (table=%s, seat=%d)\n", newts.ID, seatID)
+	}
 
-func (nmb *NativeMatchBackend) DispatchPlayer(playerID string) error {
-	return nmb.m.Join(playerID)
+	nmtb.onTableUpdated(ts.ID, sc)
+}
+func (nmtb *NativeMatchTableBackend) OnTableUpdated(fn func(tableID string, sc *match.SeatChanges)) {
+	nmtb.onTableUpdated = fn
 }

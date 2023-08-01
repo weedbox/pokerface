@@ -2,7 +2,9 @@ package competition
 
 import (
 	"errors"
+	"sync"
 
+	"github.com/weedbox/pokerface/match"
 	"github.com/weedbox/pokerface/table"
 )
 
@@ -16,19 +18,27 @@ var (
 )
 
 type Competition interface {
+	TableManager() TableManager
+	TableBackend() TableBackend
+	Start() error
+	Close() error
 	GetOptions() *Options
-	GetTableManager() TableManager
+	GetTableCount() int64
+	Match() match.Match
+	ReserveSeat(tableID string, seatID int, playerID string) (int, error)
 }
 
 type competition struct {
 	options    *Options
 	tm         TableManager
 	tb         TableBackend
-	m          MatchBackend
+	m          match.Match
+	mtb        match.TableBackend
 	players    []*PlayerInfo
 	s          *State
 	isRunning  bool
 	isJoinable bool
+	mu         sync.RWMutex
 }
 
 type CompetitionOpt func(*competition)
@@ -39,7 +49,7 @@ func WithTableBackend(tb TableBackend) CompetitionOpt {
 	}
 }
 
-func WithMatchBackend(m MatchBackend) CompetitionOpt {
+func WithMatchBackend(m match.Match) CompetitionOpt {
 	return func(c *competition) {
 		c.m = m
 	}
@@ -58,36 +68,36 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 		opt(c)
 	}
 
+	// Table backend
 	if c.tb == nil {
 		c.tb = NewNativeTableBackend(table.NewNativeBackend())
 	}
 
-	if c.m == nil {
-		c.m = NewNativeMatchBackend(c)
+	// Table backend of match
+	if c.mtb == nil {
+		c.mtb = NewNativeMatchTableBackend(c)
 	}
 
-	c.tm = NewTableManager(options, c.tb, c.m)
+	if c.m == nil {
+
+		// Initializing match
+		opts := match.NewOptions()
+		opts.WaitingPeriod = c.GetOptions().TableAllocationPeriod
+		opts.MaxTables = c.GetOptions().MaxTables
+		opts.MaxSeats = c.GetOptions().Table.MaxSeats
+
+		c.m = match.NewMatch(
+			opts,
+			match.WithTableBackend(NewNativeMatchTableBackend(c)),
+		)
+	}
+
+	c.tm = NewTableManager(options, c.tb)
 
 	return c
 }
 
-func (c *competition) GetTableManager() TableManager {
-	return c.tm
-}
-
-func (c *competition) GetOptions() *Options {
-	return c.options
-}
-
-func (c *competition) GetTableCount() int {
-	return c.tm.GetTableCount()
-}
-
-func (c *competition) GetPlayers() []*PlayerInfo {
-	return c.players
-}
-
-func (c *competition) GetPlayerByID(playerID string) (*PlayerInfo, error) {
+func (c *competition) getPlayerByID(playerID string) (*PlayerInfo, error) {
 
 	for _, p := range c.players {
 		if p.ID == playerID {
@@ -98,7 +108,42 @@ func (c *competition) GetPlayerByID(playerID string) (*PlayerInfo, error) {
 	return nil, ErrNotFoundPlayer
 }
 
+func (c *competition) TableManager() TableManager {
+	return c.tm
+}
+
+func (c *competition) TableBackend() TableBackend {
+	return c.tb
+}
+
+func (c *competition) Match() match.Match {
+	return c.m
+}
+
+func (c *competition) GetOptions() *Options {
+	return c.options
+}
+
+func (c *competition) GetTableCount() int64 {
+	return c.tm.GetTableCount()
+}
+
+func (c *competition) GetPlayers() []*PlayerInfo {
+	return c.players
+}
+
+func (c *competition) GetPlayerByID(playerID string) (*PlayerInfo, error) {
+
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	return c.getPlayerByID(playerID)
+}
+
 func (c *competition) GetPlayerIndexByID(playerID string) (int, error) {
+
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
 	for i, p := range c.players {
 		if p.ID == playerID {
@@ -111,11 +156,14 @@ func (c *competition) GetPlayerIndexByID(playerID string) (int, error) {
 
 func (c *competition) Register(playerID string, bankroll int64) error {
 
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if !c.isJoinable {
 		return ErrNotJoinable
 	}
 
-	_, err := c.GetPlayerByID(playerID)
+	_, err := c.getPlayerByID(playerID)
 	if err != ErrNotFoundPlayer {
 		// Existing already
 		return ErrPlayerExistsAlready
@@ -130,13 +178,21 @@ func (c *competition) Register(playerID string, bankroll int64) error {
 
 	// Dispatch player if competition is running already
 	if c.isRunning {
-		c.tm.DispatchPlayer(p)
+		err := c.m.Join(playerID)
+		if err != nil {
+			return err
+		}
+
+		p.Participated = true
 	}
 
 	return nil
 }
 
 func (c *competition) Unregister(playerID string) error {
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	idx := -1
 	var found *PlayerInfo
@@ -185,10 +241,19 @@ func (c *competition) Start() error {
 			continue
 		}
 
-		c.tm.DispatchPlayer(p)
+		err := c.m.Join(p.ID)
+		if err != nil {
+			return err
+		}
+
+		p.Participated = true
 	}
 
 	return nil
+}
+
+func (c *competition) Close() error {
+	return c.m.Close()
 }
 
 func (c *competition) BuyIn(p *PlayerInfo) error {
@@ -200,5 +265,25 @@ func (c *competition) BuyIn(p *PlayerInfo) error {
 	}
 
 	// Allocate seat
-	return c.tm.DispatchPlayer(p)
+	err = c.m.Join(p.ID)
+	if err != nil {
+		return err
+	}
+
+	p.Participated = true
+
+	return nil
+}
+
+func (c *competition) ReserveSeat(tableID string, seatID int, playerID string) (int, error) {
+
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	p, err := c.getPlayerByID(playerID)
+	if err != nil {
+		return -1, err
+	}
+
+	return c.tm.ReserveSeat(tableID, seatID, p)
 }

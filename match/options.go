@@ -6,6 +6,7 @@ type Options struct {
 	MaxSeats          int  `json:"max_seats"`
 	MaxTables         int  `json:"max_tables"`
 	Joinable          bool `json:"joinable"`
+	BreakThreshold    int  `json:"break_threshold"`
 }
 
 func NewOptions() *Options {
@@ -15,5 +16,6 @@ func NewOptions() *Options {
 		MaxSeats:          9,
 		MaxTables:         -1, // Unlimit
 		Joinable:          true,
+		BreakThreshold:    3,
 	}
 }
