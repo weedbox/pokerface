@@ -15,24 +15,24 @@ func (t *table) tableLoop() {
 	for interval := range t.gameLoop {
 
 		err := t.delay(interval, func() error {
-			return t.nextGame()
+			return t.NextGame()
 		})
 
 		switch err {
 		case ErrMaxGamesExceeded:
 			t.ts.Status = "closed"
-			t.updateStates(nil)
+			t.updateGameState(nil)
 			return
 		case ErrTimesUp:
 			t.ts.Status = "closed"
-			t.updateStates(nil)
+			t.updateGameState(nil)
 			return
 		case ErrInsufficientNumberOfPlayers:
 
 			// Nobody can join so so table should be closed
 			if !t.options.Joinable {
 				t.ts.Status = "closed"
-				t.updateStates(nil)
+				t.updateGameState(nil)
 				return
 			}
 
@@ -162,7 +162,7 @@ func (t *table) updatePlayerStates(ts *State) error {
 
 func (t *table) emitStateUpdated() {
 	state := t.cloneState()
-	t.onStateUpdated(state)
+	go t.onStateUpdated(state)
 }
 
 func (t *table) cloneState() *State {
@@ -179,10 +179,10 @@ func (t *table) cloneState() *State {
 	return &state
 }
 
-func (t *table) updateStates(gs *pokerface.GameState) error {
+func (t *table) updateGameState(gs *pokerface.GameState) error {
 
-	t.mu.RLock()
-	defer t.mu.RUnlock()
+	t.mu.Lock()
+	defer t.mu.Unlock()
 
 	t.ts.GameState = gs
 
@@ -190,7 +190,7 @@ func (t *table) updateStates(gs *pokerface.GameState) error {
 	state := t.cloneState()
 
 	t.updatePlayerStates(state)
-	t.onStateUpdated(state)
+	go t.onStateUpdated(state)
 
 	return nil
 }
@@ -210,7 +210,10 @@ func (t *table) checkEndConditions() error {
 	return nil
 }
 
-func (t *table) nextGame() error {
+func (t *table) NextGame() error {
+
+	//t.mu.Lock()
+	//defer t.mu.Unlock()
 
 	if t.isPaused {
 		return ErrGameCancelled
@@ -299,7 +302,7 @@ func (t *table) startGame() error {
 	t.g.OnStateUpdated(func(gs *pokerface.GameState) {
 
 		//fmt.Println(gs.GameID, gs.Status.CurrentEvent)
-		t.updateStates(gs)
+		t.updateGameState(gs)
 
 		if gs.Status.CurrentEvent == "GameClosed" {
 			cancel()

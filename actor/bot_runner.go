@@ -1,7 +1,6 @@
 package actor
 
 import (
-	"fmt"
 	"math/rand"
 	"time"
 
@@ -30,12 +29,11 @@ type botRunner struct {
 	actor             Actor
 	actions           Actions
 	playerID          string
-	gamePlayerIdx     int
 	isHumanized       bool
+	curGameID         string
+	lastGameStateTime int64
 	timebank          *timebank.TimeBank
 	tableInfo         *pokertable.Table
-	lastGameStateTime int64
-	curGameID         string
 }
 
 func NewBotRunner(playerID string) *botRunner {
@@ -56,23 +54,24 @@ func (br *botRunner) Humanized(enabled bool) {
 
 func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
 
+	gs := table.State.GameState
 	br.tableInfo = table
 
 	// The state remains unchanged or is outdated
-	if table.State.GameState != nil {
+	if gs != nil {
 
 		// New game
-		if table.State.GameState.GameID != br.curGameID {
-			br.curGameID = table.State.GameState.GameID
+		if gs.GameID != br.curGameID {
+			br.curGameID = gs.GameID
 		}
 
 		//fmt.Println(br.lastGameStateTime, br.tableInfo.State.GameState.UpdatedAt)
-		if br.lastGameStateTime >= table.State.GameState.UpdatedAt {
+		if br.lastGameStateTime >= gs.UpdatedAt {
 			//fmt.Println(br.playerID, table.ID)
 			return nil
 		}
 
-		br.lastGameStateTime = table.State.GameState.UpdatedAt
+		br.lastGameStateTime = gs.UpdatedAt
 	}
 
 	// Check if you have been eliminated
@@ -92,12 +91,11 @@ func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
 	}
 
 	// Update player index in game
-	//br.gamePlayerIdx = table.GamePlayerIndex(br.playerID)
-	br.gamePlayerIdx = br.actor.GetTable().GetGamePlayerIndex(br.playerID)
+	gamePlayerIdx := br.actor.GetTable().GetGamePlayerIndex(br.playerID)
 
 	// Somehow, this player is not in the game.
-	// It probably has no chips already or just seat down
-	if br.gamePlayerIdx == -1 {
+	// It probably has no chips already or just sat down and have not participated in the game yet
+	if gamePlayerIdx == -1 {
 		return nil
 	}
 
@@ -107,57 +105,36 @@ func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
 
 	//fmt.Printf("Bot (player_id=%s, gameIdx=%d)\n", br.playerID, br.gamePlayerIdx)
 
-	defer func() {
-		r := recover()
-		if r != nil {
-			fmt.Println("================  debugging")
-			fmt.Println("== Table State")
-			for _, ps := range table.State.PlayerStates {
-				fmt.Printf("player=%s, seat=%d\n", ps.PlayerID, ps.Seat)
-			}
-			fmt.Println("== GameState")
-			gs := br.actor.GetTable().GetGameState()
-			fmt.Printf("game cur=%s, new=%s\n", br.curGameID, gs.GameID)
-			fmt.Println(br.playerID, br.gamePlayerIdx)
-			for _, ps := range table.State.GameState.Players {
-				fmt.Println(ps.Idx)
-			}
-
-			gameIdx := br.actor.GetTable().GetGamePlayerIndex(br.playerID)
-			fmt.Println("Find again", gameIdx, br.gamePlayerIdx)
-
-			panic("crash")
-		}
-	}()
-
 	// game is running so we have to check actions allowed
-	//player := table.State.GameState.GetPlayer(br.gamePlayerIdx)
-	player := table.State.GameState.Players[br.gamePlayerIdx]
+	player := gs.GetPlayer(gamePlayerIdx)
+	if player == nil {
+		return nil
+	}
+
 	if len(player.AllowedActions) > 0 {
 		//fmt.Println(br.playerID, player.AllowedActions)
-		return br.requestMove()
+		return br.requestMove(table.State.GameState, gamePlayerIdx)
 	}
 
 	return nil
 }
 
-func (br *botRunner) requestMove() error {
-
-	gs := br.tableInfo.State.GameState
-	player := gs.Players[br.gamePlayerIdx]
+func (br *botRunner) requestMove(gs *pokerface.GameState, playerIdx int) error {
 
 	//fmt.Println(br.tableInfo.State.GameState.Status.Round, br.gamePlayerIdx, gs.Players[br.gamePlayerIdx].AllowedActions)
-
-	if len(player.AllowedActions) == 1 {
-		fmt.Println(br.playerID, player.AllowedActions)
-	}
+	/*
+		player := gs.Players[br.gamePlayerIdx]
+		if len(player.AllowedActions) == 1 {
+			fmt.Println(br.playerID, player.AllowedActions)
+		}
+	*/
 
 	// Do ready() and pay() automatically
-	if gs.HasAction(br.gamePlayerIdx, "ready") {
+	if gs.HasAction(playerIdx, "ready") {
 		return br.actions.Ready()
-	} else if gs.HasAction(br.gamePlayerIdx, "pass") {
+	} else if gs.HasAction(playerIdx, "pass") {
 		return br.actions.Pass()
-	} else if gs.HasAction(br.gamePlayerIdx, "pay") {
+	} else if gs.HasAction(playerIdx, "pay") {
 
 		// Pay for ante and blinds
 		switch gs.Status.CurrentEvent {
@@ -169,9 +146,9 @@ func (br *botRunner) requestMove() error {
 		case pokerface.GameEventSymbols[pokerface.GameEvent_BlindsRequested]:
 
 			// blinds
-			if gs.HasPosition(br.gamePlayerIdx, "sb") {
+			if gs.HasPosition(playerIdx, "sb") {
 				return br.actions.Pay(gs.Meta.Blind.SB)
-			} else if gs.HasPosition(br.gamePlayerIdx, "bb") {
+			} else if gs.HasPosition(playerIdx, "bb") {
 				return br.actions.Pay(gs.Meta.Blind.BB)
 			}
 
@@ -180,13 +157,13 @@ func (br *botRunner) requestMove() error {
 	}
 
 	if !br.isHumanized || br.tableInfo.Meta.CompetitionMeta.ActionTime == 0 {
-		return br.requestAI()
+		return br.requestAI(gs, playerIdx)
 	}
 
 	// For simulating human-like behavior, to incorporate random delays when performing actions.
 	thinkingTime := rand.Intn(br.tableInfo.Meta.CompetitionMeta.ActionTime)
 	if thinkingTime == 0 {
-		return br.requestAI()
+		return br.requestAI(gs, playerIdx)
 	}
 
 	return br.timebank.NewTask(time.Duration(thinkingTime)*time.Second, func(isCancelled bool) {
@@ -195,7 +172,7 @@ func (br *botRunner) requestMove() error {
 			return
 		}
 
-		br.requestAI()
+		br.requestAI(gs, playerIdx)
 	})
 }
 
@@ -242,10 +219,9 @@ func (br *botRunner) calcAction(actions []string) string {
 	return actions[len(actions)-1]
 }
 
-func (br *botRunner) requestAI() error {
+func (br *botRunner) requestAI(gs *pokerface.GameState, playerIdx int) error {
 
-	gs := br.tableInfo.State.GameState
-	player := gs.Players[br.gamePlayerIdx]
+	player := gs.Players[playerIdx]
 
 	// None of actions is allowed
 	if len(player.AllowedActions) == 0 {
@@ -259,6 +235,19 @@ func (br *botRunner) requestAI() error {
 	}
 
 	// Calculate chips
+	chips := int64(0)
+
+	/*
+		// Debugging messages
+		defer func() {
+			if chips > 0 {
+				fmt.Printf("Action %s %v %s(%d)\n", br.playerID, player.AllowedActions, action, chips)
+			} else {
+				fmt.Printf("Action %s %v %s\n", br.playerID, player.AllowedActions, action)
+			}
+		}()
+	*/
+
 	switch action {
 	case "bet":
 
@@ -268,9 +257,7 @@ func (br *botRunner) requestAI() error {
 			return br.actions.Bet(player.InitialStackSize)
 		}
 
-		chips := rand.Int63n(player.InitialStackSize-minBet) + minBet
-
-		fmt.Printf("%s %v %s(%d)\n", br.playerID, player.AllowedActions, action, chips)
+		chips = rand.Int63n(player.InitialStackSize-minBet) + minBet
 
 		return br.actions.Bet(chips)
 	case "raise":
@@ -282,19 +269,14 @@ func (br *botRunner) requestAI() error {
 			return br.actions.Raise(maxChipLevel)
 		}
 
-		chips := rand.Int63n(maxChipLevel-minChipLevel) + minChipLevel
-
-		fmt.Printf("%s %v %s(%d)\n", br.playerID, player.AllowedActions, action, chips)
+		chips = rand.Int63n(maxChipLevel-minChipLevel) + minChipLevel
 
 		return br.actions.Raise(chips)
 	case "call":
-		fmt.Printf("%s %v %s\n", br.playerID, player.AllowedActions, action)
 		return br.actions.Call()
 	case "check":
-		fmt.Printf("%s %v %s\n", br.playerID, player.AllowedActions, action)
 		return br.actions.Check()
 	case "allin":
-		fmt.Printf("%s %v %s\n", br.playerID, player.AllowedActions, action)
 		return br.actions.Allin()
 	}
 

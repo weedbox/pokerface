@@ -123,6 +123,11 @@ func (gs *GameState) AsObserver() {
 }
 
 func (gs *GameState) GetPlayer(idx int) *PlayerState {
+
+	if idx < 0 || idx >= len(gs.Players) {
+		return nil
+	}
+
 	return gs.Players[idx]
 }
 
@@ -144,7 +149,12 @@ func (gs *GameState) HasPosition(idx int, position string) bool {
 
 func (gs *GameState) HasAction(idx int, action string) bool {
 
-	for _, aa := range gs.Players[idx].AllowedActions {
+	p := gs.GetPlayer(idx)
+	if p == nil {
+		return false
+	}
+
+	for _, aa := range p.AllowedActions {
 		if aa == action {
 			return true
 		}

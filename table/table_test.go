@@ -131,7 +131,7 @@ func Test_Table_Basic(t *testing.T) {
 			assert.NotNil(t, ts.GameState.Result)
 
 			// Check player results
-			for _, rs := range table.GetState().GameState.Result.Players {
+			for _, rs := range ts.GameState.Result.Players {
 
 				for _, p := range table.GetState().Players {
 					if p.GameIdx == rs.Idx {

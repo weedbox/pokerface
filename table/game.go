@@ -1,6 +1,7 @@
 package table
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -176,18 +177,33 @@ func (g *game) Start() error {
 	return nil
 }
 
+func (g *game) cloneState(gs *pokerface.GameState) *pokerface.GameState {
+
+	// clone table state
+	data, err := json.Marshal(gs)
+	if err != nil {
+		return nil
+	}
+
+	var state pokerface.GameState
+	json.Unmarshal(data, &state)
+
+	return &state
+}
+
 func (g *game) updateState(gs *pokerface.GameState) {
 
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
-	g.gs = gs
+	state := g.cloneState(gs)
+	g.gs = state
 
 	if g.isClosed {
 		return
 	}
 
-	g.incomingStates <- gs
+	g.incomingStates <- state
 
 	//fmt.Println("Game Updating =>", g.gs.Status.CurrentEvent)
 }

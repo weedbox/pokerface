@@ -126,7 +126,7 @@ func Test_NativeTableAdapter_Join_Slowly(t *testing.T) {
 
 			actors = append(actors, a)
 
-			time.Sleep(50 * time.Millisecond)
+			time.Sleep(2 * time.Millisecond)
 		}
 
 		// Disallow new player to join table
@@ -138,31 +138,39 @@ func Test_NativeTableAdapter_Join_Slowly(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	var round string
+	var gameID string
 	nt.OnStateUpdated(func(s *table.State) {
 
 		//t.Log("OnStateUpdated")
 
-		// Update table state via adapter
-		for _, a := range actors {
-			go a.GetTable().(*NativeTableAdapter).UpdateNativeState(s)
+		if s.GameState != nil && gameID != s.GameState.GameID {
+			gameID = s.GameState.GameID
+			t.Log("NewGame")
 		}
 
 		if s.Status == "playing" {
+			// Intentionally causing delays to prevent some new players from participating in the game
+			time.Sleep(10 * time.Millisecond)
+
 			if s.GameState.Status.CurrentEvent == "GameClosed" {
 				t.Logf("GameClosed (id=%s, playable_players=%d)", s.GameState.GameID, nt.GetPlayablePlayerCount())
 			} else if round != s.GameState.Status.Round {
 				round = s.GameState.Status.Round
-				t.Log(s.GameState.Status.Round)
+				if len(round) > 0 {
+					t.Log(" |", s.GameState.Status.Round)
+				}
 			}
-
-			// Intentionally causing delays to prevent some new players from participating in the game
-			time.Sleep(50 * time.Millisecond)
 		}
 
 		if s.Status == "closed" {
 			t.Log("TableClosed")
 			assert.Less(t, nt.GetPlayablePlayerCount(), nt.GetState().Options.MinPlayers)
 			wg.Done()
+		}
+
+		// Update table state via adapter
+		for _, a := range actors {
+			go a.GetTable().(*NativeTableAdapter).UpdateNativeState(s)
 		}
 	})
 
