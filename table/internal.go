@@ -144,7 +144,7 @@ func (t *table) updatePlayerStates(ts *State) error {
 	// Updating player states with settlement
 	for _, rs := range ts.GameState.Result.Players {
 
-		p := t.GetPlayerByGameIdx(rs.Idx)
+		p := t.getPlayerByGameIdx(rs.Idx)
 		if p == nil {
 			continue
 		}
@@ -158,6 +158,11 @@ func (t *table) updatePlayerStates(ts *State) error {
 	}
 
 	return nil
+}
+
+func (t *table) emitStateUpdated() {
+	state := t.cloneState()
+	t.onStateUpdated(state)
 }
 
 func (t *table) cloneState() *State {
@@ -175,6 +180,9 @@ func (t *table) cloneState() *State {
 }
 
 func (t *table) updateStates(gs *pokerface.GameState) error {
+
+	t.mu.RLock()
+	defer t.mu.RUnlock()
 
 	t.ts.GameState = gs
 
@@ -289,6 +297,7 @@ func (t *table) startGame() error {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	t.g.OnStateUpdated(func(gs *pokerface.GameState) {
+
 		//fmt.Println(gs.GameID, gs.Status.CurrentEvent)
 		t.updateStates(gs)
 

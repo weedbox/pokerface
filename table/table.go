@@ -2,6 +2,7 @@ package table
 
 import (
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -75,6 +76,7 @@ type table struct {
 	options        *Options
 	gameCount      int
 	gameLoop       chan int
+	mu             sync.RWMutex
 	ts             *State
 	rg             *syncsaga.ReadyGroup
 	sm             *seat_manager.SeatManager
@@ -109,6 +111,38 @@ func NewTable(options *Options, opts ...TableOpt) *table {
 	t.ts.Status = "idle"
 
 	return t
+}
+
+func (t *table) getPlayerByID(playerID string) *PlayerInfo {
+
+	for _, ps := range t.ts.Players {
+		if ps.ID == playerID {
+			return ps
+		}
+	}
+
+	return nil
+}
+
+func (t *table) getPlayerByGameIdx(idx int) *PlayerInfo {
+
+	for _, p := range t.ts.Players {
+		if p.GameIdx == idx {
+			return p
+		}
+	}
+
+	return nil
+}
+
+func (t *table) getPlayerIdx(playerID string) int {
+
+	p := t.getPlayerByID(playerID)
+	if p == nil {
+		return -1
+	}
+
+	return p.GameIdx
 }
 
 func (t *table) OnStateUpdated(fn func(*State)) {
@@ -226,21 +260,17 @@ func (t *table) Reserve(seatID int) error {
 
 func (t *table) ActivateByPlayerID(playerID string) error {
 
-	// Find the player before joining
-	var found *PlayerInfo
-	for _, ps := range t.ts.Players {
-		if ps.ID == playerID {
-			found = ps
-		}
-	}
+	t.mu.RLock()
+	defer t.mu.RUnlock()
 
 	// Player is getting back to seat
-	if found == nil {
+	p := t.getPlayerByID(playerID)
+	if p == nil {
 		return ErrNotFoundPlayer
 	}
 
 	// Activate the seat
-	err := t.Activate(found.SeatID)
+	err := t.Activate(p.SeatID)
 	if err != nil {
 		return err
 	}
@@ -250,6 +280,9 @@ func (t *table) ActivateByPlayerID(playerID string) error {
 
 func (t *table) Join(seatID int, p *PlayerInfo) (int, error) {
 
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
 	sid, err := t.sm.Join(seatID, p)
 	if err != nil {
 		return -1, err
@@ -258,14 +291,15 @@ func (t *table) Join(seatID int, p *PlayerInfo) (int, error) {
 	p.SeatID = sid
 	t.ts.Players[sid] = p
 
-	// Event
-	state := t.cloneState()
-	t.onStateUpdated(state)
+	t.emitStateUpdated()
 
 	return sid, nil
 }
 
 func (t *table) Leave(seatID int) error {
+
+	t.mu.Lock()
+	defer t.mu.Unlock()
 
 	err := t.sm.Leave(seatID)
 	if err != nil {
@@ -274,9 +308,7 @@ func (t *table) Leave(seatID int) error {
 
 	delete(t.ts.Players, seatID)
 
-	// Event
-	state := t.cloneState()
-	t.onStateUpdated(state)
+	t.emitStateUpdated()
 
 	return nil
 }
@@ -286,45 +318,36 @@ func (t *table) GetPlayablePlayerCount() int {
 }
 
 func (t *table) GetPlayerByID(playerID string) *PlayerInfo {
-
-	for _, p := range t.ts.Players {
-		if p.ID == playerID {
-			return p
-		}
-	}
-
-	return nil
+	return t.getPlayerByID(playerID)
 }
 
 func (t *table) GetPlayerByGameIdx(idx int) *PlayerInfo {
 
-	for _, p := range t.ts.Players {
-		if p.GameIdx == idx {
-			return p
-		}
-	}
+	t.mu.RLock()
+	defer t.mu.RUnlock()
 
-	return nil
+	return t.getPlayerByGameIdx(idx)
 }
 
 func (t *table) GetPlayerIdx(playerID string) int {
 
-	p := t.GetPlayerByID(playerID)
-	if p == nil {
-		return -1
-	}
+	t.mu.RLock()
+	defer t.mu.RUnlock()
 
-	return p.GameIdx
+	return t.getPlayerIdx(playerID)
 }
 
 // Actions
 func (t *table) Ready(playerID string) error {
 
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
 	if t.isPaused {
 		return nil
 	}
 
-	idx := t.GetPlayerIdx(playerID)
+	idx := t.getPlayerIdx(playerID)
 	if idx == -1 {
 		return ErrPlayerNotInGame
 	}
@@ -339,11 +362,14 @@ func (t *table) Ready(playerID string) error {
 
 func (t *table) Pass(playerID string) error {
 
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
 	if t.isPaused {
 		return nil
 	}
 
-	idx := t.GetPlayerIdx(playerID)
+	idx := t.getPlayerIdx(playerID)
 	if idx == -1 {
 		return ErrPlayerNotInGame
 	}
@@ -358,11 +384,14 @@ func (t *table) Pass(playerID string) error {
 
 func (t *table) Pay(playerID string, chips int64) error {
 
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
 	if t.isPaused {
 		return nil
 	}
 
-	idx := t.GetPlayerIdx(playerID)
+	idx := t.getPlayerIdx(playerID)
 	if idx == -1 {
 		return ErrPlayerNotInGame
 	}
@@ -377,11 +406,14 @@ func (t *table) Pay(playerID string, chips int64) error {
 
 func (t *table) Fold(playerID string) error {
 
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
 	if t.isPaused {
 		return nil
 	}
 
-	idx := t.GetPlayerIdx(playerID)
+	idx := t.getPlayerIdx(playerID)
 	if idx == -1 {
 		return ErrPlayerNotInGame
 	}
@@ -396,11 +428,14 @@ func (t *table) Fold(playerID string) error {
 
 func (t *table) Check(playerID string) error {
 
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
 	if t.isPaused {
 		return nil
 	}
 
-	idx := t.GetPlayerIdx(playerID)
+	idx := t.getPlayerIdx(playerID)
 	if idx == -1 {
 		return ErrPlayerNotInGame
 	}
@@ -415,11 +450,14 @@ func (t *table) Check(playerID string) error {
 
 func (t *table) Call(playerID string) error {
 
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
 	if t.isPaused {
 		return nil
 	}
 
-	idx := t.GetPlayerIdx(playerID)
+	idx := t.getPlayerIdx(playerID)
 	if idx == -1 {
 		return ErrPlayerNotInGame
 	}
@@ -434,11 +472,14 @@ func (t *table) Call(playerID string) error {
 
 func (t *table) Allin(playerID string) error {
 
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
 	if t.isPaused {
 		return nil
 	}
 
-	idx := t.GetPlayerIdx(playerID)
+	idx := t.getPlayerIdx(playerID)
 	if idx == -1 {
 		return ErrPlayerNotInGame
 	}
@@ -453,11 +494,14 @@ func (t *table) Allin(playerID string) error {
 
 func (t *table) Bet(playerID string, chips int64) error {
 
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
 	if t.isPaused {
 		return nil
 	}
 
-	idx := t.GetPlayerIdx(playerID)
+	idx := t.getPlayerIdx(playerID)
 	if idx == -1 {
 		return ErrPlayerNotInGame
 	}
@@ -472,11 +516,14 @@ func (t *table) Bet(playerID string, chips int64) error {
 
 func (t *table) Raise(playerID string, chipLevel int64) error {
 
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
 	if t.isPaused {
 		return nil
 	}
 
-	idx := t.GetPlayerIdx(playerID)
+	idx := t.getPlayerIdx(playerID)
 	if idx == -1 {
 		return ErrPlayerNotInGame
 	}

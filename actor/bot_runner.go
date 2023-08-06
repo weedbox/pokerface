@@ -19,9 +19,9 @@ var (
 	actionProbabilities = []ActionProbability{
 		{Action: "check", Weight: 0.1},
 		{Action: "call", Weight: 0.3},
-		{Action: "fold", Weight: 0.2},
+		{Action: "fold", Weight: 0.15},
 		{Action: "allin", Weight: 0.05},
-		{Action: "raise", Weight: 0.25},
+		{Action: "raise", Weight: 0.3},
 		{Action: "bet", Weight: 0.1},
 	}
 )
@@ -131,7 +131,8 @@ func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
 	}()
 
 	// game is running so we have to check actions allowed
-	player := table.State.GameState.GetPlayer(br.gamePlayerIdx)
+	//player := table.State.GameState.GetPlayer(br.gamePlayerIdx)
+	player := table.State.GameState.Players[br.gamePlayerIdx]
 	if len(player.AllowedActions) > 0 {
 		//fmt.Println(br.playerID, player.AllowedActions)
 		return br.requestMove()
