@@ -1,7 +1,7 @@
 package actor
 
 import (
-	"fmt"
+	"sync"
 
 	pokertable "github.com/weedbox/pokertable"
 )
@@ -15,9 +15,9 @@ type Actor interface {
 }
 
 type actor struct {
-	runner    Runner
-	table     Adapter
-	tableInfo *pokertable.Table
+	runner       Runner
+	tableAdapter Adapter
+	mu           sync.RWMutex
 }
 
 func NewActor() Actor {
@@ -32,12 +32,12 @@ func (a *actor) SetRunner(r Runner) error {
 
 func (a *actor) SetAdapter(tc Adapter) error {
 	tc.SetActor(a)
-	a.table = tc
+	a.tableAdapter = tc
 	return nil
 }
 
 func (a *actor) GetTable() Adapter {
-	return a.table
+	return a.tableAdapter
 }
 
 func (a *actor) GetRunner() Runner {
@@ -46,10 +46,12 @@ func (a *actor) GetRunner() Runner {
 
 func (a *actor) UpdateTableState(tableInfo *pokertable.Table) error {
 
-	a.tableInfo = tableInfo
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
 	err := a.runner.UpdateTableState(tableInfo)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	return nil

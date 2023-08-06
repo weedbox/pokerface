@@ -93,17 +93,18 @@ func (t *Table) Release() error {
 }
 
 func (t *Table) isNewGame(sc *SeatChanges) bool {
-	/*
-		if t.sm.Dealer() == nil || t.sm.Dealer().ID != sc.Dealer ||
-			t.sm.SmallBlind() == nil || t.sm.SmallBlind().ID != sc.SB ||
-			t.sm.BigBlind() == nil || t.sm.BigBlind().ID != sc.BB {
-			return true
-		}
-	*/
-	if t.sm.Dealer().ID != sc.Dealer || t.sm.SmallBlind().ID != sc.SB || t.sm.BigBlind().ID != sc.BB {
+
+	if t.sm.Dealer() == nil || t.sm.Dealer().ID != sc.Dealer ||
+		t.sm.SmallBlind() == nil || t.sm.SmallBlind().ID != sc.SB ||
+		t.sm.BigBlind() == nil || t.sm.BigBlind().ID != sc.BB {
 		return true
 	}
 
+	/*
+		if t.sm.Dealer().ID != sc.Dealer || t.sm.SmallBlind().ID != sc.SB || t.sm.BigBlind().ID != sc.BB {
+			return true
+		}
+	*/
 	return false
 }
 

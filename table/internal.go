@@ -1,6 +1,7 @@
 package table
 
 import (
+	"context"
 	"encoding/json"
 	"sync"
 	"time"
@@ -284,14 +285,15 @@ func (t *table) startGame() error {
 	// Create a new game with backend
 	t.g = NewGame(t.b, opts)
 
-	closed := make(chan struct{})
+	// Preparing context
+	ctx, cancel := context.WithCancel(context.Background())
 
 	t.g.OnStateUpdated(func(gs *pokerface.GameState) {
 		//fmt.Println(gs.GameID, gs.Status.CurrentEvent)
 		t.updateStates(gs)
 
 		if gs.Status.CurrentEvent == "GameClosed" {
-			closed <- struct{}{}
+			cancel()
 		}
 	})
 
@@ -303,7 +305,8 @@ func (t *table) startGame() error {
 	t.gameCount++
 	t.ts.Status = "playing"
 
-	<-closed
+	// Waiting for game closed
+	<-ctx.Done()
 
 	t.inPosition = false
 

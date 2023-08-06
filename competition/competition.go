@@ -26,19 +26,22 @@ type Competition interface {
 	GetTableCount() int64
 	Match() match.Match
 	ReserveSeat(tableID string, seatID int, playerID string) (int, error)
+	OnTableUpdated(func(ts *table.State))
 }
 
 type competition struct {
-	options    *Options
-	tm         TableManager
-	tb         TableBackend
-	m          match.Match
-	mtb        match.TableBackend
-	players    []*PlayerInfo
-	s          *State
-	isRunning  bool
-	isJoinable bool
-	mu         sync.RWMutex
+	options        *Options
+	tm             TableManager
+	tb             TableBackend
+	m              match.Match
+	mtb            match.TableBackend
+	players        []*PlayerInfo
+	s              *State
+	isRunning      bool
+	isJoinable     bool
+	mu             sync.RWMutex
+	onPlayerJoined func(ts *table.State, seatID int, playerID string)
+	onTableUpdated func(ts *table.State)
 }
 
 type CompetitionOpt func(*competition)
@@ -55,13 +58,27 @@ func WithMatchBackend(m match.Match) CompetitionOpt {
 	}
 }
 
+func WithPlayerJoinedCallback(fn func(table *table.State, seatID int, playerID string)) CompetitionOpt {
+	return func(c *competition) {
+		c.onPlayerJoined = fn
+	}
+}
+
+func WithTableUpdatedCallback(fn func(table *table.State)) CompetitionOpt {
+	return func(c *competition) {
+		c.onTableUpdated = fn
+	}
+}
+
 func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 
 	c := &competition{
-		options:    options,
-		players:    make([]*PlayerInfo, 0),
-		s:          NewState(),
-		isJoinable: true,
+		options:        options,
+		players:        make([]*PlayerInfo, 0),
+		s:              NewState(),
+		isJoinable:     true,
+		onPlayerJoined: func(ts *table.State, seatID int, playerID string) {},
+		onTableUpdated: func(ts *table.State) {},
 	}
 
 	for _, opt := range opts {
@@ -73,11 +90,21 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 		c.tb = NewNativeTableBackend(table.NewNativeBackend())
 	}
 
+	c.tb.OnTableUpdated(func(ts *table.State) {
+		c.tm.UpdateTableState(ts)
+		c.onTableUpdated(ts)
+	})
+
+	// Table Manager
+	c.tm = NewTableManager(options, c.tb)
+
 	// Table backend of match
 	if c.mtb == nil {
 		c.mtb = NewNativeMatchTableBackend(c)
 	}
 
+	// match instance
+	//TODO: should be a match adapter to use remove match service
 	if c.m == nil {
 
 		// Initializing match
@@ -92,7 +119,10 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 		)
 	}
 
-	c.tm = NewTableManager(options, c.tb)
+	c.m.OnPlayerJoined(func(m match.Match, table *match.Table, seatID int, playerID string) {
+		ts := c.tm.GetTableState(table.ID())
+		c.onPlayerJoined(ts, seatID, playerID)
+	})
 
 	return c
 }
@@ -286,4 +316,8 @@ func (c *competition) ReserveSeat(tableID string, seatID int, playerID string) (
 	}
 
 	return c.tm.ReserveSeat(tableID, seatID, p)
+}
+
+func (c *competition) OnTableUpdated(fn func(ts *table.State)) {
+	c.onTableUpdated = fn
 }

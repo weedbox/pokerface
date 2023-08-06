@@ -1,6 +1,8 @@
 package competition
 
 import (
+	"fmt"
+
 	"github.com/weedbox/pokerface/match"
 	"github.com/weedbox/pokerface/table"
 )
@@ -17,7 +19,8 @@ func NewNativeMatchTableBackend(c Competition) *NativeMatchTableBackend {
 		onTableUpdated: func(tableID string, sc *match.SeatChanges) {},
 	}
 
-	c.TableBackend().OnTableUpdated(func(ts *table.State) {
+	// Waiting for table updates
+	c.TableManager().OnTableStateUpdated(func(ts *table.State) {
 		nmtb.EmitTableUpdated(ts)
 	})
 
@@ -42,7 +45,7 @@ func (nmtb *NativeMatchTableBackend) Allocate(maxSeats int) (*match.Table, error
 		return t, err
 	}
 
-	//fmt.Printf("Allocated Table (id=%s, seats=%d)\n", ts.ID, maxSeats)
+	fmt.Printf("Allocated Table (id=%s, seats=%d)\n", ts.ID, maxSeats)
 
 	return t, nil
 }
@@ -75,11 +78,12 @@ func (nmtb *NativeMatchTableBackend) GetTable(tableID string) (*match.Table, err
 
 func (nmtb *NativeMatchTableBackend) EmitTableUpdated(newts *table.State) {
 
+	//fmt.Println(newts.Status)
+
+	//newts.PrintState()
 	if newts.GameState == nil {
 		return
 	}
-
-	//newts.PrintState()
 
 	// Getting original table state
 	ts := nmtb.c.TableManager().GetTableState(newts.ID)

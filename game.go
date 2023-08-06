@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/weedbox/pokerface/pot"
 )
@@ -87,6 +88,11 @@ func NewGameFromState(gs *GameState) *game {
 	}
 	g.LoadState(gs)
 	return g
+}
+
+func (g *game) onBreakPoint() {
+	g.gs.UpdatedAt = time.Now().UnixNano()
+	//atomic.AddInt64(&g.gs.UpdatedAt, 1)
 }
 
 func (g *game) GetState() *GameState {
@@ -579,10 +585,14 @@ func (g *game) Initialize() error {
 }
 
 func (g *game) Prepare() error {
-	return g.EmitEvent(GameEvent_ReadyRequested)
+	return g.RequestReady()
 }
 
 func (g *game) RequestReady() error {
+
+	// Clear all player allowed actions before request ready
+	g.ResetAllPlayerAllowedActions()
+
 	return g.EmitEvent(GameEvent_ReadyRequested)
 }
 
@@ -723,8 +733,8 @@ func (g *game) PrepareRound() error {
 		return g.RequestReady()
 	}
 
-	// Everybody did all-in, no need to keep going with normal way
-	if g.GetMovablePlayerCount() == 0 {
+	// Everybody did all-in or one movable player left, no need to keep going with normal way
+	if g.GetMovablePlayerCount() <= 1 {
 		return g.EmitEvent(GameEvent_RoundClosed)
 	}
 
@@ -733,9 +743,9 @@ func (g *game) PrepareRound() error {
 
 func (g *game) StartRound() error {
 
-	if g.gs.Status.Round == "preflop" {
+	g.ResetAllPlayerAllowedActions()
 
-		g.ResetAllPlayerAllowedActions()
+	if g.gs.Status.Round == "preflop" {
 
 		// everyone did all-in, no need to keep going with normal way
 		if g.GetMovablePlayerCount() == 0 {

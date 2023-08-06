@@ -39,6 +39,7 @@ type Match interface {
 	GetPlayerCount() int64
 	PrintTables()
 	AllocateTableWithPlayers(players []string) error
+	OnPlayerJoined(fn func(Match, *Table, int, string))
 }
 
 type MatchOpt func(*match)
@@ -288,4 +289,8 @@ func (m *match) AllocateTableWithPlayers(players []string) error {
 	}
 
 	return nil
+}
+
+func (m *match) OnPlayerJoined(fn func(Match, *Table, int, string)) {
+	m.onPlayerJoined = fn
 }

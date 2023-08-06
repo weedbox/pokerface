@@ -82,6 +82,8 @@ var GameEventBySymbol = map[string]GameEvent{
 
 func (g *game) triggerEvent(event GameEvent) error {
 
+	defer g.onBreakPoint()
+
 	switch event {
 
 	case GameEvent_Started:

@@ -48,11 +48,23 @@ func (pr *playerRunner) SetActor(a Actor) {
 
 func (pr *playerRunner) UpdateTableState(table *pokertable.Table) error {
 
+	pr.tableInfo = table
+
+	// Check if you have been eliminated
+	isEliminated := true
+	for _, ps := range pr.tableInfo.State.PlayerStates {
+		if ps.PlayerID == pr.playerID {
+			isEliminated = false
+		}
+	}
+
+	if isEliminated {
+		return nil
+	}
+
 	// Update seat index
 	//pr.gamePlayerIdx = table.GamePlayerIndex(pr.playerID)
 	pr.gamePlayerIdx = pr.actor.GetTable().GetGamePlayerIndex(pr.playerID)
-
-	pr.tableInfo = table
 
 	// Emit event
 	pr.onTableStateUpdated(table)

@@ -86,3 +86,17 @@ func (ntb *NativeTableBackend) ReserveSeat(tableID string, seatID int, p *Player
 func (ntb *NativeTableBackend) OnTableUpdated(fn func(ts *table.State)) {
 	ntb.onTableUpdated = fn
 }
+
+// For testing
+func (ntb *NativeTableBackend) GetTable(tableID string) table.Table {
+
+	ntb.mu.RLock()
+	defer ntb.mu.RUnlock()
+
+	t, ok := ntb.tables[tableID]
+	if !ok {
+		return nil
+	}
+
+	return t
+}

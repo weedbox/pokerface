@@ -40,5 +40,5 @@ func Test_Competition_Basic(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	// Allocated one table
-	assert.Equal(t, 1, c.GetTableCount())
+	assert.Equal(t, int64(1), c.GetTableCount())
 }

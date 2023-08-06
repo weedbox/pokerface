@@ -3,6 +3,7 @@ package actor
 import (
 	"time"
 
+	"github.com/weedbox/pokerface"
 	pokertable "github.com/weedbox/pokertable"
 )
 
@@ -10,6 +11,7 @@ type Adapter interface {
 	SetActor(a Actor)
 	UpdateTableState(t *pokertable.Table) error
 	GetGamePlayerIndex(playerID string) int
+	GetGameState() *pokerface.GameState
 
 	// Player actions
 	Pass(playerID string) error

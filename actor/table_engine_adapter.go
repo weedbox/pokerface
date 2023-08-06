@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/weedbox/pokerface"
 	"github.com/weedbox/pokertable"
 )
 
@@ -43,6 +44,10 @@ func (tea *tableEngineAdapter) UpdateTableState(tableInfo *pokertable.Table) err
 	tea.table = &t
 
 	return tea.actor.UpdateTableState(&t)
+}
+
+func (tea *tableEngineAdapter) GetGameState() *pokerface.GameState {
+	return tea.table.State.GameState
 }
 
 func (tea *tableEngineAdapter) GetGamePlayerIndex(playerID string) int {

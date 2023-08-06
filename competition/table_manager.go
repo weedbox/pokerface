@@ -14,21 +14,25 @@ type TableManager interface {
 	GetTables() []*table.State
 	GetTableState(tableID string) *table.State
 	GetTableCount() int64
+	UpdateTableState(ts *table.State) error
 	ReserveSeat(tableID string, seatID int, p *PlayerInfo) (int, error)
+	OnTableStateUpdated(fn func(ts *table.State))
 }
 
 type tableManager struct {
-	options *Options
-	b       TableBackend
-	tables  map[string]*table.State
-	count   int64
+	options             *Options
+	b                   TableBackend
+	tables              map[string]*table.State
+	count               int64
+	onTableStateUpdated func(ts *table.State)
 }
 
 func NewTableManager(options *Options, b TableBackend) TableManager {
 	return &tableManager{
-		options: options,
-		b:       b,
-		tables:  make(map[string]*table.State),
+		options:             options,
+		b:                   b,
+		tables:              make(map[string]*table.State),
+		onTableStateUpdated: func(ts *table.State) {},
 	}
 }
 
@@ -91,6 +95,20 @@ func (tm *tableManager) ActivateTable(tableID string) error {
 	return tm.b.ActivateTable(tableID)
 }
 
+func (tm *tableManager) UpdateTableState(ts *table.State) error {
+
+	_, ok := tm.tables[ts.ID]
+	if !ok {
+		return ErrNotFoundTable
+	}
+
+	tm.tables[ts.ID] = ts
+
+	tm.onTableStateUpdated(ts)
+
+	return nil
+}
+
 func (tm *tableManager) GetTableState(tableID string) *table.State {
 
 	ts, ok := tm.tables[tableID]
@@ -118,4 +136,8 @@ func (tm *tableManager) GetTableCount() int64 {
 
 func (tm *tableManager) ReserveSeat(tableID string, seatID int, p *PlayerInfo) (int, error) {
 	return tm.b.ReserveSeat(tableID, -1, p)
+}
+
+func (tm *tableManager) OnTableStateUpdated(fn func(ts *table.State)) {
+	tm.onTableStateUpdated = fn
 }

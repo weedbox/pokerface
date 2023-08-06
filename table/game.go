@@ -41,6 +41,7 @@ type game struct {
 	opts           *pokerface.GameOptions
 	rg             *syncsaga.ReadyGroup
 	mu             sync.RWMutex
+	isClosed       bool
 	incomingStates chan *pokerface.GameState
 	onStateUpdated func(*pokerface.GameState)
 }
@@ -70,6 +71,11 @@ func (g *game) handleState(gs *pokerface.GameState) {
 
 	switch gs.Status.CurrentEvent {
 	case "GameClosed":
+		if g.isClosed {
+			break
+		}
+
+		g.isClosed = true
 		close(g.incomingStates)
 	case "RoundClosed":
 
@@ -102,7 +108,7 @@ func (g *game) handleState(gs *pokerface.GameState) {
 
 	case "AnteRequested":
 
-		if g.gs.Meta.Ante == 0 {
+		if gs.Meta.Ante == 0 {
 			break
 		}
 
@@ -132,11 +138,11 @@ func (g *game) handleState(gs *pokerface.GameState) {
 
 		g.rg.ResetParticipants()
 		for _, p := range gs.Players {
-			if g.gs.Meta.Blind.BB > 0 && g.gs.HasPosition(p.Idx, "bb") {
+			if gs.Meta.Blind.BB > 0 && gs.HasPosition(p.Idx, "bb") {
 				g.rg.Add(int64(p.Idx), false)
-			} else if g.gs.Meta.Blind.SB > 0 && g.gs.HasPosition(p.Idx, "sb") {
+			} else if gs.Meta.Blind.SB > 0 && gs.HasPosition(p.Idx, "sb") {
 				g.rg.Add(int64(p.Idx), false)
-			} else if g.gs.Meta.Blind.Dealer > 0 && g.gs.HasPosition(p.Idx, "dealer") {
+			} else if gs.Meta.Blind.Dealer > 0 && gs.HasPosition(p.Idx, "dealer") {
 				g.rg.Add(int64(p.Idx), false)
 			}
 
@@ -176,6 +182,10 @@ func (g *game) updateState(gs *pokerface.GameState) {
 	defer g.mu.Unlock()
 
 	g.gs = gs
+
+	if g.isClosed {
+		return
+	}
 
 	g.incomingStates <- gs
 
