@@ -82,6 +82,8 @@ func Test_NativeTableAdapter_Join_Slowly(t *testing.T) {
 
 	backend := table.NewNativeBackend()
 	opts := table.NewOptions()
+	opts.EliminateMode = "leave"
+	opts.Interval = 100
 
 	nt := table.NewTable(opts, table.WithBackend(backend))
 	nt.SetAnte(10)
@@ -141,11 +143,11 @@ func Test_NativeTableAdapter_Join_Slowly(t *testing.T) {
 	var gameID string
 	nt.OnStateUpdated(func(s *table.State) {
 
-		//t.Log("OnStateUpdated")
+		//t.Log("OnStateUpdated", s.Status)
 
 		if s.GameState != nil && gameID != s.GameState.GameID {
 			gameID = s.GameState.GameID
-			t.Log("NewGame")
+			t.Logf("NewGame (id=%s)", gameID)
 		}
 
 		if s.Status == "playing" {
@@ -157,14 +159,19 @@ func Test_NativeTableAdapter_Join_Slowly(t *testing.T) {
 			} else if round != s.GameState.Status.Round {
 				round = s.GameState.Status.Round
 				if len(round) > 0 {
-					t.Log(" |", s.GameState.Status.Round)
+					t.Log(" |", s.GameState.Status.Round, gameID)
 				}
 			}
 		}
 
 		if s.Status == "closed" {
+
 			t.Log("TableClosed")
 			assert.Less(t, nt.GetPlayablePlayerCount(), nt.GetState().Options.MinPlayers)
+
+			// Waiting for last GameClosed event
+			time.Sleep(time.Second)
+
 			wg.Done()
 		}
 

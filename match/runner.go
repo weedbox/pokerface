@@ -28,6 +28,8 @@ func (nr *NativeRunner) ShouldBeSplit(m Match, table *Table) bool {
 
 	totalPlayers := m.GetPlayerCount()
 
+	//fmt.Printf("ShouldBeSplit (id=%s, table_count=%d, total_players=%d)\n", table.id, tableCount, totalPlayers)
+
 	// The current number of tables is insufficient to accommodate all players.
 	requiredTables := int(math.Ceil(float64(totalPlayers) / float64(m.Options().MaxSeats)))
 	if int64(requiredTables) > tableCount {

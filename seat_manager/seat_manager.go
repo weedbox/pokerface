@@ -214,6 +214,18 @@ func (sm *SeatManager) getPlayableSeatCount() int {
 	return count
 }
 
+func (sm *SeatManager) getPlayableSeat() *Seat {
+
+	for i := 0; i < sm.max; i++ {
+		s := sm.seats[i]
+		if s.IsActive && !s.IsReserved && s.Player != nil {
+			return s
+		}
+	}
+
+	return nil
+}
+
 func (sm *SeatManager) getPlayerCount() int {
 
 	count := 0
@@ -274,11 +286,29 @@ func (sm *SeatManager) getSeats() []*Seat {
 
 func (sm *SeatManager) nextDealer() *Seat {
 
-	if sm.getPlayableSeatCount() < 2 {
+	var seats []*Seat
+
+	if sm.getPlayableSeatCount() == 1 {
+
+		if sm.getPlayerCount() == 1 {
+			return nil
+		}
+
+		// When there is only one player left available to join the game, make them the Dealer,
+		// and allow all other waiting players to join the game
+		sm.dealer = sm.getPlayableSeat()
+		seats = sm.getNormalizeSeats(sm.dealer.ID)
+		seats = seats[1:]
+
+		for _, s := range seats {
+			if s.Player != nil {
+				s.IsActive = true
+			}
+		}
+
 		return nil
 	}
 
-	var seats []*Seat
 	if sm.dealer == nil {
 		// from the first seat
 		seats = sm.getNormalizeSeats(0)

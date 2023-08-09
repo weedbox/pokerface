@@ -2,6 +2,7 @@ package competition
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/weedbox/pokerface/match"
@@ -24,6 +25,7 @@ type Competition interface {
 	Close() error
 	GetOptions() *Options
 	GetTableCount() int64
+	SetJoinable(bool)
 	Match() match.Match
 	ReserveSeat(tableID string, seatID int, playerID string) (int, error)
 	OnTableUpdated(func(ts *table.State))
@@ -91,8 +93,9 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 	}
 
 	c.tb.OnTableUpdated(func(ts *table.State) {
+		//ts.PrintState()
 		c.tm.UpdateTableState(ts)
-		c.onTableUpdated(ts)
+		go c.onTableUpdated(ts)
 	})
 
 	// Table Manager
@@ -122,6 +125,14 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 	c.m.OnPlayerJoined(func(m match.Match, table *match.Table, seatID int, playerID string) {
 		ts := c.tm.GetTableState(table.ID())
 		c.onPlayerJoined(ts, seatID, playerID)
+	})
+
+	c.m.OnTableBroken(func(m match.Match, table *match.Table) {
+		fmt.Printf("[Break] Break table (table_id=%s, left=%d, status=%d)\n",
+			table.ID(),
+			table.GetPlayerCount(),
+			table.GetStatus(),
+		)
 	})
 
 	return c
@@ -182,6 +193,10 @@ func (c *competition) GetPlayerIndexByID(playerID string) (int, error) {
 	}
 
 	return -1, ErrNotFoundPlayer
+}
+
+func (c *competition) SetJoinable(joinable bool) {
+	c.isJoinable = joinable
 }
 
 func (c *competition) Register(playerID string, bankroll int64) error {

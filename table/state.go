@@ -31,6 +31,20 @@ func (s *State) GetJSON() []byte {
 	return data
 }
 
+func (s *State) Clone() *State {
+
+	// clone table state
+	data, err := json.Marshal(s)
+	if err != nil {
+		return nil
+	}
+
+	var state State
+	json.Unmarshal(data, &state)
+
+	return &state
+}
+
 func (s *State) PrintState() error {
 
 	data, err := json.Marshal(s)
@@ -47,4 +61,34 @@ func (s *State) ResetPositions() {
 	for _, p := range s.Players {
 		p.Positions = make([]string, 0)
 	}
+}
+
+func (s *State) GetPlayerByGameIdx(idx int) *PlayerInfo {
+	for _, p := range s.Players {
+		if p.GameIdx == idx {
+			return p
+		}
+	}
+
+	return nil
+}
+
+func (s *State) GetPlayerByID(playerID string) *PlayerInfo {
+	for _, p := range s.Players {
+		if p.ID == playerID {
+			return p
+		}
+	}
+
+	return nil
+}
+
+func (s *State) GetPlayerBySeatID(seatID int) *PlayerInfo {
+	for _, p := range s.Players {
+		if p.SeatID == seatID {
+			return p
+		}
+	}
+
+	return nil
 }

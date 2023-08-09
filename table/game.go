@@ -12,6 +12,7 @@ import (
 
 var (
 	ErrInvalidAction = errors.New("game: invalid action")
+	ErrNoRunningGame = errors.New("game: no running game")
 )
 
 type Game interface {
@@ -154,7 +155,7 @@ func (g *game) handleState(gs *pokerface.GameState) {
 		g.rg.Start()
 	}
 
-	//	fmt.Println("Game Update =>", g.gs.Status.CurrentEvent)
+	//fmt.Println("Game Updated =>", g.gs.Status.CurrentEvent)
 
 	g.onStateUpdated(gs)
 }
@@ -193,8 +194,8 @@ func (g *game) cloneState(gs *pokerface.GameState) *pokerface.GameState {
 
 func (g *game) updateState(gs *pokerface.GameState) {
 
-	g.mu.Lock()
-	defer g.mu.Unlock()
+	g.mu.RLock()
+	defer g.mu.RUnlock()
 
 	state := g.cloneState(gs)
 	g.gs = state
@@ -213,6 +214,10 @@ func (g *game) GetState() *pokerface.GameState {
 }
 
 func (g *game) Ready(playerIdx int) error {
+
+	if g.gs == nil {
+		return ErrNoRunningGame
+	}
 
 	p := g.gs.GetPlayer(playerIdx)
 	if p == nil {
@@ -233,6 +238,10 @@ func (g *game) Ready(playerIdx int) error {
 // Shortcut
 func (g *game) ReadyForAll() error {
 
+	if g.gs == nil {
+		return ErrNoRunningGame
+	}
+
 	gs, err := g.backend.ReadyForAll(g.gs)
 	if err != nil {
 		return err
@@ -244,6 +253,10 @@ func (g *game) ReadyForAll() error {
 }
 
 func (g *game) PayAnte() error {
+
+	if g.gs == nil {
+		return ErrNoRunningGame
+	}
 
 	gs, err := g.backend.PayAnte(g.gs)
 	if err != nil {
@@ -269,6 +282,10 @@ func (g *game) PayBlinds() error {
 
 func (g *game) Pass(playerIdx int) error {
 
+	if g.gs == nil {
+		return ErrNoRunningGame
+	}
+
 	p := g.gs.GetPlayer(playerIdx)
 	if p == nil {
 		return ErrPlayerNotInGame
@@ -289,6 +306,10 @@ func (g *game) Pass(playerIdx int) error {
 }
 
 func (g *game) Pay(playerIdx int, chips int64) error {
+
+	if g.gs == nil {
+		return ErrNoRunningGame
+	}
 
 	p := g.gs.GetPlayer(playerIdx)
 	if p == nil {
@@ -320,6 +341,10 @@ func (g *game) Pay(playerIdx int, chips int64) error {
 
 func (g *game) Fold(playerIdx int) error {
 
+	if g.gs == nil {
+		return ErrNoRunningGame
+	}
+
 	p := g.gs.GetPlayer(playerIdx)
 	if p == nil {
 		return ErrPlayerNotInGame
@@ -340,6 +365,10 @@ func (g *game) Fold(playerIdx int) error {
 }
 
 func (g *game) Check(playerIdx int) error {
+
+	if g.gs == nil {
+		return ErrNoRunningGame
+	}
 
 	p := g.gs.GetPlayer(playerIdx)
 	if p == nil {
@@ -362,6 +391,10 @@ func (g *game) Check(playerIdx int) error {
 
 func (g *game) Call(playerIdx int) error {
 
+	if g.gs == nil {
+		return ErrNoRunningGame
+	}
+
 	p := g.gs.GetPlayer(playerIdx)
 	if p == nil {
 		return ErrPlayerNotInGame
@@ -382,6 +415,10 @@ func (g *game) Call(playerIdx int) error {
 }
 
 func (g *game) Allin(playerIdx int) error {
+
+	if g.gs == nil {
+		return ErrNoRunningGame
+	}
 
 	p := g.gs.GetPlayer(playerIdx)
 	if p == nil {
@@ -404,6 +441,10 @@ func (g *game) Allin(playerIdx int) error {
 
 func (g *game) Bet(playerIdx int, chips int64) error {
 
+	if g.gs == nil {
+		return ErrNoRunningGame
+	}
+
 	p := g.gs.GetPlayer(playerIdx)
 	if p == nil {
 		return ErrPlayerNotInGame
@@ -424,6 +465,10 @@ func (g *game) Bet(playerIdx int, chips int64) error {
 }
 
 func (g *game) Raise(playerIdx int, chipLevel int64) error {
+
+	if g.gs == nil {
+		return ErrNoRunningGame
+	}
 
 	p := g.gs.GetPlayer(playerIdx)
 	if p == nil {

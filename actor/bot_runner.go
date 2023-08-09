@@ -123,7 +123,7 @@ func (br *botRunner) requestMove(gs *pokerface.GameState, playerIdx int) error {
 
 	//fmt.Println(br.tableInfo.State.GameState.Status.Round, br.gamePlayerIdx, gs.Players[br.gamePlayerIdx].AllowedActions)
 	/*
-		player := gs.Players[br.gamePlayerIdx]
+		player := gs.Players[playerIdx]
 		if len(player.AllowedActions) == 1 {
 			fmt.Println(br.playerID, player.AllowedActions)
 		}

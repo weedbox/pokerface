@@ -140,6 +140,19 @@ func Test_Table_Basic(t *testing.T) {
 				}
 			}
 
+			playerCount := 0
+			playableCount := 0
+			for _, p := range ts.Players {
+				playerCount++
+				if p.Playable {
+					playableCount++
+				}
+			}
+
+			assert.Equal(t, table.GetPlayablePlayerCount(), playableCount)
+			assert.Equal(t, table.GetPlayablePlayerCount(), playerCount)
+
+			time.Sleep(time.Second)
 			wg.Done()
 		}
 	})
@@ -233,6 +246,7 @@ func Test_Table_Join_Slowly(t *testing.T) {
 
 		case "GameClosed":
 			assert.NotNil(t, ts.GameState.Result)
+			time.Sleep(time.Second)
 			wg.Done()
 		}
 	})
@@ -338,6 +352,7 @@ func Test_Table_Join_Pause(t *testing.T) {
 
 		case "GameClosed":
 			assert.NotNil(t, ts.GameState.Result)
+			time.Sleep(time.Second)
 			wg.Done()
 		}
 	})

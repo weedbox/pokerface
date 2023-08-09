@@ -2,7 +2,6 @@ package table
 
 import (
 	"context"
-	"encoding/json"
 	"sync"
 	"time"
 
@@ -12,10 +11,14 @@ import (
 
 func (t *table) tableLoop() {
 
+	//count := 0
 	for interval := range t.gameLoop {
 
+		//count++
+		//fmt.Println("tableLoop", t.GetState().ID, count)
+
 		err := t.delay(interval, func() error {
-			return t.NextGame()
+			return t.prepareNextGame()
 		})
 
 		switch err {
@@ -58,7 +61,7 @@ func (t *table) delay(interval int, fn func() error) error {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	t.tb.NewTask(time.Duration(interval)*time.Second, func(isCancelled bool) {
+	t.tb.NewTask(time.Duration(interval)*time.Millisecond, func(isCancelled bool) {
 
 		defer wg.Done()
 
@@ -144,16 +147,20 @@ func (t *table) updatePlayerStates(ts *State) error {
 	// Updating player states with settlement
 	for _, rs := range ts.GameState.Result.Players {
 
-		p := t.getPlayerByGameIdx(rs.Idx)
+		p := ts.GetPlayerByGameIdx(rs.Idx)
 		if p == nil {
 			continue
 		}
 
 		p.Bankroll = rs.Final
 
-		// Reserve the seat because player is unplayable
+		// Not actively kicking players, waiting for requests to make players leave the table
 		if p.Bankroll == 0 {
 			t.sm.Reserve(p.SeatID)
+
+			if t.ts.Options.EliminateMode == "leave" {
+				t.leave(p.SeatID)
+			}
 		}
 	}
 
@@ -166,17 +173,20 @@ func (t *table) emitStateUpdated() {
 }
 
 func (t *table) cloneState() *State {
+	return t.ts.Clone()
+	/*
+	   // clone table state
+	   data, err := json.Marshal(t.ts)
 
-	// clone table state
-	data, err := json.Marshal(t.ts)
-	if err != nil {
-		return nil
-	}
+	   	if err != nil {
+	   		return nil
+	   	}
 
-	var state State
-	json.Unmarshal(data, &state)
+	   var state State
+	   json.Unmarshal(data, &state)
 
-	return &state
+	   return &state
+	*/
 }
 
 func (t *table) updateGameState(gs *pokerface.GameState) error {
@@ -185,12 +195,8 @@ func (t *table) updateGameState(gs *pokerface.GameState) error {
 	defer t.mu.Unlock()
 
 	t.ts.GameState = gs
-
-	// clone table state
-	state := t.cloneState()
-
-	t.updatePlayerStates(state)
-	go t.onStateUpdated(state)
+	t.updatePlayerStates(t.ts)
+	t.emitStateUpdated()
 
 	return nil
 }
@@ -210,7 +216,7 @@ func (t *table) checkEndConditions() error {
 	return nil
 }
 
-func (t *table) NextGame() error {
+func (t *table) prepareNextGame() error {
 
 	//t.mu.Lock()
 	//defer t.mu.Unlock()

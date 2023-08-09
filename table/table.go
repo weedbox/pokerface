@@ -145,6 +145,18 @@ func (t *table) getPlayerIdx(playerID string) int {
 	return p.GameIdx
 }
 
+func (t *table) leave(seatID int) error {
+
+	err := t.sm.Leave(seatID)
+	if err != nil {
+		return err
+	}
+
+	delete(t.ts.Players, seatID)
+
+	return nil
+}
+
 func (t *table) OnStateUpdated(fn func(*State)) {
 	t.onStateUpdated = fn
 }
@@ -187,7 +199,6 @@ func (t *table) Start() error {
 
 	go t.tableLoop()
 
-	//go t.nextGame(0)
 	t.NewGame(0)
 
 	return nil
@@ -301,12 +312,10 @@ func (t *table) Leave(seatID int) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	err := t.sm.Leave(seatID)
+	err := t.leave(seatID)
 	if err != nil {
 		return err
 	}
-
-	delete(t.ts.Players, seatID)
 
 	t.emitStateUpdated()
 
@@ -318,6 +327,10 @@ func (t *table) GetPlayablePlayerCount() int {
 }
 
 func (t *table) GetPlayerByID(playerID string) *PlayerInfo {
+
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
 	return t.getPlayerByID(playerID)
 }
 
@@ -343,7 +356,7 @@ func (t *table) Ready(playerID string) error {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
-	if t.isPaused {
+	if t.isPaused || t.g == nil {
 		return nil
 	}
 
@@ -365,7 +378,7 @@ func (t *table) Pass(playerID string) error {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
-	if t.isPaused {
+	if t.isPaused || t.g == nil {
 		return nil
 	}
 
@@ -387,7 +400,7 @@ func (t *table) Pay(playerID string, chips int64) error {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
-	if t.isPaused {
+	if t.isPaused || t.g == nil {
 		return nil
 	}
 
@@ -409,7 +422,7 @@ func (t *table) Fold(playerID string) error {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
-	if t.isPaused {
+	if t.isPaused || t.g == nil {
 		return nil
 	}
 
@@ -431,7 +444,7 @@ func (t *table) Check(playerID string) error {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
-	if t.isPaused {
+	if t.isPaused || t.g == nil {
 		return nil
 	}
 
@@ -453,7 +466,7 @@ func (t *table) Call(playerID string) error {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
-	if t.isPaused {
+	if t.isPaused || t.g == nil {
 		return nil
 	}
 
@@ -475,7 +488,7 @@ func (t *table) Allin(playerID string) error {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
-	if t.isPaused {
+	if t.isPaused || t.g == nil {
 		return nil
 	}
 
@@ -497,7 +510,7 @@ func (t *table) Bet(playerID string, chips int64) error {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
-	if t.isPaused {
+	if t.isPaused || t.g == nil {
 		return nil
 	}
 
@@ -519,7 +532,7 @@ func (t *table) Raise(playerID string, chipLevel int64) error {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
-	if t.isPaused {
+	if t.isPaused || t.g == nil {
 		return nil
 	}
 
