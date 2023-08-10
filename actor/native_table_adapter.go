@@ -59,8 +59,12 @@ func (nta *NativeTableAdapter) UpdateNativeState(state *table.State) error {
 	}
 
 	if state.GameState != nil {
-		seatmap := make([]int, 0)
+		t.State.GamePlayerIndexes = make([]int, len(state.GameState.Players))
+		//fmt.Println("Update players")
+
+		count := 0
 		for _, p := range state.Players {
+			//fmt.Printf("<<<<=========== player=%s, gameIdx=%d, psIdx=%d\n", p.ID, p.GameIdx, count)
 			t.State.PlayerStates = append(t.State.PlayerStates, &pokertable.TablePlayerState{
 				PlayerID:  p.ID,
 				Seat:      p.SeatID,
@@ -68,16 +72,11 @@ func (nta *NativeTableAdapter) UpdateNativeState(state *table.State) error {
 				Bankroll:  p.Bankroll,
 			})
 
-			seatmap = append(seatmap, p.GameIdx)
-		}
-
-		for _, gp := range state.GameState.Players {
-			for i, gameIdx := range seatmap {
-				if gameIdx == gp.Idx {
-					t.State.GamePlayerIndexes = append(t.State.GamePlayerIndexes, i)
-					break
-				}
+			if p.GameIdx != -1 {
+				t.State.GamePlayerIndexes[p.GameIdx] = count
 			}
+
+			count++
 		}
 	}
 

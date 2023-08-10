@@ -82,8 +82,7 @@ func (pr *playerRunner) UpdateTableState(table *pokertable.Table) error {
 	}
 
 	// Update seat index
-	//pr.gamePlayerIdx = table.GamePlayerIndex(pr.playerID)
-	gamePlayerIdx := pr.actor.GetTable().GetGamePlayerIndex(pr.playerID)
+	gamePlayerIdx := table.GamePlayerIndex(pr.playerID)
 
 	// Emit event
 	pr.onTableStateUpdated(table)

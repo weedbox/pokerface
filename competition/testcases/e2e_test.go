@@ -49,7 +49,7 @@ func Test_E2E(t *testing.T) {
 
 			actors.Store(playerID, a)
 
-			// Activate seats
+			// Activate seats on specific table
 			table.Activate(seatID)
 
 			t.Logf("Joined (table=%s, seat=%d, player=%s)", ts.ID, seatID, playerID)

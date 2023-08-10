@@ -91,7 +91,7 @@ func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
 	}
 
 	// Update player index in game
-	gamePlayerIdx := br.actor.GetTable().GetGamePlayerIndex(br.playerID)
+	gamePlayerIdx := table.GamePlayerIndex(br.playerID)
 
 	// Somehow, this player is not in the game.
 	// It probably has no chips already or just sat down and have not participated in the game yet

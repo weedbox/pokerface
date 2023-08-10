@@ -29,6 +29,7 @@ type Competition interface {
 	Match() match.Match
 	ReserveSeat(tableID string, seatID int, playerID string) (int, error)
 	OnTableUpdated(func(ts *table.State))
+	OnCompleted(func(c Competition))
 }
 
 type competition struct {
@@ -44,6 +45,7 @@ type competition struct {
 	mu             sync.RWMutex
 	onPlayerJoined func(ts *table.State, seatID int, playerID string)
 	onTableUpdated func(ts *table.State)
+	onCompleted    func(c Competition)
 }
 
 type CompetitionOpt func(*competition)
@@ -81,6 +83,7 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 		isJoinable:     true,
 		onPlayerJoined: func(ts *table.State, seatID int, playerID string) {},
 		onTableUpdated: func(ts *table.State) {},
+		onCompleted:    func(c Competition) {},
 	}
 
 	for _, opt := range opts {
@@ -335,4 +338,8 @@ func (c *competition) ReserveSeat(tableID string, seatID int, playerID string) (
 
 func (c *competition) OnTableUpdated(fn func(ts *table.State)) {
 	c.onTableUpdated = fn
+}
+
+func (c *competition) OnCompleted(fn func(c Competition)) {
+	c.onCompleted = fn
 }

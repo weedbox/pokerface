@@ -294,6 +294,9 @@ func (t *table) Join(seatID int, p *PlayerInfo) (int, error) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
+	// Game index is -1 by default
+	p.GameIdx = -1
+
 	sid, err := t.sm.Join(seatID, p)
 	if err != nil {
 		return -1, err
