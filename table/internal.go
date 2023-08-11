@@ -225,8 +225,6 @@ func (t *table) prepareNextGame() error {
 		return ErrGameCancelled
 	}
 
-	t.ts.Status = "preparing"
-
 	if err := t.checkEndConditions(); err != nil {
 		return err
 	}
@@ -235,6 +233,9 @@ func (t *table) prepareNextGame() error {
 	if err != nil {
 		return err
 	}
+
+	t.ts.GameState = nil
+	t.ts.Status = "preparing"
 
 	// Check the number of player
 	playableCount := t.sm.GetPlayableSeatCount()
@@ -322,7 +323,12 @@ func (t *table) startGame() error {
 
 	t.gameCount++
 	t.ts.Status = "playing"
-
+	/*
+		fmt.Println("startGame")
+		for _, p := range t.ts.Players {
+			fmt.Printf("[table] player=%s, gameIdx=%d, p.SeatID=%d, bankroll=%d, playable=%v\n", p.ID, p.GameIdx, p.SeatID, p.Bankroll, p.Playable)
+		}
+	*/
 	// Waiting for game closed
 	<-ctx.Done()
 

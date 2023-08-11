@@ -51,7 +51,6 @@ func (nmtb *NativeMatchTableBackend) Allocate(maxSeats int) (*match.Table, error
 }
 
 func (nmtb *NativeMatchTableBackend) Release(tableID string) error {
-	fmt.Printf("Released Table (id=%s)\n", tableID)
 	return nmtb.c.TableManager().ReleaseTable(tableID)
 }
 

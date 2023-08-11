@@ -73,6 +73,19 @@ func (nta *NativeTableAdapter) UpdateNativeState(state *table.State) error {
 			})
 
 			if p.GameIdx != -1 {
+				/*
+					if p.GameIdx >= len(state.GameState.Players) {
+						fmt.Println("=======", state.Status, state.GameState.Status.CurrentEvent)
+						for _, gp := range state.GameState.Players {
+							fmt.Println(gp.Idx)
+						}
+						for _, p := range state.Players {
+							fmt.Printf("<<<<===== player=%s, gameIdx=%d, p.SeatID=%d, bankroll=%d, playable=%v\n", p.ID, p.GameIdx, p.SeatID, p.Bankroll, p.Playable)
+						}
+
+						state.PrintState()
+					}
+				*/
 				t.State.GamePlayerIndexes[p.GameIdx] = count
 			}
 

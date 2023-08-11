@@ -56,8 +56,7 @@ func Test_E2E(t *testing.T) {
 		}),
 		competition.WithTableUpdatedCallback(func(ts *table.State) {
 
-			v, ok := tables.Load(ts.ID)
-			assert.True(t, ok)
+			v, _ := tables.LoadOrStore(ts.ID, &sync.Map{})
 			actors := v.(*sync.Map)
 
 			if ts.Status == "playing" {
@@ -92,8 +91,11 @@ func Test_E2E(t *testing.T) {
 				time.Sleep(time.Second)
 				t.Log("TableClosed")
 				assert.Less(t, len(ts.Players), ts.Options.MinPlayers)
-				//wg.Done()
 			}
+		}),
+		competition.WithCompletedCallback(func(c competition.Competition) {
+			t.Log("Completed")
+			wg.Done()
 		}),
 	)
 	defer c.Close()
@@ -101,7 +103,7 @@ func Test_E2E(t *testing.T) {
 	assert.Nil(t, c.Start())
 
 	// Registering
-	totalPlayer := 18
+	totalPlayer := 90
 	for i := 0; i < totalPlayer; i++ {
 		playerID := fmt.Sprintf("player_%d", i+1)
 		assert.Nil(t, c.Register(playerID, 10000))

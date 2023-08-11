@@ -74,6 +74,12 @@ func WithTableUpdatedCallback(fn func(table *table.State)) CompetitionOpt {
 	}
 }
 
+func WithCompletedCallback(fn func(c Competition)) CompetitionOpt {
+	return func(c *competition) {
+		c.onCompleted = fn
+	}
+}
+
 func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 
 	c := &competition{
@@ -96,9 +102,7 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 	}
 
 	c.tb.OnTableUpdated(func(ts *table.State) {
-		//ts.PrintState()
-		c.tm.UpdateTableState(ts)
-		go c.onTableUpdated(ts)
+		c.UpdateTableState(ts)
 	})
 
 	// Table Manager
@@ -152,6 +156,21 @@ func (c *competition) getPlayerByID(playerID string) (*PlayerInfo, error) {
 	return nil, ErrNotFoundPlayer
 }
 
+func (c *competition) evaluateCompletion() bool {
+
+	// Check if the competition has ended
+	if !c.isJoinable && c.tm.GetTableCount() == 1 {
+
+		ts := c.tm.GetTables()[0]
+
+		if len(ts.Players) == 1 {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (c *competition) TableManager() TableManager {
 	return c.tm
 }
@@ -199,7 +218,12 @@ func (c *competition) GetPlayerIndexByID(playerID string) (int, error) {
 }
 
 func (c *competition) SetJoinable(joinable bool) {
+
 	c.isJoinable = joinable
+
+	if c.evaluateCompletion() {
+		c.onCompleted(c)
+	}
 }
 
 func (c *competition) Register(playerID string, bankroll int64) error {
@@ -302,6 +326,19 @@ func (c *competition) Start() error {
 
 func (c *competition) Close() error {
 	return c.m.Close()
+}
+
+func (c *competition) UpdateTableState(ts *table.State) error {
+
+	c.tm.UpdateTableState(ts)
+
+	if c.evaluateCompletion() {
+		c.onCompleted(c)
+	}
+
+	go c.onTableUpdated(ts)
+
+	return nil
 }
 
 func (c *competition) BuyIn(p *PlayerInfo) error {
