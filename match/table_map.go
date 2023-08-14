@@ -259,6 +259,11 @@ func (tm *tableMap) FindAvailableTable(condition *TableCondition) (*Table, error
 		for e := tm.ordered.Back(); e != nil; e = e.Prev() {
 
 			var table *Table = e.Value.(*Table)
+
+			if table.GetStatus() != TableStatus_Ready {
+				continue
+			}
+
 			if tm.isTableAvailable(condition, table) {
 				//fmt.Printf("Found available table: %s\n", table.ID())
 				return table, nil
@@ -270,6 +275,11 @@ func (tm *tableMap) FindAvailableTable(condition *TableCondition) (*Table, error
 
 	for e := tm.ordered.Front(); e != nil; e = e.Next() {
 		var table *Table = e.Value.(*Table)
+
+		if table.GetStatus() != TableStatus_Ready {
+			continue
+		}
+
 		if tm.isTableAvailable(condition, table) {
 			return table, nil
 		}

@@ -23,7 +23,7 @@ func Test_Match_Basic(t *testing.T) {
 
 	totalPlayers := 900
 	for i := 0; i < totalPlayers; i++ {
-		assert.Nil(t, m.Join(fmt.Sprintf("player_%d", i+1)))
+		assert.Nil(t, m.Register(fmt.Sprintf("player_%d", i+1)))
 	}
 
 	time.Sleep(2 * time.Second)
@@ -162,7 +162,7 @@ func Test_Match_BreakTable_UntilOnlyOneTable(t *testing.T) {
 
 	// Preparing players and tables
 	for i := 0; i < totalPlayers; i++ {
-		assert.Nil(t, m.Join(fmt.Sprintf("player_%d", i+1)))
+		assert.Nil(t, m.Register(fmt.Sprintf("player_%d", i+1)))
 	}
 
 	time.Sleep(time.Second)

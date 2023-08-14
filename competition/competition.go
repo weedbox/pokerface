@@ -127,6 +127,10 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 			opts,
 			match.WithTableBackend(NewNativeMatchTableBackend(c)),
 		)
+
+		if !c.isJoinable {
+			c.m.DisableRegistration()
+		}
 	}
 
 	c.m.OnPlayerJoined(func(m match.Match, table *match.Table, seatID int, playerID string) {
@@ -159,11 +163,13 @@ func (c *competition) getPlayerByID(playerID string) (*PlayerInfo, error) {
 func (c *competition) evaluateCompletion() bool {
 
 	// Check if the competition has ended
-	if !c.isJoinable && c.tm.GetTableCount() == 1 {
+	if !c.isJoinable && c.tm.GetTableCount() == 1 && c.m.Dispatcher().GetPendingCount() == 0 {
 
 		ts := c.tm.GetTables()[0]
 
 		if len(ts.Players) == 1 {
+
+			fmt.Println("evaluateCompletion True", len(ts.Players))
 			return true
 		}
 	}
@@ -221,6 +227,12 @@ func (c *competition) SetJoinable(joinable bool) {
 
 	c.isJoinable = joinable
 
+	if !joinable {
+		c.m.DisableRegistration()
+	}
+
+	//c.tm.SetJoinable(joinable)
+
 	if c.evaluateCompletion() {
 		c.onCompleted(c)
 	}
@@ -250,7 +262,7 @@ func (c *competition) Register(playerID string, bankroll int64) error {
 
 	// Dispatch player if competition is running already
 	if c.isRunning {
-		err := c.m.Join(playerID)
+		err := c.m.Register(playerID)
 		if err != nil {
 			return err
 		}
@@ -313,7 +325,7 @@ func (c *competition) Start() error {
 			continue
 		}
 
-		err := c.m.Join(p.ID)
+		err := c.m.Register(p.ID)
 		if err != nil {
 			return err
 		}
@@ -332,8 +344,10 @@ func (c *competition) UpdateTableState(ts *table.State) error {
 
 	c.tm.UpdateTableState(ts)
 
-	if c.evaluateCompletion() {
-		c.onCompleted(c)
+	if ts.Status == "closed" || (ts.GameState != nil && ts.GameState.Status.CurrentEvent == "GameClosed") {
+		if c.evaluateCompletion() {
+			c.onCompleted(c)
+		}
 	}
 
 	go c.onTableUpdated(ts)
@@ -350,7 +364,7 @@ func (c *competition) BuyIn(p *PlayerInfo) error {
 	}
 
 	// Allocate seat
-	err = c.m.Join(p.ID)
+	err = c.m.Register(p.ID)
 	if err != nil {
 		return err
 	}

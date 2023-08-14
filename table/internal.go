@@ -14,6 +14,10 @@ func (t *table) tableLoop() {
 	//count := 0
 	for interval := range t.gameLoop {
 
+		if !t.isRunning {
+			break
+		}
+
 		//count++
 		//fmt.Println("tableLoop", t.GetState().ID, count)
 
@@ -45,6 +49,10 @@ func (t *table) tableLoop() {
 		case ErrGameCancelled:
 			// Do nothing
 			continue
+		}
+
+		if !t.isRunning {
+			break
 		}
 
 		// Continue to the next game
@@ -80,6 +88,7 @@ func (t *table) delay(interval int, fn func() error) error {
 
 func (t *table) setupPosition() error {
 
+	// No need to prepare game roles as the roles are already in position
 	if t.inPosition {
 		return nil
 	}
@@ -96,7 +105,9 @@ func (t *table) setupPosition() error {
 	}
 
 	// Updating seat and position information for players
+	t.mu.RLock()
 	t.ts.ResetPositions()
+	t.mu.RUnlock()
 
 	seats := t.sm.GetSeats()
 	for _, s := range seats {
@@ -286,9 +297,11 @@ func (t *table) startGame() error {
 	opts.Blind.BB = t.options.Blind.BB
 
 	// Clean legacy status
+	t.mu.RLock()
 	for _, p := range t.ts.Players {
 		p.GameIdx = -1
 	}
+	t.mu.RUnlock()
 
 	// Preparing players
 	seats := t.sm.GetPlayableSeats()

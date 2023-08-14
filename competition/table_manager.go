@@ -16,6 +16,7 @@ type TableManager interface {
 	GetTables() []*table.State
 	GetTableState(tableID string) *table.State
 	GetTableCount() int64
+	SetJoinable(joinable bool) error
 	UpdateTableState(ts *table.State) error
 	ReserveSeat(tableID string, seatID int, p *PlayerInfo) (int, error)
 	OnTableStateUpdated(fn func(ts *table.State))
@@ -222,6 +223,15 @@ func (tm *tableManager) GetTables() []*table.State {
 
 func (tm *tableManager) GetTableCount() int64 {
 	return atomic.LoadInt64(&tm.count)
+}
+
+func (tm *tableManager) SetJoinable(joinable bool) error {
+
+	for _, t := range tm.tables {
+		tm.b.SetJoinable(t.ID, joinable)
+	}
+
+	return nil
 }
 
 func (tm *tableManager) ReserveSeat(tableID string, seatID int, p *PlayerInfo) (int, error) {

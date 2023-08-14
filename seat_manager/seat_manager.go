@@ -226,6 +226,19 @@ func (sm *SeatManager) getPlayableSeat() *Seat {
 	return nil
 }
 
+func (sm *SeatManager) getNonEmptySeatCount() int {
+
+	count := 0
+	for i := 0; i < sm.max; i++ {
+		s := sm.seats[i]
+		if !s.IsReserved && s.Player != nil {
+			count++
+		}
+	}
+
+	return count
+}
+
 func (sm *SeatManager) getPlayerCount() int {
 
 	count := 0
@@ -290,7 +303,7 @@ func (sm *SeatManager) nextDealer() *Seat {
 
 	if sm.getPlayableSeatCount() == 1 {
 
-		if sm.getPlayerCount() == 1 {
+		if sm.getNonEmptySeatCount() <= 1 {
 			return nil
 		}
 
@@ -306,7 +319,7 @@ func (sm *SeatManager) nextDealer() *Seat {
 			}
 		}
 
-		return nil
+		return sm.dealer
 	}
 
 	if sm.dealer == nil {
@@ -346,6 +359,16 @@ func (sm *SeatManager) nextDealer() *Seat {
 	sm.dealer, _ = sm.findActivePlayer(seats)
 
 	return sm.dealer
+}
+
+func (sm *SeatManager) renewNonEmptySeats() {
+
+	for i := 0; i < sm.max; i++ {
+		s := sm.seats[i]
+		if !s.IsActive && !s.IsReserved && s.Player != nil {
+			s.IsActive = true
+		}
+	}
 }
 
 func (sm *SeatManager) resetSeat(seatID int) {
@@ -505,7 +528,7 @@ func (sm *SeatManager) GetPlayerCount() int {
 	return sm.getPlayerCount()
 }
 
-func (sm *SeatManager) Activate(seatID int) error {
+func (sm *SeatManager) Seat(seatID int) error {
 
 	sm.mu.Lock()
 	defer sm.mu.Unlock()

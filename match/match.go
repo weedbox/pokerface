@@ -32,8 +32,9 @@ type Match interface {
 	Close() error
 
 	GetStatus() MatchStatus
+	DisableRegistration()
 	IsLastTableStage() bool
-	Join(playerID string) error
+	Register(playerID string) error
 	BreakTable(tableID string) error
 	ApplySeatChanges(tableID string, sc *SeatChanges) error
 	GetPlayerCount() int64
@@ -200,11 +201,15 @@ func (m *match) GetStatus() MatchStatus {
 	return m.status
 }
 
+func (m *match) DisableRegistration() {
+	m.status = MatchStatus_AfterRegDeadline
+}
+
 func (m *match) GetPlayerCount() int64 {
 	return atomic.LoadInt64(&m.playerCount)
 }
 
-func (m *match) Join(playerID string) error {
+func (m *match) Register(playerID string) error {
 
 	opts := m.Options()
 	if opts.MaxTables > 0 {

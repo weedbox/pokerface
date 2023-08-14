@@ -21,6 +21,7 @@ var (
 	ErrGameConditionsNotMet        = errors.New("table: game conditions not met")
 	ErrMaxGamesExceeded            = errors.New("table: reach the maximum number of games")
 	ErrGameCancelled               = errors.New("table: game was cancelled")
+	ErrDisallowSeatReservation     = errors.New("table: disallow seat reservation")
 )
 
 type TableOpt func(*table)
@@ -211,7 +212,11 @@ func (t *table) NewGame(interval int) error {
 
 func (t *table) Close() error {
 
+	t.isRunning = false
 	t.ts.Status = "closed"
+
+	t.tb.Cancel()
+	close(t.gameLoop)
 
 	return nil
 }
@@ -248,7 +253,7 @@ func (t *table) Pause() error {
 
 func (t *table) Activate(seatID int) error {
 
-	err := t.sm.Activate(seatID)
+	err := t.sm.Seat(seatID)
 	if err != nil {
 		return nil
 	}
@@ -323,6 +328,14 @@ func (t *table) Leave(seatID int) error {
 	t.emitStateUpdated()
 
 	return nil
+}
+
+func (t *table) ResetPositions() {
+
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
+	t.ts.ResetPositions()
 }
 
 func (t *table) GetPlayablePlayerCount() int {

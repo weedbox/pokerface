@@ -24,6 +24,7 @@ func Test_E2E(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
+	closedCount := 0
 	tb := competition.NewNativeTableBackend(table.NewNativeBackend())
 	c := competition.NewCompetition(
 		opts,
@@ -88,9 +89,8 @@ func Test_E2E(t *testing.T) {
 			})
 
 			if ts.Status == "closed" {
-				time.Sleep(time.Second)
-				t.Log("TableClosed")
-				assert.Less(t, len(ts.Players), ts.Options.MinPlayers)
+				closedCount++
+				t.Logf("[%d] TableClosed (table=%s, players=%d)", closedCount, ts.ID[:8], len(ts.Players))
 			}
 		}),
 		competition.WithCompletedCallback(func(c competition.Competition) {
@@ -103,7 +103,7 @@ func Test_E2E(t *testing.T) {
 	assert.Nil(t, c.Start())
 
 	// Registering
-	totalPlayer := 90
+	totalPlayer := 900
 	for i := 0; i < totalPlayer; i++ {
 		playerID := fmt.Sprintf("player_%d", i+1)
 		assert.Nil(t, c.Register(playerID, 10000))

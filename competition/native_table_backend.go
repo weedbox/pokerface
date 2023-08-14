@@ -65,6 +65,21 @@ func (ntb *NativeTableBackend) ReleaseTable(tableID string) error {
 	return t.Close()
 }
 
+func (ntb *NativeTableBackend) SetJoinable(tableID string, isJoinable bool) error {
+
+	ntb.mu.Lock()
+	defer ntb.mu.Unlock()
+
+	t, ok := ntb.tables[tableID]
+	if !ok {
+		return ErrNotFoundTable
+	}
+
+	t.SetJoinable(isJoinable)
+
+	return nil
+}
+
 func (ntb *NativeTableBackend) ReserveSeat(tableID string, seatID int, p *PlayerInfo) (int, error) {
 
 	ntb.mu.RLock()
