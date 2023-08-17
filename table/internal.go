@@ -170,6 +170,7 @@ func (t *table) updatePlayerStates(ts *State) error {
 			t.sm.Reserve(p.SeatID)
 
 			if t.ts.Options.EliminateMode == "leave" {
+				//fmt.Println("updatePlayerStates", ts.ID, "LEAVE", p.SeatID, p.ID)
 				t.leave(p.SeatID)
 			}
 		}

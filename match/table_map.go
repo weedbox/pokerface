@@ -60,7 +60,7 @@ func (tm *tableMap) isTableAvailable(condition *TableCondition, table *Table) bo
 			table.GetAvailableSeatCount(),
 		)
 	*/
-	if table.status != TableStatus_Ready {
+	if table.GetStatus() != TableStatus_Ready {
 		return false
 	}
 	/*
@@ -68,16 +68,46 @@ func (tm *tableMap) isTableAvailable(condition *TableCondition, table *Table) bo
 			fmt.Println("==", s.ID, s.Player, s.IsActive, s.IsReserved)
 		}
 	*/
-	if condition.MinAvailableSeats == -1 && table.GetSeatCount() > table.GetPlayerCount() {
-		// players are allowed to sit at any empty seat
-		return true
+	if condition.MinAvailableSeats == -1 {
+		if table.GetSeatCount() > table.GetPlayerCount() {
+			// players are allowed to sit at any empty seat
+			//fmt.Println("table.GetSeatCount() > table.GetPlayerCount() FOUND", table.ID(), table.GetSeatCount(), table.GetPlayerCount())
+			return true
+		}
 	} else if table.GetAvailableSeatCount() >= condition.MinAvailableSeats {
 		// minimum number of available seats is required to allow players to sit
-		//fmt.Println("FOUND", table.ID())
+		//fmt.Println("table.GetAvailableSeatCount() FOUND", table.ID(), table.GetAvailableSeatCount())
 		return true
 	}
 
 	return false
+}
+
+func (tm *tableMap) findAvailableTable(condition *TableCondition) (*Table, error) {
+
+	if condition.HighestNumberOfPlayers {
+
+		// Start searching from the table with the highest number of players
+		for e := tm.ordered.Back(); e != nil; e = e.Prev() {
+
+			var table *Table = e.Value.(*Table)
+			if tm.isTableAvailable(condition, table) {
+				//fmt.Printf("Found available table: %s\n", table.ID())
+				return table, nil
+			}
+		}
+
+		return nil, ErrNotFoundAvailableTable
+	}
+
+	for e := tm.ordered.Front(); e != nil; e = e.Next() {
+		var table *Table = e.Value.(*Table)
+		if tm.isTableAvailable(condition, table) {
+			return table, nil
+		}
+	}
+
+	return nil, ErrNotFoundAvailableTable
 }
 
 func (tm *tableMap) createTable(players []string) (*Table, error) {
@@ -89,7 +119,12 @@ func (tm *tableMap) createTable(players []string) (*Table, error) {
 	}
 
 	t.OnPlayerJoined(func(playerID string, seatID int) {
-		tm.m.TableBackend().Reserve(t.ID(), seatID, playerID)
+		err := tm.m.TableBackend().Reserve(t.ID(), seatID, playerID)
+		if err != nil {
+			//fmt.Println("[match/table_map]", playerID, seatID, err)
+			return
+		}
+
 		tm.onPlayerJoined(t, seatID, playerID)
 	})
 
@@ -253,45 +288,16 @@ func (tm *tableMap) FindAvailableTable(condition *TableCondition) (*Table, error
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()
 
-	if condition.HighestNumberOfPlayers {
-
-		// Start searching from the table with the highest number of players
-		for e := tm.ordered.Back(); e != nil; e = e.Prev() {
-
-			var table *Table = e.Value.(*Table)
-
-			if table.GetStatus() != TableStatus_Ready {
-				continue
-			}
-
-			if tm.isTableAvailable(condition, table) {
-				//fmt.Printf("Found available table: %s\n", table.ID())
-				return table, nil
-			}
-		}
-
-		return nil, ErrNotFoundAvailableTable
-	}
-
-	for e := tm.ordered.Front(); e != nil; e = e.Next() {
-		var table *Table = e.Value.(*Table)
-
-		if table.GetStatus() != TableStatus_Ready {
-			continue
-		}
-
-		if tm.isTableAvailable(condition, table) {
-			return table, nil
-		}
-	}
-
-	return nil, ErrNotFoundAvailableTable
+	return tm.findAvailableTable(condition)
 }
 
 func (tm *tableMap) DispatchPlayer(condition *TableCondition, playerID string) error {
 
+	tm.mu.Lock()
+	defer tm.mu.Unlock()
+
 	// Find the table with the maximum number of players
-	table, err := tm.FindAvailableTable(condition)
+	table, err := tm.findAvailableTable(condition)
 	if err == nil && table != nil {
 		// Found a available table can be used
 		return table.Join(-1, playerID)

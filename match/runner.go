@@ -22,7 +22,7 @@ func (nr *NativeRunner) ShouldBeSplit(m Match, table *Table) bool {
 	tableCount := m.TableMap().Count()
 
 	// Final table
-	if tableCount == 1 {
+	if tableCount <= 1 {
 		return false
 	}
 

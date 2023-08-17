@@ -563,7 +563,7 @@ func (sm *SeatManager) Join(seatID int, p PlayerInfo) (int, error) {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
-	if seatID >= sm.max {
+	if seatID >= sm.max || seatID < -1 {
 		return -1, ErrInvalidSeat
 	}
 

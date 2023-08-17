@@ -43,7 +43,7 @@ type competition struct {
 	isRunning      bool
 	isJoinable     bool
 	mu             sync.RWMutex
-	onPlayerJoined func(ts *table.State, seatID int, playerID string)
+	onSeatReserved func(ts *table.State, seatID int, playerID string)
 	onTableUpdated func(ts *table.State)
 	onCompleted    func(c Competition)
 }
@@ -62,9 +62,9 @@ func WithMatchBackend(m match.Match) CompetitionOpt {
 	}
 }
 
-func WithPlayerJoinedCallback(fn func(table *table.State, seatID int, playerID string)) CompetitionOpt {
+func WithSeatReservedCallback(fn func(table *table.State, seatID int, playerID string)) CompetitionOpt {
 	return func(c *competition) {
-		c.onPlayerJoined = fn
+		c.onSeatReserved = fn
 	}
 }
 
@@ -87,7 +87,7 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 		players:        make([]*PlayerInfo, 0),
 		s:              NewState(),
 		isJoinable:     true,
-		onPlayerJoined: func(ts *table.State, seatID int, playerID string) {},
+		onSeatReserved: func(ts *table.State, seatID int, playerID string) {},
 		onTableUpdated: func(ts *table.State) {},
 		onCompleted:    func(c Competition) {},
 	}
@@ -135,7 +135,7 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 
 	c.m.OnPlayerJoined(func(m match.Match, table *match.Table, seatID int, playerID string) {
 		ts := c.tm.GetTableState(table.ID())
-		c.onPlayerJoined(ts, seatID, playerID)
+		c.onSeatReserved(ts, seatID, playerID)
 	})
 
 	c.m.OnTableBroken(func(m match.Match, table *match.Table) {

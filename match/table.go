@@ -67,8 +67,11 @@ func (t *Table) Join(seatID int, playerID string) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
+	//fmt.Println("[match/table] Join()", t.id, seatID, playerID)
+
 	sid, err := t.sm.Join(seatID, playerID)
 	if err != nil {
+		//fmt.Println("[match/table] Failed to Join()", t.id, seatID, playerID, t.sm.GetPlayerCount())
 		return err
 	}
 
@@ -135,7 +138,7 @@ func (t *Table) ApplySeatChanges(sc *SeatChanges) error {
 
 		seat := t.sm.GetSeat(seatID)
 		if seat.Player == nil {
-			fmt.Printf("WARNING seat.Player = nil, seat=%d, table=%s\n", seatID, t.ID())
+			fmt.Printf("WARNING player left but seat.Player = nil, seat=%d, table=%s\n", seatID, t.ID())
 			continue
 		}
 

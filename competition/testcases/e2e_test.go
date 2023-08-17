@@ -29,7 +29,7 @@ func Test_E2E(t *testing.T) {
 	c := competition.NewCompetition(
 		opts,
 		competition.WithTableBackend(tb),
-		competition.WithPlayerJoinedCallback(func(ts *table.State, seatID int, playerID string) {
+		competition.WithSeatReservedCallback(func(ts *table.State, seatID int, playerID string) {
 
 			v, _ := tables.LoadOrStore(ts.ID, &sync.Map{})
 			actors := v.(*sync.Map)
@@ -53,7 +53,7 @@ func Test_E2E(t *testing.T) {
 			// Activate seats on specific table
 			table.Activate(seatID)
 
-			t.Logf("Joined (table=%s, seat=%d, player=%s)", ts.ID, seatID, playerID)
+			t.Logf("Seat Reserved (table=%s, seat=%d, player=%s)", ts.ID, seatID, playerID)
 		}),
 		competition.WithTableUpdatedCallback(func(ts *table.State) {
 
