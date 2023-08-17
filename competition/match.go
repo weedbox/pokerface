@@ -39,12 +39,6 @@ func (nmtb *NativeMatchTableBackend) Allocate(maxSeats int) (*match.Table, error
 	t := match.NewTable(maxSeats)
 	t.SetID(ts.ID)
 
-	// Activate immediately
-	err = nmtb.c.TableManager().ActivateTable(ts.ID)
-	if err != nil {
-		return t, err
-	}
-
 	fmt.Printf("Allocated Table (id=%s, seats=%d)\n", ts.ID, maxSeats)
 
 	return t, nil
@@ -52,6 +46,18 @@ func (nmtb *NativeMatchTableBackend) Allocate(maxSeats int) (*match.Table, error
 
 func (nmtb *NativeMatchTableBackend) Release(tableID string) error {
 	return nmtb.c.TableManager().ReleaseTable(tableID)
+}
+
+func (nmtb *NativeMatchTableBackend) Activate(tableID string) error {
+
+	err := nmtb.c.TableManager().ActivateTable(tableID)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Activated Table (id=%s)\n", tableID)
+
+	return nil
 }
 
 func (nmtb *NativeMatchTableBackend) Reserve(tableID string, seatID int, playerID string) error {

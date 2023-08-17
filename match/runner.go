@@ -51,7 +51,10 @@ func (nr *NativeRunner) ShouldBeSplit(m Match, table *Table) bool {
 			return false
 		}
 
-		return true
+		// Attempt to reduce the number of tables
+		if int64(requiredTables) < tableCount {
+			return true
+		}
 	}
 
 	// Condition 1: the number of players is less than or equal to minimum limit
@@ -63,10 +66,6 @@ func (nr *NativeRunner) ShouldBeSplit(m Match, table *Table) bool {
 	}
 
 	// Condition 2: the number of players is less than average
-	if tableCount == 0 {
-		return false
-	}
-
 	// Calculate the average number of players per table
 	avg := totalPlayers / int64(tableCount)
 	/*

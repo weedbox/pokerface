@@ -144,6 +144,12 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 			table.GetPlayerCount(),
 			table.GetStatus(),
 		)
+
+		fmt.Printf("[Competition Status] (table_count=%d, player_count=(%d/%d))\n",
+			c.tm.GetTableCount(),
+			c.m.GetPlayerCount(),
+			len(c.players),
+		)
 	})
 
 	return c

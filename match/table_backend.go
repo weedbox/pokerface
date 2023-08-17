@@ -7,6 +7,7 @@ import (
 type TableBackend interface {
 	Allocate(maxSeats int) (*Table, error)
 	Release(tableID string) error
+	Activate(tableID string) error
 	Reserve(tableID string, seatID int, playerID string) error
 	GetTable(tableID string) (*Table, error)
 	OnTableUpdated(func(tableID string, sc *SeatChanges))
@@ -62,6 +63,10 @@ func (tb *NativeTableBackend) Release(tableID string) error {
 	defer tb.mu.Unlock()
 
 	delete(tb.tables, tableID)
+	return nil
+}
+
+func (tb *NativeTableBackend) Activate(tableID string) error {
 	return nil
 }
 

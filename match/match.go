@@ -136,7 +136,7 @@ func NewMatch(options *Options, opts ...MatchOpt) Match {
 	}
 
 	m.tb.OnTableUpdated(func(tableID string, sc *SeatChanges) {
-		m.ApplySeatChanges(tableID, sc)
+		go m.ApplySeatChanges(tableID, sc)
 	})
 
 	// Runner

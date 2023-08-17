@@ -2,6 +2,7 @@ package table
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -27,10 +28,12 @@ func (t *table) tableLoop() {
 
 		switch err {
 		case ErrMaxGamesExceeded:
+			fmt.Println("TABLE ErrMaxGamesExceeded")
 			t.ts.Status = "closed"
 			t.updateGameState(nil)
 			return
 		case ErrTimesUp:
+			fmt.Println("TABLE ErrTimesUp")
 			t.ts.Status = "closed"
 			t.updateGameState(nil)
 			return
@@ -38,6 +41,7 @@ func (t *table) tableLoop() {
 
 			// Nobody can join so so table should be closed
 			if !t.options.Joinable {
+				fmt.Println("TABLE ErrInsufficientNumberOfPlayers")
 				t.ts.Status = "closed"
 				t.updateGameState(nil)
 				return
@@ -181,7 +185,7 @@ func (t *table) updatePlayerStates(ts *State) error {
 
 func (t *table) emitStateUpdated() {
 	state := t.cloneState()
-	go t.onStateUpdated(state)
+	t.onStateUpdated(state)
 }
 
 func (t *table) cloneState() *State {

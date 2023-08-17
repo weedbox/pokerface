@@ -118,6 +118,9 @@ func (tm *tableMap) createTable(players []string) (*Table, error) {
 		return nil, err
 	}
 
+	t.SetStatus(TableStatus_Busy)
+
+	// Initializing event handlers
 	t.OnPlayerJoined(func(playerID string, seatID int) {
 		err := tm.m.TableBackend().Reserve(t.ID(), seatID, playerID)
 		if err != nil {
@@ -151,6 +154,8 @@ func (tm *tableMap) createTable(players []string) (*Table, error) {
 	}
 
 	tm.ordered.PushBack(t)
+
+	t.SetStatus(TableStatus_Ready)
 
 	return t, nil
 }
@@ -222,6 +227,12 @@ func (tm *tableMap) CreateTable(players []string) (*Table, error) {
 	defer tm.mu.Unlock()
 
 	t, err := tm.createTable(players)
+
+	// Activate table
+	err = tm.m.TableBackend().Activate(t.id)
+	if err != nil {
+		return nil, err
+	}
 
 	t.SetStatus(TableStatus_Ready)
 

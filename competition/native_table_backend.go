@@ -29,7 +29,7 @@ func (ntb *NativeTableBackend) CreateTable(opts *table.Options) (*table.State, e
 	t := table.NewTable(opts, table.WithBackend(ntb.geb))
 
 	t.OnStateUpdated(func(ts *table.State) {
-		go ntb.onTableUpdated(ts)
+		ntb.onTableUpdated(ts)
 	})
 
 	ntb.tables[t.GetState().ID] = t

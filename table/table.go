@@ -2,6 +2,7 @@ package table
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -304,7 +305,7 @@ func (t *table) Join(seatID int, p *PlayerInfo) (int, error) {
 
 	sid, err := t.sm.Join(seatID, p)
 	if err != nil {
-		///fmt.Println("=====", err, t.ts.ID, p.ID, sid)
+		fmt.Println("=====", err, t.ts.ID, p.ID, sid)
 		return -1, err
 	}
 

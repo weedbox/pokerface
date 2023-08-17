@@ -125,10 +125,10 @@ func (tm *tableManager) UpdateTableState(ts *table.State) error {
 
 	sc := tm.GetSeatChanges(oldts, ts)
 	if sc != nil {
-		go tm.onSeatChanged(ts, sc)
+		tm.onSeatChanged(ts, sc)
 	}
 
-	go tm.onTableStateUpdated(ts)
+	tm.onTableStateUpdated(ts)
 
 	return nil
 }
