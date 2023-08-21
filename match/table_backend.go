@@ -10,6 +10,7 @@ type TableBackend interface {
 	Activate(tableID string) error
 	Reserve(tableID string, seatID int, playerID string) error
 	GetTable(tableID string) (*Table, error)
+	UpdateTable(tableID string, sc *SeatChanges) error
 	OnTableUpdated(func(tableID string, sc *SeatChanges))
 }
 
@@ -98,15 +99,14 @@ func (tb *NativeTableBackend) GetTable(tableID string) (*Table, error) {
 	return t, nil
 }
 
-func (tb *NativeTableBackend) OnTableUpdated(fn func(tableID string, sc *SeatChanges)) {
-	tb.onTableUpdated = fn
-}
-
-// For debugging and dummy usage
-func (tb *NativeTableBackend) EmitTableUpdated(tableID string, sc *SeatChanges) {
+func (tb *NativeTableBackend) UpdateTable(tableID string, sc *SeatChanges) error {
 	t, _ := tb.GetTable(tableID)
 	t.SetStatus(TableStatus_Busy)
 	tb.onTableUpdated(tableID, sc)
 	t.SetStatus(TableStatus_Ready)
+	return nil
+}
 
+func (tb *NativeTableBackend) OnTableUpdated(fn func(tableID string, sc *SeatChanges)) {
+	tb.onTableUpdated = fn
 }

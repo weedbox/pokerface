@@ -12,54 +12,23 @@ import (
 func TestActor_BotRunner_Humanize(t *testing.T) {
 
 	// Initializing table
-	tableEngine := pokertable.NewTableEngine()
-	table, err := tableEngine.CreateTable(
-		pokertable.TableSetting{
-			ShortID:        "ABC123",
-			Code:           "01",
-			Name:           "table name",
-			InvitationCode: "come_to_play",
-			CompetitionMeta: pokertable.CompetitionMeta{
-				ID: "competition id",
-				Blind: pokertable.Blind{
-					ID:              uuid.New().String(),
-					Name:            "blind name",
-					FinalBuyInLevel: 2,
-					InitialLevel:    1,
-					Levels: []pokertable.BlindLevel{
-						{
-							Level:    1,
-							SB:       10,
-							BB:       20,
-							Ante:     0,
-							Duration: 10,
-						},
-						{
-							Level:    2,
-							SB:       20,
-							BB:       30,
-							Ante:     0,
-							Duration: 10,
-						},
-						{
-							Level:    3,
-							SB:       30,
-							BB:       40,
-							Ante:     0,
-							Duration: 10,
-						},
-					},
-				},
-				MaxDuration:         60,
-				Rule:                pokertable.CompetitionRule_Default,
-				Mode:                pokertable.CompetitionMode_MTT,
-				TableMaxSeatCount:   9,
-				TableMinPlayerCount: 2,
-				MinChipUnit:         10,
-				ActionTime:          1,
-			},
+	manager := pokertable.NewManager()
+	table, err := manager.CreateTable(pokertable.TableSetting{
+		TableID: uuid.New().String(),
+		Meta: pokertable.TableMeta{
+			CompetitionID:       "1005c477-84b4-4d1b-9fca-3a6ad84e0fe7",
+			Rule:                pokertable.CompetitionRule_Default,
+			Mode:                pokertable.CompetitionMode_CT,
+			MaxDuration:         3,
+			TableMaxSeatCount:   9,
+			TableMinPlayerCount: 2,
+			MinChipUnit:         10,
+			ActionTime:          10,
 		},
-	)
+	})
+	assert.Nil(t, err)
+
+	tableEngine, err := manager.GetTableEngine(table.ID)
 	assert.Nil(t, err)
 
 	// Initializing bot
@@ -104,7 +73,7 @@ func TestActor_BotRunner_Humanize(t *testing.T) {
 				t.Log("GameClosed", table.State.GameState.GameID)
 
 				if len(table.AlivePlayers()) == 1 {
-					tableEngine.DeleteTable(table.ID)
+					tableEngine.CloseTable()
 					t.Log("Table deleted")
 					wg.Done()
 					return
@@ -115,12 +84,13 @@ func TestActor_BotRunner_Humanize(t *testing.T) {
 
 	// Add player to table
 	for _, p := range players {
-		err := tableEngine.PlayerJoin(table.ID, p)
+		tableEngine.PlayerReserve(p)
+		err := tableEngine.PlayerJoin(p.PlayerID)
 		assert.Nil(t, err)
 	}
 
 	// Start game
-	err = tableEngine.StartTableGame(table.ID)
+	err = tableEngine.StartTableGame()
 	assert.Nil(t, err)
 
 	wg.Wait()

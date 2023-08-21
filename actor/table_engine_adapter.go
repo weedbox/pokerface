@@ -55,39 +55,39 @@ func (tea *tableEngineAdapter) GetGamePlayerIndex(playerID string) int {
 }
 
 func (tea *tableEngineAdapter) Pass(playerID string) error {
-	return tea.engine.PlayerPass(tea.table.ID, playerID)
+	return tea.engine.PlayerPass(playerID)
 }
 
 func (tea *tableEngineAdapter) Ready(playerID string) error {
-	return tea.engine.PlayerReady(tea.table.ID, playerID)
+	return tea.engine.PlayerReady(playerID)
 }
 
 func (tea *tableEngineAdapter) Pay(playerID string, chips int64) error {
-	return tea.engine.PlayerPay(tea.table.ID, playerID, chips)
+	return tea.engine.PlayerPay(playerID, chips)
 }
 
 func (tea *tableEngineAdapter) Check(playerID string) error {
-	return tea.engine.PlayerCheck(tea.table.ID, playerID)
+	return tea.engine.PlayerCheck(playerID)
 }
 
 func (tea *tableEngineAdapter) Bet(playerID string, chips int64) error {
-	return tea.engine.PlayerBet(tea.table.ID, playerID, chips)
+	return tea.engine.PlayerBet(playerID, chips)
 }
 
 func (tea *tableEngineAdapter) Call(playerID string) error {
-	return tea.engine.PlayerCall(tea.table.ID, playerID)
+	return tea.engine.PlayerCall(playerID)
 }
 
 func (tea *tableEngineAdapter) Fold(playerID string) error {
-	return tea.engine.PlayerFold(tea.table.ID, playerID)
+	return tea.engine.PlayerFold(playerID)
 }
 
 func (tea *tableEngineAdapter) Allin(playerID string) error {
-	return tea.engine.PlayerAllin(tea.table.ID, playerID)
+	return tea.engine.PlayerAllin(playerID)
 }
 
 func (tea *tableEngineAdapter) Raise(playerID string, chipLevel int64) error {
-	return tea.engine.PlayerRaise(tea.table.ID, playerID, chipLevel)
+	return tea.engine.PlayerRaise(playerID, chipLevel)
 }
 
 func (tea *tableEngineAdapter) ExtendTime(playerID string, duration time.Duration) error {

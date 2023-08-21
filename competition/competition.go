@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/weedbox/pokerface/match"
 	"github.com/weedbox/pokerface/table"
@@ -25,7 +27,10 @@ type Competition interface {
 	Close() error
 	GetOptions() *Options
 	GetTableCount() int64
+	GetPlayerCount() int64
+	GetCompetitorCount() int
 	SetJoinable(bool)
+	IsJoinable() bool
 	Match() match.Match
 	ReserveSeat(tableID string, seatID int, playerID string) (int, error)
 	OnTableUpdated(func(ts *table.State))
@@ -42,6 +47,7 @@ type competition struct {
 	s              *State
 	isRunning      bool
 	isJoinable     bool
+	playerCount    int64
 	mu             sync.RWMutex
 	onSeatReserved func(ts *table.State, seatID int, playerID string)
 	onTableUpdated func(ts *table.State)
@@ -102,11 +108,33 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 	}
 
 	c.tb.OnTableUpdated(func(ts *table.State) {
+		/*
+			if ts.GameState != nil && ts.GameState.Status.CurrentEvent == "GameClosed" {
+				fmt.Printf("[Competition Status] (table_count=%d, player_count=(%d/%d/%d))\n",
+					c.tm.GetTableCount(),
+					c.m.GetPlayerCount(),
+					c.m.Dispatcher().GetPendingCount(),
+					len(c.players),
+				)
+			}
+		*/
 		c.UpdateTableState(ts)
 	})
 
 	// Table Manager
 	c.tm = NewTableManager(options, c.tb)
+
+	// Waiting for table updates
+	c.tm.OnSeatChanged(func(ts *table.State, sc *match.SeatChanges) {
+
+		for _, state := range sc.Seats {
+			if state == "left" {
+				atomic.AddInt64(&c.playerCount, -1)
+			}
+		}
+
+		c.mtb.UpdateTable(ts.ID, sc)
+	})
 
 	// Table backend of match
 	if c.mtb == nil {
@@ -125,7 +153,7 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 
 		c.m = match.NewMatch(
 			opts,
-			match.WithTableBackend(NewNativeMatchTableBackend(c)),
+			match.WithTableBackend(c.mtb),
 		)
 
 		if !c.isJoinable {
@@ -144,15 +172,40 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 			table.GetPlayerCount(),
 			table.GetStatus(),
 		)
-
-		fmt.Printf("[Competition Status] (table_count=%d, player_count=(%d/%d))\n",
-			c.tm.GetTableCount(),
-			c.m.GetPlayerCount(),
-			len(c.players),
-		)
+		c.PrintDebuggingStatus()
 	})
 
+	// For debugging
+	go func() {
+		for {
+			select {
+			case <-time.After(time.Second):
+				/*
+					if c.GetTableCount() == 2 {
+						c.tm.GetTables()[0].PrintState()
+						c.tm.GetTables()[1].PrintState()
+					}
+
+					if c.GetTableCount() == 1 {
+						c.tm.GetTables()[0].PrintState()
+					}
+				*/
+				c.PrintDebuggingStatus()
+			}
+		}
+	}()
+
 	return c
+}
+
+func (c *competition) PrintDebuggingStatus() {
+
+	fmt.Printf("[Competition Status] (table_count=%d, player_count=(%d/%d), pending=%d)\n",
+		c.tm.GetTableCount(),
+		c.GetPlayerCount(),
+		len(c.players),
+		c.m.Dispatcher().GetPendingCount(),
+	)
 }
 
 func (c *competition) getPlayerByID(playerID string) (*PlayerInfo, error) {
@@ -168,19 +221,22 @@ func (c *competition) getPlayerByID(playerID string) (*PlayerInfo, error) {
 
 func (c *competition) evaluateCompletion() bool {
 
-	// Check if the competition has ended
-	if !c.isJoinable && c.tm.GetTableCount() == 1 && c.m.Dispatcher().GetPendingCount() == 0 {
-
-		ts := c.tm.GetTables()[0]
-
-		if len(ts.Players) == 1 {
-
-			fmt.Println("evaluateCompletion True", len(ts.Players))
-			return true
-		}
+	if c.isJoinable {
+		return false
 	}
 
-	return false
+	if c.GetPlayerCount() > 1 {
+		return false
+	}
+
+	fmt.Printf("[Competition End Status] (table_count=%d, player_count=(%d/%d), pending=%d)\n",
+		c.tm.GetTableCount(),
+		c.GetPlayerCount(),
+		len(c.players),
+		c.m.Dispatcher().GetPendingCount(),
+	)
+
+	return true
 }
 
 func (c *competition) TableManager() TableManager {
@@ -201,6 +257,14 @@ func (c *competition) GetOptions() *Options {
 
 func (c *competition) GetTableCount() int64 {
 	return c.tm.GetTableCount()
+}
+
+func (c *competition) GetPlayerCount() int64 {
+	return atomic.LoadInt64(&c.playerCount)
+}
+
+func (c *competition) GetCompetitorCount() int {
+	return len(c.players)
 }
 
 func (c *competition) GetPlayers() []*PlayerInfo {
@@ -227,6 +291,10 @@ func (c *competition) GetPlayerIndexByID(playerID string) (int, error) {
 	}
 
 	return -1, ErrNotFoundPlayer
+}
+
+func (c *competition) IsJoinable() bool {
+	return c.isJoinable
 }
 
 func (c *competition) SetJoinable(joinable bool) {
@@ -265,6 +333,8 @@ func (c *competition) Register(playerID string, bankroll int64) error {
 	}
 
 	c.players = append(c.players, p)
+
+	atomic.AddInt64(&c.playerCount, 1)
 
 	// Dispatch player if competition is running already
 	if c.isRunning {
@@ -305,6 +375,8 @@ func (c *competition) Unregister(playerID string) error {
 
 	// Remove player from list
 	c.players = append(c.players[:idx], c.players[idx+1:]...)
+
+	atomic.AddInt64(&c.playerCount, -1)
 
 	return nil
 }
@@ -350,13 +422,13 @@ func (c *competition) UpdateTableState(ts *table.State) error {
 
 	c.tm.UpdateTableState(ts)
 
+	c.onTableUpdated(ts)
+
 	if ts.Status == "closed" || (ts.GameState != nil && ts.GameState.Status.CurrentEvent == "GameClosed") {
 		if c.evaluateCompletion() {
 			c.onCompleted(c)
 		}
 	}
-
-	go c.onTableUpdated(ts)
 
 	return nil
 }

@@ -5,9 +5,9 @@ go 1.19
 require (
 	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.8.4
-	github.com/weedbox/pokertable v0.0.0-20230627140454-3be2ec86c79a
-	github.com/weedbox/syncsaga v0.0.0-20230626205634-721bf83472e1
-	github.com/weedbox/timebank v0.0.0-20230626195305-39f7a14ece16
+	github.com/weedbox/pokertable v0.0.0-20230818182614-a6fe03375bcf
+	github.com/weedbox/syncsaga v0.0.0-20230821071725-a634f0872340
+	github.com/weedbox/timebank v0.0.0-20230713013837-bd7a6f808e3e
 )
 
 require (
@@ -29,4 +29,4 @@ require (
 
 //replace github.com/weedbox/syncsaga => ../weedbox/syncsaga
 
-replace github.com/weedbox/timebank => ../weedbox/timebank
+//replace github.com/weedbox/timebank => ../weedbox/timebank

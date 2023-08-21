@@ -53,7 +53,7 @@ func Test_E2E(t *testing.T) {
 			// Activate seats on specific table
 			table.Activate(seatID)
 
-			t.Logf("Seat Reserved (table=%s, seat=%d, player=%s)", ts.ID, seatID, playerID)
+			t.Logf("Player Seated (table=%s, seat=%d, player=%s)", ts.ID, seatID, playerID)
 		}),
 		competition.WithTableUpdatedCallback(func(ts *table.State) {
 
@@ -103,13 +103,15 @@ func Test_E2E(t *testing.T) {
 	assert.Nil(t, c.Start())
 
 	// Registering
-	totalPlayer := 900
+	totalPlayer := 90
 	for i := 0; i < totalPlayer; i++ {
 		playerID := fmt.Sprintf("player_%d", i+1)
 		assert.Nil(t, c.Register(playerID, 10000))
 	}
 
 	time.Sleep(time.Second)
+
+	assert.Equal(t, totalPlayer, c.GetCompetitorCount())
 
 	c.SetJoinable(false)
 

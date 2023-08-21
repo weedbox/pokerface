@@ -128,7 +128,7 @@ func Test_Match_BreakTable_UntilOnlyOneTable(t *testing.T) {
 		)
 
 		// Emit event to simulate table state changes
-		tb.EmitTableUpdated(table.ID(), sc)
+		tb.UpdateTable(table.ID(), sc)
 
 		return true
 	}

@@ -156,12 +156,12 @@ func (br *botRunner) requestMove(gs *pokerface.GameState, playerIdx int) error {
 		}
 	}
 
-	if !br.isHumanized || br.tableInfo.Meta.CompetitionMeta.ActionTime == 0 {
+	if !br.isHumanized || br.tableInfo.Meta.ActionTime == 0 {
 		return br.requestAI(gs, playerIdx)
 	}
 
 	// For simulating human-like behavior, to incorporate random delays when performing actions.
-	thinkingTime := rand.Intn(br.tableInfo.Meta.CompetitionMeta.ActionTime)
+	thinkingTime := rand.Intn(br.tableInfo.Meta.ActionTime)
 	if thinkingTime == 0 {
 		return br.requestAI(gs, playerIdx)
 	}

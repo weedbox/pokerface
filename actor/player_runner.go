@@ -128,7 +128,7 @@ func (pr *playerRunner) requestMove(gs *pokerface.GameState, playerIdx int) erro
 	}
 
 	// Setup timebank to wait for player
-	thinkingTime := time.Duration(pr.tableInfo.Meta.CompetitionMeta.ActionTime) * time.Second
+	thinkingTime := time.Duration(pr.tableInfo.Meta.ActionTime) * time.Second
 	return pr.timebank.NewTask(thinkingTime, func(isCancelled bool) {
 
 		if isCancelled {

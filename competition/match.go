@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/weedbox/pokerface/match"
-	"github.com/weedbox/pokerface/table"
 )
 
 type NativeMatchTableBackend struct {
@@ -18,11 +17,6 @@ func NewNativeMatchTableBackend(c Competition) *NativeMatchTableBackend {
 		c:              c,
 		onTableUpdated: func(tableID string, sc *match.SeatChanges) {},
 	}
-
-	// Waiting for table updates
-	c.TableManager().OnSeatChanged(func(ts *table.State, sc *match.SeatChanges) {
-		nmtb.onTableUpdated(ts.ID, sc)
-	})
 
 	return nmtb
 }
@@ -80,6 +74,11 @@ func (nmtb *NativeMatchTableBackend) GetTable(tableID string) (*match.Table, err
 	t.SetID(ts.ID)
 
 	return t, nil
+}
+
+func (nmtb *NativeMatchTableBackend) UpdateTable(tableID string, sc *match.SeatChanges) error {
+	nmtb.onTableUpdated(tableID, sc)
+	return nil
 }
 
 func (nmtb *NativeMatchTableBackend) OnTableUpdated(fn func(tableID string, sc *match.SeatChanges)) {

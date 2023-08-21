@@ -16,6 +16,7 @@ func (t *table) tableLoop() {
 	for interval := range t.gameLoop {
 
 		if !t.isRunning {
+			fmt.Println("TABLE NotRunning", t.ts.ID)
 			break
 		}
 
@@ -56,6 +57,7 @@ func (t *table) tableLoop() {
 		}
 
 		if !t.isRunning {
+			fmt.Println("TABLE NotRunning", t.ts.ID)
 			break
 		}
 
