@@ -62,11 +62,6 @@ func TestActor_Basic(t *testing.T) {
 	// Preparing table state updater
 	tableEngine.OnTableUpdated(func(table *pokertable.Table) {
 
-		// Update table state via adapter
-		for _, a := range actors {
-			a.GetTable().UpdateTableState(table)
-		}
-
 		if table.State.Status == pokertable.TableStateStatus_TableGameSettled {
 			if table.State.GameState.Status.CurrentEvent == "GameClosed" {
 				t.Log("GameClosed", table.State.GameState.GameID)
@@ -81,6 +76,13 @@ func TestActor_Basic(t *testing.T) {
 				//				t.Log(json)
 			}
 		}
+
+		// Update table state via adapter
+		go func() {
+			for _, a := range actors {
+				a.GetTable().UpdateTableState(table)
+			}
+		}()
 
 	})
 

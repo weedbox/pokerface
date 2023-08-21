@@ -107,9 +107,11 @@ func TestActor_ObserverRunner_PlayerAct(t *testing.T) {
 	tableEngine.OnTableUpdated(func(table *pokertable.Table) {
 
 		// Update table state via adapter
-		for _, a := range actors {
-			a.GetTable().UpdateTableState(table)
-		}
+		go func() {
+			for _, a := range actors {
+				a.GetTable().UpdateTableState(table)
+			}
+		}()
 	})
 
 	// Add player to table

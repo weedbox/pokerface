@@ -55,9 +55,11 @@ func Test_NativeTableAdapter_Basic(t *testing.T) {
 	nt.OnStateUpdated(func(s *table.State) {
 
 		// Update table state via adapter
-		for _, a := range actors {
-			a.GetTable().(*NativeTableAdapter).UpdateNativeState(s)
-		}
+		go func() {
+			for _, a := range actors {
+				a.GetTable().(*NativeTableAdapter).UpdateNativeState(s)
+			}
+		}()
 
 		if s.Status == "playing" && s.GameState.Status.CurrentEvent == "GameClosed" {
 			t.Logf("GameClosed (id=%s, playable_players=%d)", s.GameState.GameID, nt.GetPlayablePlayerCount())
@@ -176,9 +178,11 @@ func Test_NativeTableAdapter_Join_Slowly(t *testing.T) {
 		}
 
 		// Update table state via adapter
-		for _, a := range actors {
-			go a.GetTable().(*NativeTableAdapter).UpdateNativeState(s)
-		}
+		go func() {
+			for _, a := range actors {
+				go a.GetTable().(*NativeTableAdapter).UpdateNativeState(s)
+			}
+		}()
 	})
 
 	assert.Nil(t, nt.Start())

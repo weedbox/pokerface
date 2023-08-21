@@ -64,9 +64,11 @@ func TestActor_BotRunner_Humanize(t *testing.T) {
 	tableEngine.OnTableUpdated(func(table *pokertable.Table) {
 
 		// Update table state via adapter
-		for _, a := range actors {
-			a.GetTable().UpdateTableState(table)
-		}
+		go func() {
+			for _, a := range actors {
+				a.GetTable().UpdateTableState(table)
+			}
+		}()
 
 		if table.State.Status == pokertable.TableStateStatus_TableGameSettled {
 			if table.State.GameState.Status.CurrentEvent == "GameClosed" {

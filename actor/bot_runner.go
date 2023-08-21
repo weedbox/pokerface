@@ -1,6 +1,7 @@
 package actor
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -103,7 +104,7 @@ func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
 		return nil
 	}
 
-	//fmt.Printf("Bot (player_id=%s, gameIdx=%d)\n", br.playerID, br.gamePlayerIdx)
+	fmt.Printf("Bot (player_id=%s, gameIdx=%d)\n", br.playerID, gamePlayerIdx)
 
 	// game is running so we have to check actions allowed
 	player := gs.GetPlayer(gamePlayerIdx)
