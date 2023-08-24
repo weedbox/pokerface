@@ -1,7 +1,6 @@
 package actor
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/weedbox/pokerface"
@@ -30,19 +29,10 @@ func (nta *NativeTableAdapter) UpdateTableState(t *pokertable.Table) error {
 	return nta.actor.UpdateTableState(t)
 }
 
-func (nta *NativeTableAdapter) UpdateNativeState(state *table.State) error {
+func (nta *NativeTableAdapter) UpdateNativeState(s *table.State) error {
 
-	// Clone to get a individual table structure
-	data := state.GetJSON()
-
-	var s table.State
-	err := json.Unmarshal([]byte(data), &s)
-	if err != nil {
-		return err
-	}
-
-	state = &s
-
+	//state := s.Clone()
+	state := s
 	nta.state = state
 
 	// Convert native table state to standard format

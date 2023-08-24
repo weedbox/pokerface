@@ -14,7 +14,63 @@ import (
 
 func Test_E2E(t *testing.T) {
 
+	var tableEvents sync.Map
 	var tables sync.Map
+
+	initTable := func(tableID string) {
+
+		// Load table instance to update states
+		v, _ := tableEvents.Load(tableID)
+		te := v.(chan *table.State)
+
+		// New table so preparing handler
+		go func(te chan *table.State) {
+			var mu sync.Mutex
+			for ts := range te {
+				mu.Lock()
+
+				// Loading all actors
+				v, _ := tables.Load(tableID)
+				actors := v.(*sync.Map)
+
+				// Broadcast
+				actors.Range(func(k interface{}, v interface{}) bool {
+					a := v.(actor.Actor)
+					err := a.GetTable().(*actor.NativeTableAdapter).UpdateNativeState(ts)
+					if err != nil {
+						t.Logf("Error: %v (player=%s, event=%s)", err, k.(string), ts.GameState.Status.CurrentEvent)
+					}
+					return true
+				})
+				mu.Unlock()
+			}
+		}(te)
+	}
+
+	assertTable := func(tableID string) chan *table.State {
+
+		tables.LoadOrStore(tableID, &sync.Map{})
+
+		// Load table instance to update states
+		v, loaded := tableEvents.LoadOrStore(tableID, make(chan *table.State, 1024))
+		te := v.(chan *table.State)
+
+		if !loaded {
+			initTable(tableID)
+		}
+
+		return te
+	}
+
+	closeTable := func(tableID string) {
+
+		// Remove table
+		v, _ := tableEvents.Load(tableID)
+		te := v.(chan *table.State)
+		close(te)
+
+		tableEvents.Delete(tableID)
+	}
 
 	opts := competition.NewOptions()
 	opts.TableAllocationPeriod = 1
@@ -31,7 +87,7 @@ func Test_E2E(t *testing.T) {
 		competition.WithTableBackend(tb),
 		competition.WithSeatReservedCallback(func(ts *table.State, seatID int, playerID string) {
 
-			v, _ := tables.LoadOrStore(ts.ID, &sync.Map{})
+			v, _ := tables.Load(ts.ID)
 			actors := v.(*sync.Map)
 
 			// Getting native table
@@ -57,8 +113,8 @@ func Test_E2E(t *testing.T) {
 		}),
 		competition.WithTableUpdatedCallback(func(ts *table.State) {
 
-			v, _ := tables.LoadOrStore(ts.ID, &sync.Map{})
-			actors := v.(*sync.Map)
+			te := assertTable(ts.ID)
+			te <- ts
 
 			if ts.Status == "playing" {
 
@@ -78,19 +134,10 @@ func Test_E2E(t *testing.T) {
 				}
 			}
 
-			// Update table state via adapter
-			go actors.Range(func(k interface{}, v interface{}) bool {
-				a := v.(actor.Actor)
-				err := a.GetTable().(*actor.NativeTableAdapter).UpdateNativeState(ts)
-				if err != nil {
-					t.Logf("Error: %v (player=%s, event=%s)", err, k.(string), ts.GameState.Status.CurrentEvent)
-				}
-				return true
-			})
-
 			if ts.Status == "closed" {
 				closedCount++
 				t.Logf("[%d] TableClosed (table=%s, players=%d)", closedCount, ts.ID[:8], len(ts.Players))
+				closeTable(ts.ID)
 			}
 		}),
 		competition.WithCompletedCallback(func(c competition.Competition) {
@@ -103,7 +150,7 @@ func Test_E2E(t *testing.T) {
 	assert.Nil(t, c.Start())
 
 	// Registering
-	totalPlayer := 90
+	totalPlayer := 900
 	for i := 0; i < totalPlayer; i++ {
 		playerID := fmt.Sprintf("player_%d", i+1)
 		assert.Nil(t, c.Register(playerID, 10000))

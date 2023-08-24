@@ -192,19 +192,6 @@ func (t *table) emitStateUpdated() {
 
 func (t *table) cloneState() *State {
 	return t.ts.Clone()
-	/*
-	   // clone table state
-	   data, err := json.Marshal(t.ts)
-
-	   	if err != nil {
-	   		return nil
-	   	}
-
-	   var state State
-	   json.Unmarshal(data, &state)
-
-	   return &state
-	*/
 }
 
 func (t *table) updateGameState(gs *pokerface.GameState) error {

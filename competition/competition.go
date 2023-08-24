@@ -127,13 +127,15 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 	// Waiting for table updates
 	c.tm.OnSeatChanged(func(ts *table.State, sc *match.SeatChanges) {
 
+		if err := c.mtb.UpdateTable(ts.ID, sc); err != nil {
+			return
+		}
+
 		for _, state := range sc.Seats {
 			if state == "left" {
 				atomic.AddInt64(&c.playerCount, -1)
 			}
 		}
-
-		c.mtb.UpdateTable(ts.ID, sc)
 	})
 
 	// Table backend of match
@@ -155,10 +157,10 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 			opts,
 			match.WithTableBackend(c.mtb),
 		)
+	}
 
-		if !c.isJoinable {
-			c.m.DisableRegistration()
-		}
+	if !c.isJoinable {
+		c.m.DisableRegistration()
 	}
 
 	c.m.OnPlayerJoined(func(m match.Match, table *match.Table, seatID int, playerID string) {
@@ -167,10 +169,11 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 	})
 
 	c.m.OnTableBroken(func(m match.Match, table *match.Table) {
-		fmt.Printf("[Break] Break table (table_id=%s, left=%d, status=%d)\n",
+		fmt.Printf("[Break] Break table (table_id=%s, left=%d, status=%d, total_players=%d)\n",
 			table.ID(),
 			table.GetPlayerCount(),
 			table.GetStatus(),
+			c.GetPlayerCount(),
 		)
 		c.PrintDebuggingStatus()
 	})
@@ -181,11 +184,6 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 			select {
 			case <-time.After(time.Second):
 				/*
-					if c.GetTableCount() == 2 {
-						c.tm.GetTables()[0].PrintState()
-						c.tm.GetTables()[1].PrintState()
-					}
-
 					if c.GetTableCount() == 1 {
 						c.tm.GetTables()[0].PrintState()
 					}
@@ -396,6 +394,8 @@ func (c *competition) Start() error {
 	c.isRunning = true
 
 	// Dispatching registered players who is waiting for game start
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	for _, p := range c.players {
 
 		// Participated already

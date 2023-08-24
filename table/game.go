@@ -73,12 +73,7 @@ func (g *game) handleState(gs *pokerface.GameState) {
 
 	switch gs.Status.CurrentEvent {
 	case "GameClosed":
-		if g.isClosed {
-			break
-		}
-
-		g.isClosed = true
-		close(g.incomingStates)
+		g.Close()
 	case "RoundClosed":
 
 		// Next round automatically
@@ -146,6 +141,8 @@ func (g *game) handleState(gs *pokerface.GameState) {
 				g.rg.Add(int64(p.Idx), false)
 			} else if gs.Meta.Blind.Dealer > 0 && gs.HasPosition(p.Idx, "dealer") {
 				g.rg.Add(int64(p.Idx), false)
+			} else {
+				continue
 			}
 
 			// Allow "pay" action
@@ -211,6 +208,15 @@ func (g *game) updateState(gs *pokerface.GameState) {
 
 func (g *game) GetState() *pokerface.GameState {
 	return g.gs
+}
+
+func (g *game) Close() {
+	if g.isClosed {
+		return
+	}
+
+	g.isClosed = true
+	close(g.incomingStates)
 }
 
 func (g *game) Ready(playerIdx int) error {

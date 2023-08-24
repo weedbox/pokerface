@@ -303,6 +303,7 @@ func (sm *SeatManager) nextDealer() *Seat {
 
 	if sm.getPlayableSeatCount() == 1 {
 
+		// Only one player left
 		if sm.getNonEmptySeatCount() <= 1 {
 			return nil
 		}
@@ -314,7 +315,7 @@ func (sm *SeatManager) nextDealer() *Seat {
 		seats = seats[1:]
 
 		for _, s := range seats {
-			if s.Player != nil {
+			if !s.IsReserved && s.Player != nil {
 				s.IsActive = true
 			}
 		}

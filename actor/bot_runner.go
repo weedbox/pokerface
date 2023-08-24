@@ -1,6 +1,7 @@
 package actor
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -55,24 +56,8 @@ func (br *botRunner) Humanized(enabled bool) {
 func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
 
 	gs := table.State.GameState
+	//oldState := br.tableInfo.State
 	br.tableInfo = table
-
-	// The state remains unchanged or is outdated
-	if gs != nil {
-
-		// New game
-		if gs.GameID != br.curGameID {
-			br.curGameID = gs.GameID
-		}
-
-		//fmt.Println(br.lastGameStateTime, br.tableInfo.State.GameState.UpdatedAt)
-		if br.lastGameStateTime >= gs.UpdatedAt {
-			//fmt.Println(br.playerID, table.ID)
-			return nil
-		}
-
-		br.lastGameStateTime = gs.UpdatedAt
-	}
 
 	// Check if you have been eliminated
 	isEliminated := true
@@ -86,11 +71,26 @@ func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
 		return nil
 	}
 
+	// The state remains unchanged or is outdated
+	if gs != nil {
+
+		// New game
+		if gs.GameID != br.curGameID {
+			br.curGameID = gs.GameID
+		} else if br.lastGameStateTime >= gs.UpdatedAt {
+			// Ignore if game state is too old
+			//fmt.Println(br.playerID, table.ID)
+			return nil
+		}
+
+		br.lastGameStateTime = gs.UpdatedAt
+	}
+
 	if table.State.Status == pokertable.TableStateStatus_TableGameStandby {
 		return nil
 	}
 
-	// Update player index in game
+	// Getting player index in game
 	gamePlayerIdx := table.GamePlayerIndex(br.playerID)
 
 	// Somehow, this player is not in the game.
@@ -103,7 +103,7 @@ func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
 		return nil
 	}
 
-	//fmt.Printf("Bot (player_id=%s, gameIdx=%d)\n", br.playerID, gamePlayerIdx)
+	//fmt.Printf("Bot (player_id=%s, gameIdx=%d, event=%s)\n", br.playerID, gamePlayerIdx, gs.Status.CurrentEvent)
 
 	// game is running so we have to check actions allowed
 	player := gs.GetPlayer(gamePlayerIdx)
@@ -113,7 +113,11 @@ func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
 
 	if len(player.AllowedActions) > 0 {
 		//fmt.Println(br.playerID, player.AllowedActions)
-		return br.requestMove(table.State.GameState, gamePlayerIdx)
+		err := br.requestMove(table.State.GameState, gamePlayerIdx)
+		if err != nil {
+			fmt.Printf("Bot got Failed (player_id=%s, gameIdx=%d, event=%s)\n", br.playerID, gamePlayerIdx, gs.Status.CurrentEvent)
+			return err
+		}
 	}
 
 	return nil
