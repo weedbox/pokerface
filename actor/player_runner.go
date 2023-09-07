@@ -16,7 +16,7 @@ const (
 	PlayerStatus_Suspend
 )
 
-type playerRunner struct {
+type PlayerRunner struct {
 	actor               Actor
 	actions             Actions
 	playerID            string
@@ -32,8 +32,8 @@ type playerRunner struct {
 	suspendThreshold int
 }
 
-func NewPlayerRunner(playerID string) *playerRunner {
-	return &playerRunner{
+func NewPlayerRunner(playerID string) *PlayerRunner {
+	return &PlayerRunner{
 		playerID:            playerID,
 		timebank:            timebank.NewTimeBank(),
 		status:              PlayerStatus_Running,
@@ -42,12 +42,12 @@ func NewPlayerRunner(playerID string) *playerRunner {
 	}
 }
 
-func (pr *playerRunner) SetActor(a Actor) {
+func (pr *PlayerRunner) SetActor(a Actor) {
 	pr.actor = a
 	pr.actions = NewActions(a, pr.playerID)
 }
 
-func (pr *playerRunner) UpdateTableState(table *pokertable.Table) error {
+func (pr *PlayerRunner) UpdateTableState(table *pokertable.Table) error {
 
 	gs := table.State.GameState
 	pr.tableInfo = table
@@ -110,12 +110,12 @@ func (pr *playerRunner) UpdateTableState(table *pokertable.Table) error {
 	return nil
 }
 
-func (pr *playerRunner) OnTableStateUpdated(fn func(*pokertable.Table)) error {
+func (pr *PlayerRunner) OnTableStateUpdated(fn func(*pokertable.Table)) error {
 	pr.onTableStateUpdated = fn
 	return nil
 }
 
-func (pr *playerRunner) requestMove(gs *pokerface.GameState, playerIdx int) error {
+func (pr *PlayerRunner) requestMove(gs *pokerface.GameState, playerIdx int) error {
 
 	// Do pass automatically
 	if gs.HasAction(playerIdx, "pass") {
@@ -145,7 +145,7 @@ func (pr *playerRunner) requestMove(gs *pokerface.GameState, playerIdx int) erro
 	})
 }
 
-func (pr *playerRunner) automate(gs *pokerface.GameState, playerIdx int) error {
+func (pr *PlayerRunner) automate(gs *pokerface.GameState, playerIdx int) error {
 
 	// Default actions for automation when player has no response
 	if gs.HasAction(playerIdx, "ready") {
@@ -178,11 +178,11 @@ func (pr *playerRunner) automate(gs *pokerface.GameState, playerIdx int) error {
 	return nil
 }
 
-func (pr *playerRunner) SetSuspendThreshold(count int) {
+func (pr *PlayerRunner) SetSuspendThreshold(count int) {
 	pr.suspendThreshold = count
 }
 
-func (pr *playerRunner) Resume() error {
+func (pr *PlayerRunner) Resume() error {
 
 	if pr.status == PlayerStatus_Running {
 		return nil
@@ -194,7 +194,7 @@ func (pr *playerRunner) Resume() error {
 	return nil
 }
 
-func (pr *playerRunner) Idle() error {
+func (pr *PlayerRunner) Idle() error {
 	if pr.status != PlayerStatus_Idle {
 		pr.status = PlayerStatus_Idle
 		pr.idleCount = 0
@@ -209,12 +209,12 @@ func (pr *playerRunner) Idle() error {
 	return nil
 }
 
-func (pr *playerRunner) Suspend() error {
+func (pr *PlayerRunner) Suspend() error {
 	pr.status = PlayerStatus_Suspend
 	return nil
 }
 
-func (pr *playerRunner) Pass() error {
+func (pr *PlayerRunner) Pass() error {
 
 	err := pr.actions.Pass()
 	if err != nil {
@@ -226,7 +226,7 @@ func (pr *playerRunner) Pass() error {
 	return nil
 }
 
-func (pr *playerRunner) Ready() error {
+func (pr *PlayerRunner) Ready() error {
 
 	err := pr.actions.Ready()
 	if err != nil {
@@ -238,7 +238,7 @@ func (pr *playerRunner) Ready() error {
 	return nil
 }
 
-func (pr *playerRunner) Pay(chips int64) error {
+func (pr *PlayerRunner) Pay(chips int64) error {
 
 	err := pr.actions.Pay(chips)
 	if err != nil {
@@ -250,7 +250,7 @@ func (pr *playerRunner) Pay(chips int64) error {
 	return nil
 }
 
-func (pr *playerRunner) Check() error {
+func (pr *PlayerRunner) Check() error {
 
 	err := pr.actions.Check()
 	if err != nil {
@@ -262,7 +262,7 @@ func (pr *playerRunner) Check() error {
 	return nil
 }
 
-func (pr *playerRunner) Bet(chips int64) error {
+func (pr *PlayerRunner) Bet(chips int64) error {
 
 	err := pr.actions.Bet(chips)
 	if err != nil {
@@ -274,7 +274,7 @@ func (pr *playerRunner) Bet(chips int64) error {
 	return nil
 }
 
-func (pr *playerRunner) Call() error {
+func (pr *PlayerRunner) Call() error {
 
 	err := pr.actions.Call()
 	if err != nil {
@@ -286,12 +286,12 @@ func (pr *playerRunner) Call() error {
 	return nil
 }
 
-func (pr *playerRunner) Fold() error {
+func (pr *PlayerRunner) Fold() error {
 	pr.Resume()
 	return pr.actions.Fold()
 }
 
-func (pr *playerRunner) Allin() error {
+func (pr *PlayerRunner) Allin() error {
 
 	err := pr.actions.Allin()
 	if err != nil {
@@ -303,7 +303,7 @@ func (pr *playerRunner) Allin() error {
 	return nil
 }
 
-func (pr *playerRunner) Raise(chipLevel int64) error {
+func (pr *PlayerRunner) Raise(chipLevel int64) error {
 
 	err := pr.actions.Raise(chipLevel)
 	if err != nil {

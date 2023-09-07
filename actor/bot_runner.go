@@ -26,7 +26,7 @@ var (
 	}
 )
 
-type botRunner struct {
+type BotRunner struct {
 	actor             Actor
 	actions           Actions
 	playerID          string
@@ -37,23 +37,23 @@ type botRunner struct {
 	tableInfo         *pokertable.Table
 }
 
-func NewBotRunner(playerID string) *botRunner {
-	return &botRunner{
+func NewBotRunner(playerID string) *BotRunner {
+	return &BotRunner{
 		playerID: playerID,
 		timebank: timebank.NewTimeBank(),
 	}
 }
 
-func (br *botRunner) SetActor(a Actor) {
+func (br *BotRunner) SetActor(a Actor) {
 	br.actor = a
 	br.actions = NewActions(a, br.playerID)
 }
 
-func (br *botRunner) Humanized(enabled bool) {
+func (br *BotRunner) Humanized(enabled bool) {
 	br.isHumanized = enabled
 }
 
-func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
+func (br *BotRunner) UpdateTableState(table *pokertable.Table) error {
 
 	gs := table.State.GameState
 	//oldState := br.tableInfo.State
@@ -123,7 +123,7 @@ func (br *botRunner) UpdateTableState(table *pokertable.Table) error {
 	return nil
 }
 
-func (br *botRunner) requestMove(gs *pokerface.GameState, playerIdx int) error {
+func (br *BotRunner) requestMove(gs *pokerface.GameState, playerIdx int) error {
 
 	//fmt.Println(br.tableInfo.State.GameState.Status.Round, br.gamePlayerIdx, gs.Players[br.gamePlayerIdx].AllowedActions)
 	/*
@@ -180,7 +180,7 @@ func (br *botRunner) requestMove(gs *pokerface.GameState, playerIdx int) error {
 	})
 }
 
-func (br *botRunner) calcActionProbabilities(actions []string) map[string]float64 {
+func (br *BotRunner) calcActionProbabilities(actions []string) map[string]float64 {
 
 	probabilities := make(map[string]float64)
 	totalWeight := 0.0
@@ -206,7 +206,7 @@ func (br *botRunner) calcActionProbabilities(actions []string) map[string]float6
 	return probabilities
 }
 
-func (br *botRunner) calcAction(actions []string) string {
+func (br *BotRunner) calcAction(actions []string) string {
 
 	// Select action randomly
 	rand.Seed(time.Now().UnixNano())
@@ -223,7 +223,7 @@ func (br *botRunner) calcAction(actions []string) string {
 	return actions[len(actions)-1]
 }
 
-func (br *botRunner) requestAI(gs *pokerface.GameState, playerIdx int) error {
+func (br *BotRunner) requestAI(gs *pokerface.GameState, playerIdx int) error {
 
 	player := gs.Players[playerIdx]
 
