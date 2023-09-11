@@ -42,7 +42,7 @@ func (nqm *NativeQueueManager) Connect() error {
 
 	go s.Start()
 
-	if !s.ReadyForConnections(4 * time.Second) {
+	if !s.ReadyForConnections(30 * time.Second) {
 		return errors.New("not ready for connection")
 	}
 
