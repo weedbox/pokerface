@@ -97,7 +97,7 @@ func (nr *NativeRunner) DismissTable(m Match, table *Table) error {
 
 	for _, p := range players {
 		//fmt.Printf("Releasing player %s from table %s\n", p, table.ID())
-		err := m.Dispatcher().Dispatch(p)
+		err := m.Dispatcher().Dispatch(p, false)
 		if err != nil {
 			return err
 		}
@@ -110,7 +110,7 @@ func (nr *NativeRunner) DrainWaitingRoomPlayers(m Match, players []string) error
 
 	// re-dispatch players who is drained from waiting room
 	for _, id := range players {
-		err := m.Dispatcher().Dispatch(id)
+		err := m.Dispatcher().Dispatch(id, true)
 		if err != nil {
 			return err
 		}

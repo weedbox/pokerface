@@ -1,17 +1,23 @@
 package match
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync/atomic"
 
 	"github.com/nats-io/nats.go"
 )
 
+type DispatchRequest struct {
+	PlayerID               string `json:"player_id"`
+	HighestNumberOfPlayers bool   `json:"highest_number_of_players"`
+}
+
 type Dispatcher interface {
 	Start() error
 	Close() error
 	GetPendingCount() int64
-	Dispatch(playerID string) error
+	Dispatch(playerID string, highestNumberOfPlayers bool) error
 	OnFailure(func(err error, playerID string))
 }
 
@@ -41,10 +47,13 @@ func (d *dispatcher) Start() error {
 
 	return d.queue.Subscribe(func(m *nats.Msg) {
 
-		playerID := string(m.Data)
-		err := d.dispatch(playerID)
+		var req DispatchRequest
+
+		json.Unmarshal(m.Data, &req)
+
+		err := d.dispatch(&req)
 		if err != nil {
-			d.onFailure(err, playerID)
+			d.onFailure(err, req.PlayerID)
 		}
 		atomic.AddInt64(&d.pending, -int64(1))
 
@@ -70,7 +79,8 @@ func (d *dispatcher) GetPendingCount() int64 {
 	return atomic.LoadInt64(&d.pending)
 }
 
-func (d *dispatcher) dispatch(playerID string) error {
+// func (d *dispatcher) dispatch(playerID string) error {
+func (d *dispatcher) dispatch(req *DispatchRequest) error {
 
 	minAvailSeats := 1
 
@@ -83,26 +93,34 @@ func (d *dispatcher) dispatch(playerID string) error {
 
 	// Find the table with the maximum number of players
 	err := d.m.TableMap().DispatchPlayer(&TableCondition{
-		HighestNumberOfPlayers: true,
+		HighestNumberOfPlayers: req.HighestNumberOfPlayers,
 		MinAvailableSeats:      minAvailSeats,
-	}, playerID)
+	}, req.PlayerID)
 
 	if err == ErrNotFoundAvailableTable {
 		// No available table, so pushing to waiting room
-		return d.m.WaitingRoom().Enter(playerID)
+		return d.m.WaitingRoom().Enter(req.PlayerID)
 	}
 
 	return err
 }
 
-func (d *dispatcher) Dispatch(playerID string) error {
+func (d *dispatcher) Dispatch(playerID string, highestNumberOfPlayers bool) error {
 
 	if d.queue == nil {
 		return nil
 	}
 
 	atomic.AddInt64(&d.pending, int64(1))
-	return d.queue.Publish([]byte(playerID))
+
+	req := &DispatchRequest{
+		PlayerID:               playerID,
+		HighestNumberOfPlayers: highestNumberOfPlayers,
+	}
+
+	data, _ := json.Marshal(req)
+
+	return d.queue.Publish(data)
 }
 
 func (d *dispatcher) OnFailure(fn func(error, string)) {

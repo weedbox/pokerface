@@ -222,7 +222,7 @@ func (m *match) Register(playerID string) error {
 		return nil
 	}
 
-	err := m.d.Dispatch(playerID)
+	err := m.d.Dispatch(playerID, true)
 	if err != nil {
 		return err
 	}

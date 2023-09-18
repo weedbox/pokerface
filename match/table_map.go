@@ -7,8 +7,8 @@ import (
 )
 
 type TableCondition struct {
-	HighestNumberOfPlayers bool
-	MinAvailableSeats      int
+	HighestNumberOfPlayers bool `json:"highest_number_of_players"`
+	MinAvailableSeats      int  `json:"min_available_seats"`
 }
 
 type TableMap interface {
