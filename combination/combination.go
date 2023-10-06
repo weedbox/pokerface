@@ -146,14 +146,13 @@ func GetAllPossibleCombinations(boardCards []string, holeCards []string, holeCar
 	boardCardCombinations := GetPossibleCombinations(boardCards, 5-holeCardsCount)
 
 	for _, cards := range holeCardCombinations {
-		allCards := make([]string, 0)
-		allCards = append(allCards, cards...)
 
 		for _, bCards := range boardCardCombinations {
+			allCards := make([]string, 0)
+			allCards = append(allCards, cards...)
 			allCards = append(allCards, bCards...)
+			combinations = append(combinations, allCards)
 		}
-
-		combinations = append(combinations, allCards)
 	}
 
 	return combinations
