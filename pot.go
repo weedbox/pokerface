@@ -11,7 +11,7 @@ func (g *game) updatePots() error {
 	for _, p := range g.gs.Players {
 
 		// Not contributer
-		if p.Wager == 0 {
+		if p.Wager == 0 || p.Fold {
 			continue
 		}
 
