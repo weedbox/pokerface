@@ -48,6 +48,7 @@ type Game interface {
 	UpdateLastAction(source int, ptype string, value int64) error
 	EmitEvent(event GameEvent) error
 	PrintState() error
+	PrintPots()
 
 	// Operations
 	Next() error
