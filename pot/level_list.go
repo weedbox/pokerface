@@ -131,7 +131,7 @@ func (ll *LevelList) GetPots() []*Pot {
 			continue
 		}
 
-		prev.Level += p.Level
+		prev.Level = p.Level
 		prev.Wager += p.Wager
 		prev.Total += p.Total
 		prev.Levels = append(prev.Levels, p.Levels...)
