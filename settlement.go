@@ -52,30 +52,23 @@ func (g *game) CalculateGameResults() error {
 
 	r := settlement.NewResult()
 
-	// Initializing player results
-	for _, p := range g.gs.Players {
-		r.AddPlayer(p.Idx, p.Bankroll)
-	}
-
 	// Initializing pot results
 	for _, pot := range g.gs.Status.Pots {
-		r.AddPot(pot.Total)
+		r.AddPot(pot.Total, pot.Levels)
 	}
 
-	// Add contributers to each pot
-	for potIdx, pot := range g.gs.Status.Pots {
+	// Initializing player scores
+	for _, p := range g.gs.Players {
 
-		for _, c := range pot.Contributors {
-			player := g.Player(c).State()
+		r.AddPlayer(p.Idx, p.Bankroll)
 
-			// No score if player fold already
-			if player.Fold {
-				r.AddContributor(potIdx, c, 0)
-				continue
-			}
-
-			r.AddContributor(potIdx, c, player.Combination.Power)
+		// No score if player fold already
+		if p.Fold {
+			r.UpdateScore(p.Idx, 0)
+			continue
 		}
+
+		r.UpdateScore(p.Idx, p.Combination.Power)
 	}
 
 	r.Calculate()

@@ -1,5 +1,9 @@
 package settlement
 
+import (
+	"github.com/weedbox/pokerface/pot"
+)
+
 type Result struct {
 	Players []*PlayerResult `json:"players"`
 	Pots    []*PotResult    `json:"pots"`
@@ -9,18 +13,6 @@ type PlayerResult struct {
 	Idx     int   `json:"idx"`
 	Final   int64 `json:"final"`
 	Changed int64 `json:"changed"`
-}
-
-type PotResult struct {
-	rank PotRank
-
-	Total   int64     `json:"total"`
-	Winners []*Winner `json:"winners"`
-}
-
-type Winner struct {
-	Idx      int   `json:"idx"`
-	Withdraw int64 `json:"withdraw"`
 }
 
 func NewResult() *Result {
@@ -41,38 +33,37 @@ func (r *Result) AddPlayer(playerIdx int, bankroll int64) {
 	r.Players = append(r.Players, pr)
 }
 
-func (r *Result) AddPot(total int64) {
+func (r *Result) AddPot(total int64, levels []*pot.Level) {
 
 	pr := &PotResult{
+		level:   NewPotLevel(),
 		Total:   total,
 		Winners: make([]*Winner, 0),
+	}
+
+	for _, l := range levels {
+		pr.level.AddLevel(l.Level, l.Wager, l.Total, l.Contributors)
 	}
 
 	r.Pots = append(r.Pots, pr)
 }
 
-func (r *Result) AddContributor(potIdx int, playerIdx int, score int) {
+func (r *Result) UpdateScore(playerIdx int, score int) {
 
-	// Take pot
-	pot := r.Pots[potIdx]
-
-	// Add a new contributr
-	pot.rank.AddContributor(score, playerIdx)
+	for _, p := range r.Pots {
+		for _, l := range p.level.levels {
+			l.UpdateScore(playerIdx, score)
+		}
+	}
 }
 
 func (r *Result) Update(potIdx int, playerIdx int, wager int64, withdraw int64) {
 
 	pot := r.Pots[potIdx]
 
-	// Add winner to pot
+	// Update winners information
 	if withdraw >= 0 {
-
-		w := &Winner{
-			Idx:      playerIdx,
-			Withdraw: withdraw + wager,
-		}
-
-		pot.Winners = append(pot.Winners, w)
+		pot.UpdateWinner(playerIdx, withdraw+wager)
 	}
 
 	// Update player results
@@ -85,14 +76,17 @@ func (r *Result) Update(potIdx int, playerIdx int, wager int64, withdraw int64) 
 	}
 }
 
-func (r *Result) CalculateWagerOfPot(total int64, contributerCount int) int64 {
-	return total / int64(contributerCount)
-}
+func (r *Result) CalculateWinnerRewards(potIdx int, l *LevelInfo) {
 
-func (r *Result) CalculateWinnerRewards(potIdx int, wager int64, total int64, winners []int) {
+	// Calculate contributer ranks of this pot by score
+	l.rank.Calculate()
 
-	based := total / int64(len(winners))
-	remainder := total % int64(len(winners))
+	// Calculate chips for multiple winners of this pot
+	winners := l.rank.GetWinners()
+
+	// Calculate rewards
+	based := l.Total / int64(len(winners))
+	remainder := l.Total % int64(len(winners))
 
 	for i, wIdx := range winners {
 
@@ -102,28 +96,35 @@ func (r *Result) CalculateWinnerRewards(potIdx int, wager int64, total int64, wi
 			reward += 1
 		}
 
-		r.Update(potIdx, wIdx, wager, reward-wager)
+		r.Update(potIdx, wIdx, l.Wager, reward-l.Wager)
+	}
+}
+
+func (r *Result) CalculateLoserResults(potIdx int, l *LevelInfo) {
+
+	losers := l.rank.GetLoser()
+
+	for _, lIdx := range losers {
+		// withdraw should be negtive
+		r.Update(potIdx, lIdx, l.Wager, -l.Wager)
+	}
+}
+
+func (r *Result) CalculatePot(potIdx int, p *PotResult) {
+
+	for _, l := range p.level.levels {
+
+		// Calculate chips for multiple winners of this pot
+		r.CalculateWinnerRewards(potIdx, l)
+
+		// Update loser results
+		r.CalculateLoserResults(potIdx, l)
 	}
 }
 
 func (r *Result) Calculate() {
 
 	for potIdx, pot := range r.Pots {
-
-		// Calculate contributions of players
-		wager := r.CalculateWagerOfPot(pot.Total, pot.rank.ContributorCount())
-
-		// Calculate contributer ranks of this pot by score
-		pot.rank.Calculate()
-
-		// Calculate chips for multiple winners of this pot
-		winners := pot.rank.GetWinners()
-		r.CalculateWinnerRewards(potIdx, wager, pot.Total, winners)
-
-		// Update loser results (should be negtive)
-		losers := pot.rank.GetLoser()
-		for _, lIdx := range losers {
-			r.Update(potIdx, lIdx, wager, -wager)
-		}
+		r.CalculatePot(potIdx, pot)
 	}
 }

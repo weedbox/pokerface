@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPotList(t *testing.T) {
+func TestLevelList(t *testing.T) {
 
 	contributers := []int64{
 		1000,
@@ -17,10 +17,10 @@ func TestPotList(t *testing.T) {
 		3000,
 	}
 
-	list := NewPotList()
+	list := NewLevelList()
 
 	for idx, wager := range contributers {
-		list.AddContributor(wager, idx)
+		list.AddContributor(wager, idx, false)
 	}
 
 	assert.Equal(t, 3, list.Count())
@@ -49,17 +49,17 @@ func TestPotList(t *testing.T) {
 	assert.Equal(t, int64(1000), pots[2].Total)
 }
 
-func TestPotList_SB_And_BB(t *testing.T) {
+func TestLevelList_SB_And_BB(t *testing.T) {
 
 	contributers := []int64{
 		5,
 		10,
 	}
 
-	list := NewPotList()
+	list := NewLevelList()
 
 	for idx, wager := range contributers {
-		list.AddContributor(wager, idx)
+		list.AddContributor(wager, idx, false)
 	}
 
 	assert.Equal(t, 2, list.Count())

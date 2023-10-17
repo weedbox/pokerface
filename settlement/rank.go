@@ -7,23 +7,23 @@ type RankGroup struct {
 	Score        int
 }
 
-type PotRank struct {
+type Rank struct {
 	contributerCount int
 	groups           []*RankGroup
 }
 
-func NewPotRank() *PotRank {
-	return &PotRank{
+func NewRank() *Rank {
+	return &Rank{
 		contributerCount: 0,
 		groups:           make([]*RankGroup, 0),
 	}
 }
 
-func (pr *PotRank) AddContributor(score int, contributerIdx int) {
+func (r *Rank) AddContributor(score int, contributerIdx int) {
 
-	pr.contributerCount++
+	r.contributerCount++
 
-	for _, g := range pr.groups {
+	for _, g := range r.groups {
 
 		if g.Score == score {
 			g.Contributors = append(g.Contributors, contributerIdx)
@@ -39,38 +39,38 @@ func (pr *PotRank) AddContributor(score int, contributerIdx int) {
 
 	g.Contributors = append(g.Contributors, contributerIdx)
 
-	pr.groups = append(pr.groups, g)
+	r.groups = append(r.groups, g)
 }
 
-func (pr *PotRank) Calculate() {
+func (r *Rank) Calculate() {
 
 	// Sort by score
-	sort.Slice(pr.groups, func(i, j int) bool {
-		return pr.groups[i].Score > pr.groups[j].Score
+	sort.Slice(r.groups, func(i, j int) bool {
+		return r.groups[i].Score > r.groups[j].Score
 	})
 }
 
-func (pr *PotRank) ContributorCount() int {
-	return pr.contributerCount
+func (r *Rank) ContributorCount() int {
+	return r.contributerCount
 }
 
-func (pr *PotRank) GetWinners() []int {
+func (r *Rank) GetWinners() []int {
 
-	if len(pr.groups) == 0 {
+	if len(r.groups) == 0 {
 		return []int{}
 	}
 
-	return pr.groups[0].Contributors
+	return r.groups[0].Contributors
 }
 
-func (pr *PotRank) GetLoser() []int {
+func (r *Rank) GetLoser() []int {
 
-	if len(pr.groups) == 0 {
+	if len(r.groups) == 0 {
 		return []int{}
 	}
 
 	contributers := make([]int, 0)
-	for i, g := range pr.groups {
+	for i, g := range r.groups {
 		if i == 0 {
 			continue
 		}
