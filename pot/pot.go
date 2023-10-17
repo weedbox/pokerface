@@ -5,7 +5,7 @@ type Pot struct {
 	Wager        int64         `json:"wager"`
 	Total        int64         `json:"total"`
 	Contributors map[int]int64 `json:"contributors"`
-	Levels       []*Level      //      `json:"levels"`
+	Levels       []*Level      `json:"-"`
 }
 
 func (p *Pot) ContributorExists(idx int) bool {
