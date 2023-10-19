@@ -62,7 +62,7 @@ func (r *Result) Update(potIdx int, playerIdx int, wager int64, withdraw int64) 
 	pot := r.Pots[potIdx]
 
 	// Update winners information
-	if withdraw >= 0 {
+	if withdraw > 0 {
 		pot.UpdateWinner(playerIdx, withdraw+wager)
 	}
 
