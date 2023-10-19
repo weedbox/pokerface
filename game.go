@@ -112,6 +112,8 @@ func (g *game) LoadState(gs *GameState) error {
 		g.addPlayer(ps)
 	}
 
+	g.updatePots()
+
 	return nil
 }
 

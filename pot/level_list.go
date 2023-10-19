@@ -125,7 +125,7 @@ func (ll *LevelList) GetPots() []*Pot {
 		}
 
 		// Comparing contributors
-		if len(prev.Contributors) != len(p.Contributors) {
+		if len(prev.Contributors) != len(p.Contributors) && len(p.Contributors) > 1 {
 			pots = append(pots, p)
 			prev = p
 			continue
