@@ -273,11 +273,14 @@ func (g *game) onGameCompleted() error {
 
 func (g *game) onSettlementRequested() error {
 
-	//Note: this task is not required because we done need player ranking
-	//ranks := g.CalculatePlayersRanking()
+	// Update pots
+	err := g.updatePots()
+	if err != nil {
+		return err
+	}
 
 	// Calculate results with ranks
-	err := g.CalculateGameResults()
+	err = g.CalculateGameResults()
 	if err != nil {
 		return err
 	}
