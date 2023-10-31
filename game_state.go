@@ -115,6 +115,20 @@ func (gs *GameState) AsObserver() {
 
 	gs.Meta.Deck = []string{}
 
+	if gs.Status.CurrentEvent == "GameClosed" {
+
+		for _, p := range gs.Players {
+
+			// Hide private information if player do fold
+			if p.Fold {
+				p.HoleCards = []string{}
+				p.Combination = nil
+			}
+		}
+
+		return
+	}
+
 	// Hide all private information
 	for _, p := range gs.Players {
 		p.HoleCards = []string{}
