@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_WaitingRoom_Basic(t *testing.T) {
 
-	opts := NewOptions()
+	opts := NewOptions(uuid.New().String())
 	opts.WaitingPeriod = 1
 
 	m := NewMatch(opts)
@@ -47,7 +48,7 @@ func Test_WaitingRoom_Basic(t *testing.T) {
 
 func Test_WaitingRoom_WaitingPeriod(t *testing.T) {
 
-	opts := NewOptions()
+	opts := NewOptions(uuid.New().String())
 	opts.WaitingPeriod = 5
 
 	m := NewMatch(opts)
@@ -104,7 +105,7 @@ func Test_WaitingRoom_WaitingPeriod(t *testing.T) {
 
 func Test_WaitingRoom_Pump_Up(t *testing.T) {
 
-	opts := NewOptions()
+	opts := NewOptions(uuid.New().String())
 	opts.MaxSeats = 9
 	opts.MinInitialPlayers = 4
 	opts.WaitingPeriod = 1

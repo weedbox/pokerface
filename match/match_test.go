@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,7 +16,7 @@ type TestTableState struct {
 
 func Test_Match_Basic(t *testing.T) {
 
-	opts := NewOptions()
+	opts := NewOptions(uuid.New().String())
 	opts.WaitingPeriod = 1
 
 	m := NewMatch(opts)
@@ -133,7 +134,7 @@ func Test_Match_BreakTable_UntilOnlyOneTable(t *testing.T) {
 		return true
 	}
 
-	opts := NewOptions()
+	opts := NewOptions(uuid.New().String())
 	opts.WaitingPeriod = 1
 
 	m := NewMatch(

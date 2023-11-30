@@ -3,6 +3,7 @@ package match
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync/atomic"
 
 	"github.com/nats-io/nats.go"
@@ -36,8 +37,8 @@ func NewDispatcher(m Match) Dispatcher {
 }
 
 func (d *dispatcher) Start() error {
-
-	queue, err := d.m.QueueManager().AssertQueue("match_dispatcher", "match.dispatcher")
+	queueName := fmt.Sprintf("match_dispatcher_%s", strings.Replace(d.m.Options().ID, "-", "", -1))
+	queue, err := d.m.QueueManager().AssertQueue(queueName, "match.dispatcher")
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -72,6 +73,11 @@ func (d *dispatcher) Close() error {
 		return err
 	}
 
+	err = d.queue.Destroy()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -89,7 +95,7 @@ func (d *dispatcher) dispatch(req *DispatchRequest) error {
 		minAvailSeats = -1
 	}
 
-	//fmt.Printf("Dispatching player %s\n", playerID)
+	fmt.Printf("Dispatching player %s\n", req.PlayerID)
 
 	// Find the table with the maximum number of players
 	err := d.m.TableMap().DispatchPlayer(&TableCondition{

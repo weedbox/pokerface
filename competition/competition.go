@@ -148,7 +148,7 @@ func NewCompetition(options *Options, opts ...CompetitionOpt) *competition {
 	if c.m == nil {
 
 		// Initializing match
-		opts := match.NewOptions()
+		opts := match.NewOptions(c.s.ID)
 		opts.WaitingPeriod = c.GetOptions().TableAllocationPeriod
 		opts.MaxTables = c.GetOptions().MaxTables
 		opts.MaxSeats = c.GetOptions().Table.MaxSeats
