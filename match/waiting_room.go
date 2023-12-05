@@ -1,6 +1,7 @@
 package match
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -122,6 +123,7 @@ func (wr *waitingRoom) drain() error {
 	}
 
 	wr.m.Runner().DrainWaitingRoomPlayers(wr.m, ids)
+	fmt.Printf("[wr#drain] drain %d players %v from the waiting room \n", len(ids), ids)
 
 	return nil
 }
@@ -157,6 +159,7 @@ func (wr *waitingRoom) match() error {
 
 	// Allocate table for players
 	wr.m.AllocateTableWithPlayers(players)
+	fmt.Printf("[wr#match] Allocate table for %d players: %v\n", len(players), players)
 
 	return nil
 }
@@ -165,6 +168,7 @@ func (wr *waitingRoom) flush() error {
 
 	wr.tb.Cancel()
 
+	fmt.Printf("[wr#flush] Waiting room players %d\n", wr.players.Len())
 	for wr.players.Len() >= wr.m.Options().MinInitialPlayers {
 		err := wr.match()
 		if err != nil {
