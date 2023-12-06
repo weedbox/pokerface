@@ -37,8 +37,10 @@ func NewDispatcher(m Match) Dispatcher {
 }
 
 func (d *dispatcher) Start() error {
-	queueName := fmt.Sprintf("match_dispatcher_%s", strings.Replace(d.m.Options().ID, "-", "", -1))
-	queue, err := d.m.QueueManager().AssertQueue(queueName, "match.dispatcher")
+	id := strings.Replace(d.m.Options().ID, "-", "", -1)
+	queueName := fmt.Sprintf("match_dispatcher_%s", id)
+	subject := fmt.Sprintf("match.dispatcher.%s", id)
+	queue, err := d.m.QueueManager().AssertQueue(queueName, subject)
 	if err != nil {
 		fmt.Println(err)
 		return err
