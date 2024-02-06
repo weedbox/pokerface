@@ -72,11 +72,9 @@ func NewRegulator(opts ...Opt) Regulator {
 		tables:             make(map[string]*Table),
 		requestTableFn: func(players []string) (string, error) {
 			panic("Not implemented")
-			return "", nil
 		},
 		assignPlayersFn: func(tableID string, players []string) error {
 			panic("Not implemented")
-			return nil
 		},
 	}
 
@@ -85,6 +83,23 @@ func NewRegulator(opts ...Opt) Regulator {
 	}
 
 	return r
+}
+
+func (r *regulator) getLowWaterLevelTableCount() int {
+
+	requiredTables := int(math.Ceil(float64(r.playerCount) / float64(r.maxPlayersPerTable)))
+	waterLevel := int(math.Floor(float64(r.playerCount) / float64(requiredTables)))
+
+	tableCount := 0
+	for _, t := range r.tables {
+
+		if t.PlayerCount < waterLevel {
+			tableCount++
+			continue
+		}
+	}
+
+	return tableCount
 }
 
 func (r *regulator) calculateLowerWaterLevel() float64 {
@@ -248,6 +263,20 @@ func (r *regulator) allocateTables() error {
 	return nil
 }
 
+func (r *regulator) breakTable(tableID string) error {
+
+	_, ok := r.tables[tableID]
+	if !ok {
+		return ErrNotFoundTable
+	}
+
+	delete(r.tables, tableID)
+
+	r.tableCount--
+
+	return nil
+}
+
 func (r *regulator) GetPlayerCount() int {
 	return r.playerCount
 }
@@ -308,8 +337,14 @@ func (r *regulator) SyncState(tableID string, playerCount int) (int, []string, e
 		return 0, []string{}, ErrNotFoundTable
 	}
 
+	// update total player
+	playerChanges := t.PlayerCount - playerCount
+	r.playerCount -= playerChanges
+
 	// Update table information
 	t.PlayerCount = playerCount
+
+	//fmt.Println(tableID, r.playerCount, -playerChanges, playerCount)
 
 	// Figure out how many tables we need
 	requiredTables := int(math.Ceil(float64(r.playerCount) / float64(r.maxPlayersPerTable)))
@@ -319,7 +354,13 @@ func (r *regulator) SyncState(tableID string, playerCount int) (int, []string, e
 	if r.status == CompetitionStatus_AfterRegDeadline {
 		// We can't add more tables after the registration deadline
 		if r.playerCount <= r.maxPlayersPerTable && requiredTables < r.tableCount {
+
 			// Break table
+			err := r.breakTable(tableID)
+			if err != nil {
+				return 0, []string{}, err
+			}
+
 			return playerCount, []string{}, nil
 		}
 	}
@@ -330,17 +371,31 @@ func (r *regulator) SyncState(tableID string, playerCount int) (int, []string, e
 
 	if float64(playerCount) < waterLevel {
 
+		// more than one table has low water level
+		if r.getLowWaterLevelTableCount() >= 2 && requiredTables < r.tableCount {
+
+			// Break table
+			err := r.breakTable(tableID)
+			if err != nil {
+				return 0, []string{}, err
+			}
+
+			return playerCount, []string{}, nil
+		}
+
 		// We need more players
-		count := playerCount - int(math.Floor(waterLevel))
+		count := int(math.Floor(waterLevel)) - playerCount
 
 		// Request players
 		players := r.requestPlayers(count)
 
-		// Update table sheet
+		// Update table information
 		stillRequired := count - len(players)
 		if stillRequired > 0 {
 			r.tables[tableID].Required = stillRequired
 		}
+
+		t.PlayerCount += len(players)
 
 		return 0, players, nil
 	}
@@ -361,8 +416,6 @@ func (r *regulator) SyncState(tableID string, playerCount int) (int, []string, e
 			picked++
 			t.PlayerCount--
 		}
-
-		//t.PlayerCount -= picked
 
 		return picked, []string{}, nil
 	}
@@ -414,13 +467,6 @@ func (r *regulator) ReleasePlayers(tableID string, players []string) error {
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	/*
-		t, ok := r.tables[tableID]
-		if !ok {
-			return ErrNotFoundTable
-		}
 
-		t.PlayerCount -= len(players)
-	*/
 	return r.enterWaitingQueue(players)
 }

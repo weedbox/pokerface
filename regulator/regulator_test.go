@@ -176,4 +176,105 @@ func TestRegulator_91Problem(t *testing.T) {
 }
 
 func TestRegulator_AfterRegDeadline(t *testing.T) {
+
+	tables := make(map[string][]string)
+
+	tableCounter := 0
+
+	r := NewRegulator(
+		WithRequestTableFn(func(players []string) (string, error) {
+			tableCounter++
+			tableID := fmt.Sprintf("table_%d", tableCounter)
+			tables[tableID] = []string{}
+
+			t.Log("Request to create table: ", tableID)
+
+			for _, player := range players {
+				t.Log("  Player", player, "joined table")
+				tables[tableID] = append(tables[tableID], player)
+			}
+
+			return tableID, nil
+		}),
+
+		WithAssignPlayersFn(func(tableID string, players []string) error {
+			t.Log("Request to assign players to table", tableID)
+
+			for _, player := range players {
+				t.Log("  Assigned player", player, "to table")
+				tables[tableID] = append(tables[tableID], player)
+			}
+
+			return nil
+		}),
+	)
+
+	totalPlayers := 0
+
+	// Prepare 27 players
+	for i := 0; i < 27; i++ {
+		totalPlayers++
+		r.AddPlayers([]string{fmt.Sprintf("player_%d", totalPlayers)})
+	}
+
+	assert.Equal(t, 27, r.GetPlayerCount())
+	assert.Equal(t, 0, r.GetTableCount())
+
+	r.SetStatus(CompetitionStatus_Normal)
+	r.SetStatus(CompetitionStatus_AfterRegDeadline)
+
+	for i := 0; i < 3; i++ {
+
+		t.Log("hand", i+1)
+
+		for tableID, players := range tables {
+
+			// 3 players are out
+			players = players[3:]
+
+			// Each table still has 9 when first hand is over
+			releaseCount, newPlayers, err := r.SyncState(tableID, len(players))
+			assert.Nil(t, err)
+
+			t.Logf("Table %s: %d players, %d new players, should release %d players", tableID, len(players), len(newPlayers), releaseCount)
+
+			// Attempt to release players
+			var releasedPlayers []string
+			for n := 0; n < releaseCount; n++ {
+
+				// Pick one player to release
+				player := players[0]
+				players = players[1:]
+
+				releasedPlayers = append(releasedPlayers, player)
+			}
+
+			err = r.ReleasePlayers(tableID, releasedPlayers)
+			assert.Nil(t, err)
+
+			// It should break this table
+			if len(players) == 0 {
+				t.Log("Break table:", tableID)
+				delete(tables, tableID)
+				continue
+			}
+
+			// Attempt to allocate for new players
+			players = append(players, newPlayers...)
+
+			// Update local table information
+			tables[tableID] = players
+		}
+
+		if i == 0 {
+			assert.Equal(t, 18, r.GetPlayerCount())
+			assert.Equal(t, 2, r.GetTableCount())
+		} else if i == 1 {
+			assert.Equal(t, 12, r.GetPlayerCount())
+			assert.Equal(t, 2, r.GetTableCount())
+		} else if i == 2 {
+			assert.Equal(t, 6, r.GetPlayerCount())
+			assert.Equal(t, 1, r.GetTableCount())
+		}
+	}
 }
