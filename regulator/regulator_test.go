@@ -83,6 +83,51 @@ func TestRegulator(t *testing.T) {
 	assert.Equal(t, 0, r.GetTable("table_2").Required)
 }
 
+func TestRegulator_12Problem(t *testing.T) {
+
+	tableCounter := 0
+
+	r := NewRegulator(
+		WithRequestTableFn(func(players []string) (string, error) {
+			tableCounter++
+			t.Log("Request to create table", tableCounter)
+
+			for _, player := range players {
+				t.Log("  Player", player, "joined table")
+			}
+
+			return fmt.Sprintf("table_%d", tableCounter), nil
+		}),
+
+		WithAssignPlayersFn(func(tableID string, players []string) error {
+			t.Log("Request to assign players to table", tableID)
+
+			for _, player := range players {
+				t.Log("  Assigned player", player, "to table")
+			}
+
+			return nil
+		}),
+	)
+
+	totalPlayers := 0
+
+	for i := 0; i < 12; i++ {
+		totalPlayers++
+		r.AddPlayers([]string{fmt.Sprintf("player_%d", totalPlayers)})
+	}
+
+	assert.Equal(t, 12, r.GetPlayerCount())
+	assert.Equal(t, 0, r.GetTableCount())
+
+	r.SetStatus(CompetitionStatus_Normal)
+
+	assert.Equal(t, 2, r.GetTableCount())
+
+	assert.Equal(t, 6, r.GetTable("table_1").PlayerCount)
+	assert.Equal(t, 6, r.GetTable("table_2").PlayerCount)
+}
+
 func TestRegulator_91Problem(t *testing.T) {
 
 	// Prepare tables

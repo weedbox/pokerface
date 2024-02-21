@@ -225,9 +225,11 @@ func (r *regulator) allocateTables() error {
 	requiredTables := int(math.Ceil(float64(r.playerCount) / float64(r.maxPlayersPerTable)))
 
 	waterLevel := r.maxPlayersPerTable
-	if r.tableCount > 0 {
-		waterLevel = int(math.Floor(float64(r.playerCount) / float64(requiredTables)))
-	}
+	//	if r.tableCount > 0 {
+	waterLevel = int(math.Floor(float64(r.playerCount) / float64(requiredTables)))
+	//	}
+
+	//	fmt.Println(waterLevel)
 
 	//for len(r.waitingQueue) >= r.minInitialPlayers {
 	for waterLevel >= r.minInitialPlayers && r.tableCount < requiredTables {
@@ -425,6 +427,7 @@ func (r *regulator) SyncState(tableID string, playerCount int) (int, []string, e
 
 func (r *regulator) drainWaitingQueue() error {
 
+	// First time to allocate tables
 	if r.tableCount == 0 && len(r.waitingQueue) >= r.minInitialPlayers {
 		return r.allocateTables()
 	}
