@@ -419,9 +419,9 @@ func (g *game) BecomeRaiser(p Player) error {
 			continue
 		}
 
-		if ps.DidAction != "fold" && ps.DidAction != "allin" {
-			ps.DidAction = ""
-		}
+		// if ps.DidAction != "fold" && ps.DidAction != "allin" {
+		// 	ps.DidAction = ""
+		// }
 
 		ps.Acted = false
 	}
