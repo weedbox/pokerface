@@ -448,6 +448,7 @@ func (r *regulator) drainWaitingQueue() error {
 		}
 
 		r.waitingQueue = candidates
+		fmt.Println("[MTT#DEBUG#regulator#drainWaitingQueue] waitingQueue:", r.waitingQueue)
 
 		// still have players
 		if len(candidates) > 0 {
