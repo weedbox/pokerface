@@ -172,6 +172,9 @@ func (r *regulator) getPlayersFromWaitingQueue(count int) []string {
 		players = append(players, player)
 	}
 
+	// TODO: test only: remove this later on
+	fmt.Println("[MTT#DEBUG#regulator#getPlayersFromWaitingQueue] waitingQueue:", r.waitingQueue)
+
 	return players
 }
 
@@ -458,6 +461,9 @@ func (r *regulator) drainWaitingQueue() error {
 func (r *regulator) enterWaitingQueue(players []string) error {
 
 	r.waitingQueue = append(r.waitingQueue, players...)
+
+	// TODO: test only: remove this later on
+	fmt.Println("[MTT#DEBUG#regulator#enterWaitingQueue] waitingQueue:", r.waitingQueue)
 
 	if r.status == CompetitionStatus_Pending {
 		return nil
