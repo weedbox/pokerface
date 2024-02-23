@@ -200,6 +200,7 @@ func (r *regulator) dispatchPlayer(players []string) ([]string, error) {
 		// Pick up players this table needs
 		picked = candidates
 		players = []string{}
+		candidates = []string{}
 
 	} else if t.Required < len(candidates) {
 
