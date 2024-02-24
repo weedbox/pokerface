@@ -81,6 +81,7 @@ type CombinationInfo struct {
 func (gs *GameState) AsPlayer(idx int) {
 
 	gs.Meta.Deck = []string{}
+	gs.Status.Burned = []string{}
 
 	// Do nothing if game has been closed already
 	if gs.Status.CurrentEvent == "GameClosed" {
@@ -114,6 +115,7 @@ func (gs *GameState) AsPlayer(idx int) {
 func (gs *GameState) AsObserver() {
 
 	gs.Meta.Deck = []string{}
+	gs.Status.Burned = []string{}
 
 	if gs.Status.CurrentEvent == "GameClosed" {
 
