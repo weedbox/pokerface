@@ -229,17 +229,38 @@ func (r *regulator) allocateTables() error {
 	requiredTables := int(math.Ceil(float64(r.playerCount) / float64(r.maxPlayersPerTable)))
 
 	waterLevel := r.maxPlayersPerTable
-	//	if r.tableCount > 0 {
-	waterLevel = int(math.Floor(float64(r.playerCount) / float64(requiredTables)))
-	//	}
+	if r.tableCount == 0 {
 
-	//	fmt.Println(waterLevel)
+		// no table yet and we don't have enough players
+		if r.playerCount < r.minInitialPlayers {
+			return nil
+		}
+
+		// no table yet and we have enough players for more than one table
+		wl := int(math.Floor(float64(r.playerCount) / float64(requiredTables)))
+		if wl >= r.minInitialPlayers {
+			waterLevel = wl
+		} else {
+			// Correct the required tables
+			requiredTables = int(math.Floor(float64(r.playerCount) / float64(r.maxPlayersPerTable)))
+		}
+
+	} else if r.tableCount > 0 {
+		waterLevel = int(math.Floor(float64(r.playerCount) / float64(requiredTables)))
+	}
 
 	//for len(r.waitingQueue) >= r.minInitialPlayers {
 	for waterLevel >= r.minInitialPlayers && r.tableCount < requiredTables {
 
+		requiredPlayers := waterLevel
+
+		// the rest of players for the last table
+		if len(r.waitingQueue) > waterLevel && len(r.waitingQueue) < r.maxPlayersPerTable {
+			requiredPlayers = len(r.waitingQueue)
+		}
+
 		// pull players from waiting queue
-		players := r.getPlayersFromWaitingQueue(waterLevel)
+		players := r.getPlayersFromWaitingQueue(requiredPlayers)
 		if len(players) == 0 {
 			return nil
 		}
