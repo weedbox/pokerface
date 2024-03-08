@@ -83,6 +83,101 @@ func TestRegulator(t *testing.T) {
 	assert.Equal(t, 0, r.GetTable("table_2").Required)
 }
 
+func TestRegulator_3TablesTo2Tables(t *testing.T) {
+
+	tableCounter := 0
+	tables := make(map[string][]string)
+
+	r := NewRegulator(
+		WithRequestTableFn(func(players []string) (string, error) {
+			tableCounter++
+			t.Log("Request to create table", tableCounter)
+
+			for _, player := range players {
+				t.Log("  Player", player, "joined table")
+			}
+
+			tableID := fmt.Sprintf("table_%d", tableCounter)
+			tables[tableID] = players
+
+			return tableID, nil
+		}),
+
+		WithAssignPlayersFn(func(tableID string, players []string) error {
+			t.Log("Request to assign players to table", tableID)
+
+			for _, player := range players {
+				t.Log("  Assigned player", player, "to table")
+			}
+
+			tables[tableID] = append(tables[tableID], players...)
+
+			return nil
+		}),
+	)
+
+	totalPlayers := 0
+
+	for i := 0; i < 19; i++ {
+		totalPlayers++
+		playerName := fmt.Sprintf("player_%d", totalPlayers)
+		r.AddPlayers([]string{playerName})
+	}
+
+	assert.Equal(t, 19, r.GetPlayerCount())
+	assert.Equal(t, 0, r.GetTableCount())
+
+	r.SetStatus(CompetitionStatus_Normal)
+
+	assert.Equal(t, 3, r.GetTableCount())
+
+	// Find the table contains 6 players
+	for i := 0; i < 3; i++ {
+		tableID := fmt.Sprintf("table_%d", i+1)
+		table := r.GetTable(tableID)
+		if table.PlayerCount == 6 {
+
+			// one player has left
+			players := tables[tableID]
+			players = players[:len(players)-1]
+
+			// sync to regulator
+			releaseCount, newPlayers, err := r.SyncState(tableID, len(players))
+			assert.Nil(t, err)
+
+			// water level should be 9 for 18 players, so the rest of players should be released
+			assert.Equal(t, 5, releaseCount)
+
+			// No new player for this table
+			assert.Len(t, newPlayers, 0)
+
+			// Release all players from this table
+			err = r.ReleasePlayers(tableID, players)
+			assert.Nil(t, err)
+
+			// Break this table
+			delete(tables, tableID)
+
+			break
+		}
+	}
+
+	assert.Equal(t, 18, r.GetPlayerCount())
+	assert.Equal(t, 2, r.GetTableCount())
+
+	// Update the rest of tables to get new players
+	assignedCount := 0
+	for tableID, players := range tables {
+		releaseCount, newPlayers, err := r.SyncState(tableID, len(players))
+		assert.Nil(t, err)
+		assert.Equal(t, 0, releaseCount)
+
+		assignedCount += len(newPlayers)
+	}
+
+	assert.Equal(t, 5, assignedCount)
+}
+
 func TestRegulator_11Problem(t *testing.T) {
 
 	tableCounter := 0
