@@ -46,7 +46,6 @@ func NewShortDeckGameOptions() *GameOptions {
 
 	opts := NewStardardGameOptions()
 	opts.CombinationPowers = combination.CombinationPowerShortDeck
-	opts.RequiredHoleCardsCount = 2
 
 	return opts
 }

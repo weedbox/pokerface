@@ -193,7 +193,7 @@ func (p *player) PayBlinds() error {
 	}
 
 	// Pay for blinds
-	chips := gs.Meta.Blind.Dealer
+	chips := int64(0)
 	action := "dealer_blind"
 	if gs.Meta.Blind.BB > 0 && p.CheckPosition("bb") {
 		chips = gs.Meta.Blind.BB
