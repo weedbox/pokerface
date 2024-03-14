@@ -264,6 +264,7 @@ func (g *game) ResetAllPlayerStatus() error {
 
 func (g *game) ResetRoundStatus() error {
 	g.gs.Status.PreviousRaiseSize = 0
+	g.gs.Status.MaxWager = 0
 	g.gs.Status.CurrentRoundPot = 0
 	g.gs.Status.CurrentWager = 0
 	g.gs.Status.CurrentRaiser = g.Dealer().State().Idx

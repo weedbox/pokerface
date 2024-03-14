@@ -35,6 +35,7 @@ type Action struct {
 
 type Status struct {
 	MiniBet             int64      `json:"mini_bet"`
+	MaxWager            int64      `json:"max_wager"`
 	Pots                []*pot.Pot `json:"pots"`
 	Round               string     `json:"round,omitempty"`
 	Burned              []string   `json:"burned,omitempty"`

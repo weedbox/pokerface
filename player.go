@@ -121,6 +121,10 @@ func (p *player) pay(chips int64, isWager bool) error {
 		gs := p.game.GetState()
 		gs.Status.CurrentRoundPot += p.state.InitialStackSize - p.state.Wager
 
+		if gs.Meta.Limit == "pot" {
+			gs.Status.MaxWager = gs.Status.CurrentRoundPot + gs.Status.PreviousRaiseSize
+		}
+
 		p.state.DidAction = "allin"
 		p.state.Wager = p.state.InitialStackSize
 		p.state.StackSize = 0
@@ -143,6 +147,10 @@ func (p *player) pay(chips int64, isWager bool) error {
 	// Update pot of current round
 	gs := p.game.GetState()
 	gs.Status.CurrentRoundPot += chips
+
+	if gs.Meta.Limit == "pot" {
+		gs.Status.MaxWager = gs.Status.CurrentRoundPot + gs.Status.PreviousRaiseSize
+	}
 
 	if isWager {
 		// player raised
@@ -352,13 +360,22 @@ func (p *player) Raise(chipLevel int64) error {
 		return p.Allin()
 	}
 
+	// Check if raising rule is pot limit
+	if gs.Meta.Limit == "pot" {
+		maxRaise := gs.Status.CurrentWager + gs.Status.PreviousRaiseSize
+		if raised > maxRaise {
+			raised = maxRaise
+			required = maxRaise + gs.Status.CurrentWager - p.state.Wager
+		}
+	}
+
 	//fmt.Printf("[Player %d] raise\n", p.idx)
 
 	p.state.DidAction = "raise"
 	p.state.Acted = true
 
 	// Update raise size
-	gs.Status.PreviousRaiseSize = chipLevel - gs.Status.CurrentWager
+	gs.Status.PreviousRaiseSize = raised
 
 	p.pay(required, true)
 
