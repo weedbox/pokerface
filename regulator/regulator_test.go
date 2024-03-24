@@ -312,6 +312,114 @@ func TestRegulator_13Problem(t *testing.T) {
 	assert.Equal(t, 7, r.GetTable("table_2").PlayerCount)
 }
 
+func TestRegulator_50Problem_AllocateTable(t *testing.T) {
+
+	tableCounter := 0
+
+	r := NewRegulator(
+		WithRequestTableFn(func(players []string) (string, error) {
+			tableCounter++
+			t.Log("Request to create table", tableCounter, "with", len(players), "players")
+
+			for _, player := range players {
+				t.Log("  Player", player, "joined table")
+			}
+
+			return fmt.Sprintf("table_%d", tableCounter), nil
+		}),
+
+		WithAssignPlayersFn(func(tableID string, players []string) error {
+			t.Log("Request to assign players to table", tableID)
+
+			for _, player := range players {
+				t.Log("  Assigned player", player, "to table")
+			}
+
+			return nil
+		}),
+	)
+
+	totalPlayers := 0
+
+	for i := 0; i < 50; i++ {
+		totalPlayers++
+		r.AddPlayers([]string{fmt.Sprintf("player_%d", totalPlayers)})
+	}
+
+	assert.Equal(t, 50, r.GetPlayerCount())
+	assert.Equal(t, 0, r.GetTableCount())
+
+	r.SetStatus(CompetitionStatus_Normal)
+
+	assert.Equal(t, 6, r.GetTableCount())
+
+	// 50 players should be in 6 tables
+	inTable := 0
+	for i := 0; i < r.GetTableCount(); i++ {
+		tableID := fmt.Sprintf("table_%d", i+1)
+		inTable += r.GetTable(tableID).PlayerCount
+	}
+
+	assert.Equal(t, 50, inTable)
+}
+
+func TestRegulator_50Problem_AssignPlayer(t *testing.T) {
+
+	tableCounter := 0
+
+	r := NewRegulator(
+		WithRequestTableFn(func(players []string) (string, error) {
+			tableCounter++
+			t.Log("Request to create table", tableCounter, "with", len(players), "players")
+
+			for _, player := range players {
+				t.Log("  Player", player, "joined table")
+			}
+
+			return fmt.Sprintf("table_%d", tableCounter), nil
+		}),
+
+		WithAssignPlayersFn(func(tableID string, players []string) error {
+			t.Log("Request to assign players to table", tableID)
+
+			for _, player := range players {
+				t.Log("  Assigned player", player, "to table")
+			}
+
+			return nil
+		}),
+	)
+
+	totalPlayers := 0
+
+	for i := 0; i < 48; i++ {
+		totalPlayers++
+		r.AddPlayers([]string{fmt.Sprintf("player_%d", totalPlayers)})
+	}
+
+	assert.Equal(t, 48, r.GetPlayerCount())
+	assert.Equal(t, 0, r.GetTableCount())
+
+	r.SetStatus(CompetitionStatus_Normal)
+
+	assert.Equal(t, 6, r.GetTableCount())
+
+	// add two players (49 and 50)
+	totalPlayers++
+	r.AddPlayers([]string{fmt.Sprintf("player_%d", totalPlayers)})
+	totalPlayers++
+	r.AddPlayers([]string{fmt.Sprintf("player_%d", totalPlayers)})
+
+	// 49 players should be in 6 tables
+	inTable := 0
+	for i := 0; i < r.GetTableCount(); i++ {
+		tableID := fmt.Sprintf("table_%d", i+1)
+		inTable += r.GetTable(tableID).PlayerCount
+	}
+
+	assert.Equal(t, 50, inTable)
+}
+
 func TestRegulator_91Problem(t *testing.T) {
 
 	// Prepare tables

@@ -285,6 +285,10 @@ func (r *regulator) allocateTables() error {
 		}
 
 		r.tables[tableID] = t
+
+		// Calculate water level with players in the waiting queue
+		expectedTables := requiredTables - r.tableCount
+		waterLevel = int(math.Floor(float64(len(r.waitingQueue)) / float64(expectedTables)))
 	}
 
 	return nil
@@ -340,6 +344,25 @@ func (r *regulator) SetStatus(status CompetitionStatus) {
 	}
 }
 
+func (r *regulator) updateTableRequirements() {
+
+	// the number of tables is not changed
+	requiredTables := int(math.Ceil(float64(r.playerCount) / float64(r.maxPlayersPerTable)))
+	if requiredTables == len(r.tables) {
+
+		// Attempt to update table requirements
+		remains := requiredTables
+		for _, t := range r.tables {
+			waterLevel := int(math.Floor(float64(r.playerCount) / float64(remains)))
+			if t.PlayerCount < waterLevel {
+				t.Required = waterLevel - t.PlayerCount
+			}
+
+			remains--
+		}
+	}
+}
+
 func (r *regulator) AddPlayers(players []string) error {
 
 	r.mu.Lock()
@@ -350,6 +373,8 @@ func (r *regulator) AddPlayers(players []string) error {
 	}
 
 	r.playerCount += len(players)
+
+	r.updateTableRequirements()
 
 	return r.enterWaitingQueue(players)
 }
