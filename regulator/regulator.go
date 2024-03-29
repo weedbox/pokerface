@@ -173,7 +173,7 @@ func (r *regulator) getPlayersFromWaitingQueue(count int) []string {
 	}
 
 	// TODO: test only: remove this later on
-	fmt.Println("[MTT#DEBUG#regulator#getPlayersFromWaitingQueue] waitingQueue:", r.waitingQueue)
+	//fmt.Println("[MTT#DEBUG#regulator#getPlayersFromWaitingQueue] waitingQueue:", r.waitingQueue)
 
 	return players
 }
@@ -346,19 +346,30 @@ func (r *regulator) SetStatus(status CompetitionStatus) {
 
 func (r *regulator) updateTableRequirements() {
 
+	//	fmt.Println("Player count:", r.playerCount)
+
 	// the number of tables is not changed
 	requiredTables := int(math.Ceil(float64(r.playerCount) / float64(r.maxPlayersPerTable)))
 	if requiredTables == len(r.tables) {
 
 		// Attempt to update table requirements
 		remains := requiredTables
+		playerRemains := r.playerCount
+
 		for _, t := range r.tables {
-			waterLevel := int(math.Floor(float64(r.playerCount) / float64(remains)))
+
+			//fmt.Println("Remains:", remains)
+			//fmt.Println("Player remains:", playerRemains)
+
+			waterLevel := int(math.Floor(float64(playerRemains) / float64(remains)))
 			if t.PlayerCount < waterLevel {
 				t.Required = waterLevel - t.PlayerCount
 			}
 
+			playerRemains -= waterLevel
 			remains--
+
+			//fmt.Printf("Table %s: %d, %d, %d\n", t.ID, t.PlayerCount, t.Required, waterLevel)
 		}
 	}
 }
@@ -495,7 +506,7 @@ func (r *regulator) drainWaitingQueue() error {
 		}
 
 		r.waitingQueue = candidates
-		fmt.Println("[MTT#DEBUG#regulator#drainWaitingQueue] waitingQueue:", r.waitingQueue)
+		//fmt.Println("[MTT#DEBUG#regulator#drainWaitingQueue] waitingQueue:", r.waitingQueue)
 
 		// still have players
 		if len(candidates) > 0 {
@@ -511,7 +522,7 @@ func (r *regulator) enterWaitingQueue(players []string) error {
 	r.waitingQueue = append(r.waitingQueue, players...)
 
 	// TODO: test only: remove this later on
-	fmt.Println("[MTT#DEBUG#regulator#enterWaitingQueue] waitingQueue:", r.waitingQueue)
+	//fmt.Println("[MTT#DEBUG#regulator#enterWaitingQueue] waitingQueue:", r.waitingQueue)
 
 	if r.status == CompetitionStatus_Pending {
 		return nil

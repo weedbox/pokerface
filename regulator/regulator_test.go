@@ -417,7 +417,7 @@ func TestRegulator_50Problem_AssignPlayer(t *testing.T) {
 		inTable += r.GetTable(tableID).PlayerCount
 	}
 
-	assert.Equal(t, 50, inTable)
+	assert.Equal(t, r.GetPlayerCount(), inTable)
 }
 
 func TestRegulator_91Problem(t *testing.T) {
@@ -614,4 +614,52 @@ func TestRegulator_AfterRegDeadline(t *testing.T) {
 			assert.Equal(t, 1, r.GetTableCount())
 		}
 	}
+}
+
+func TestRegulator_AllocateTable_NormalStatus(t *testing.T) {
+
+	tableCounter := 0
+
+	r := NewRegulator(
+		WithRequestTableFn(func(players []string) (string, error) {
+			tableCounter++
+			t.Log("Request to create table", tableCounter, "with", len(players), "players")
+
+			for _, player := range players {
+				t.Log("  Player", player, "joined table")
+			}
+
+			return fmt.Sprintf("table_%d", tableCounter), nil
+		}),
+
+		WithAssignPlayersFn(func(tableID string, players []string) error {
+			t.Log("Request to assign players to table", tableID)
+
+			for _, player := range players {
+				t.Log("  Assigned player", player, "to table")
+			}
+
+			return nil
+		}),
+	)
+
+	assert.Equal(t, 0, r.GetTableCount())
+
+	r.SetStatus(CompetitionStatus_Normal)
+
+	totalPlayers := 0
+	for i := 0; i < 90; i++ {
+		totalPlayers++
+		r.AddPlayers([]string{fmt.Sprintf("player_%d", totalPlayers)})
+		assert.Equal(t, totalPlayers, r.GetPlayerCount())
+	}
+
+	// Sum of players in tables should be 45
+	inTable := 0
+	for i := 0; i < r.GetTableCount(); i++ {
+		tableID := fmt.Sprintf("table_%d", i+1)
+		inTable += r.GetTable(tableID).PlayerCount
+	}
+
+	assert.Equal(t, r.GetPlayerCount(), inTable)
 }
