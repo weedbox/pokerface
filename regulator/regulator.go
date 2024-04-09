@@ -49,6 +49,18 @@ type regulator struct {
 
 type Opt func(*regulator)
 
+func MinInitialPlayers(num int) Opt {
+	return func(r *regulator) {
+		r.minInitialPlayers = num
+	}
+}
+
+func MaxPlayersPerTable(num int) Opt {
+	return func(r *regulator) {
+		r.maxPlayersPerTable = num
+	}
+}
+
 func WithRequestTableFn(fn RequestTableFn) Opt {
 	return func(r *regulator) {
 		r.requestTableFn = fn
