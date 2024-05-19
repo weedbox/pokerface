@@ -284,7 +284,12 @@ func Test_Allin_PreviousRaiseSize(t *testing.T) {
 
 	// Initializing game
 	g := pf.NewGame(opts)
-	g.GetState().Meta.Deck = []string{"H7", "HQ", "SQ", "H8", "C5", "H9", "H6", "S5", "S7", "D7", "D6", "C8", "D4", "H4", "CK", "D2", "SA", "HA", "DK", "CA", "HK", "DT", "C4", "SJ", "C3", "C2", "S3", "DJ", "S2", "S8", "S6", "H3", "HT", "S4", "CT", "SK", "ST", "DA", "S9", "C9", "H5", "C7", "CQ", "D5", "C6", "DQ", "H2", "D9", "HJ", "CJ", "D3", "D8"}
+	g.GetState().Meta.Deck = []string{
+		"H7", "HQ", "SQ", "H8", "C5", "H9", "H6", "S5", "S7", "D7", "D6", "C8", "D4", "H4",
+		"CK", "D2", "SA", "HA", "DK", "CA", "HK", "DT", "C4", "SJ", "C3", "C2", "S3", "DJ",
+		"S2", "S8", "S6", "H3", "HT", "S4", "CT", "SK", "ST", "DA", "S9", "C9", "H5", "C7",
+		"CQ", "D5", "C6", "DQ", "H2", "D9", "HJ", "CJ", "D3", "D8",
+	}
 	g.GetState().Players[0].HoleCards = []string{"H7", "HQ"}
 	g.GetState().Players[1].HoleCards = []string{"SQ", "H8"}
 
@@ -327,5 +332,5 @@ func Test_Allin_PreviousRaiseSize(t *testing.T) {
 	assert.Nil(t, g.Next())
 	assert.Equal(t, "GameClosed", g.GetState().Status.CurrentEvent)
 
-	g.PrintState()
+	//g.PrintState()
 }
