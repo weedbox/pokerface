@@ -102,5 +102,5 @@ func Test_ShortDeck_Player_Wager(t *testing.T) {
 		}
 	}
 
-	g.PrintState()
+	//g.PrintState()
 }

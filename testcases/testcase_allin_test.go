@@ -256,3 +256,81 @@ func Test_Allin_NoOneCanMove(t *testing.T) {
 
 	//g.PrintState()
 }
+
+func Test_Allin_PreviousRaiseSize(t *testing.T) {
+
+	pf := pokerface.NewPokerFace()
+
+	opts := pokerface.NewStardardGameOptions()
+	opts.Blind.SB = 50
+	opts.Blind.BB = 100
+	opts.Ante = 0
+
+	// Preparing deck
+	opts.Deck = pokerface.NewStandardDeckCards()
+
+	// Preparing players
+	players := []*pokerface.PlayerSetting{
+		&pokerface.PlayerSetting{
+			Bankroll:  29800,
+			Positions: []string{"dealer", "sb"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  30200,
+			Positions: []string{"bb"},
+		},
+	}
+	opts.Players = append(opts.Players, players...)
+
+	// Initializing game
+	g := pf.NewGame(opts)
+	g.GetState().Meta.Deck = []string{
+		"H7", "HQ", "SQ", "H8", "C5", "H9", "H6", "S5", "S7", "D7", "D6", "C8", "D4", "H4",
+		"CK", "D2", "SA", "HA", "DK", "CA", "HK", "DT", "C4", "SJ", "C3", "C2", "S3", "DJ",
+		"S2", "S8", "S6", "H3", "HT", "S4", "CT", "SK", "ST", "DA", "S9", "C9", "H5", "C7",
+		"CQ", "D5", "C6", "DQ", "H2", "D9", "HJ", "CJ", "D3", "D8",
+	}
+	g.GetState().Players[0].HoleCards = []string{"H7", "HQ"}
+	g.GetState().Players[1].HoleCards = []string{"SQ", "H8"}
+
+	assert.Nil(t, g.Start())
+
+	// Waiting for ready
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.ReadyForAll())
+
+	// Entering Preflop
+	assert.Equal(t, "preflop", g.GetState().Status.Round)
+
+	// Blinds
+	assert.Nil(t, g.PayBlinds())
+
+	// Waiting for ready
+	assert.Nil(t, g.ReadyForAll())
+
+	// Dealer: Allin
+	cp := g.GetCurrentPlayer()
+	assert.Nil(t, cp.Allin())
+
+	// BB: Allin
+	cp = g.GetCurrentPlayer()
+	assert.Equal(t, int64(29800), g.GetState().Status.CurrentWager)
+	assert.Equal(t, int64(29800-g.GetState().Meta.Blind.BB), g.GetState().Status.PreviousRaiseSize)
+	assert.ElementsMatch(t, cp.State().AllowedActions, []string{"allin", "call", "fold"})
+	assert.Nil(t, cp.Allin())
+
+	// flop
+	assert.Nil(t, g.Next())
+
+	// turn
+	assert.Nil(t, g.Next())
+
+	// river
+	assert.Nil(t, g.Next())
+
+	// close game
+	assert.Nil(t, g.Next())
+	assert.Equal(t, "GameClosed", g.GetState().Status.CurrentEvent)
+
+	//g.PrintState()
+}
