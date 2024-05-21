@@ -402,7 +402,7 @@ func (r *regulator) AddPlayers(players []string) error {
 	return r.enterWaitingQueue(players)
 }
 
-func (r *regulator) SyncState(tableID string, playerCount int) (int, []string, error) {
+func (r *regulator) SyncState(tableID string, out int) (int, []string, error) {
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -413,11 +413,10 @@ func (r *regulator) SyncState(tableID string, playerCount int) (int, []string, e
 	}
 
 	// update total player
-	playerChanges := t.PlayerCount - playerCount
-	r.playerCount -= playerChanges
+	r.playerCount -= out
 
 	// Update table information
-	t.PlayerCount = playerCount
+	t.PlayerCount -= out
 
 	//fmt.Println(tableID, r.playerCount, -playerChanges, playerCount)
 
@@ -436,7 +435,7 @@ func (r *regulator) SyncState(tableID string, playerCount int) (int, []string, e
 				return 0, []string{}, err
 			}
 
-			return playerCount, []string{}, nil
+			return t.PlayerCount, []string{}, nil
 		}
 	}
 
@@ -444,7 +443,7 @@ func (r *regulator) SyncState(tableID string, playerCount int) (int, []string, e
 
 	//fmt.Println("Water level:", waterLevel)
 
-	if float64(playerCount) < waterLevel {
+	if float64(t.PlayerCount) < waterLevel {
 
 		// more than one table has low water level
 		if r.getLowWaterLevelTableCount() >= 2 && requiredTables < r.tableCount {
@@ -455,11 +454,11 @@ func (r *regulator) SyncState(tableID string, playerCount int) (int, []string, e
 				return 0, []string{}, err
 			}
 
-			return playerCount, []string{}, nil
+			return t.PlayerCount, []string{}, nil
 		}
 
 		// We need more players
-		count := int(math.Floor(waterLevel)) - playerCount
+		count := int(math.Floor(waterLevel)) - t.PlayerCount
 
 		// Request players
 		players := r.requestPlayers(count)
@@ -475,8 +474,8 @@ func (r *regulator) SyncState(tableID string, playerCount int) (int, []string, e
 		return 0, players, nil
 	}
 
-	if float64(playerCount) > waterLevel {
-		count := playerCount - int(math.Floor(waterLevel))
+	if float64(t.PlayerCount) > waterLevel {
+		count := t.PlayerCount - int(math.Floor(waterLevel))
 
 		picked := 0
 		for i := 0; i < count; i++ {

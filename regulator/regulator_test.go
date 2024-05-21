@@ -60,7 +60,7 @@ func TestRegulator(t *testing.T) {
 	assert.Equal(t, 3, r.GetTable("table_2").Required)
 
 	// Table still has 9 when first hand is over
-	releaseCount, players, err := r.SyncState("table_1", 9)
+	releaseCount, players, err := r.SyncState("table_1", 0)
 	assert.Nil(t, err)
 
 	// water level should be 6 for 12 players, so 3 players should be released
@@ -139,10 +139,11 @@ func TestRegulator_3TablesTo2Tables(t *testing.T) {
 
 			// one player has left
 			players := tables[tableID]
-			players = players[:len(players)-1]
+			playerChanges := 1
+			players = players[:len(players)-playerChanges]
 
 			// sync to regulator
-			releaseCount, newPlayers, err := r.SyncState(tableID, len(players))
+			releaseCount, newPlayers, err := r.SyncState(tableID, playerChanges)
 			assert.Nil(t, err)
 
 			// water level should be 9 for 18 players, so the rest of players should be released
@@ -167,8 +168,8 @@ func TestRegulator_3TablesTo2Tables(t *testing.T) {
 
 	// Update the rest of tables to get new players
 	assignedCount := 0
-	for tableID, players := range tables {
-		releaseCount, newPlayers, err := r.SyncState(tableID, len(players))
+	for tableID, _ := range tables {
+		releaseCount, newPlayers, err := r.SyncState(tableID, 0)
 		assert.Nil(t, err)
 		assert.Equal(t, 0, releaseCount)
 
@@ -483,7 +484,7 @@ func TestRegulator_91Problem(t *testing.T) {
 		tableID := fmt.Sprintf("table_%d", i+1)
 
 		// Each table still has 9 when first hand is over
-		releaseCount, players, err := r.SyncState(tableID, 9)
+		releaseCount, players, err := r.SyncState(tableID, 0)
 		assert.Nil(t, err)
 
 		// No new players should be put on old table
@@ -570,7 +571,7 @@ func TestRegulator_AfterRegDeadline(t *testing.T) {
 			players = players[3:]
 
 			// Each table still has 9 when first hand is over
-			releaseCount, newPlayers, err := r.SyncState(tableID, len(players))
+			releaseCount, newPlayers, err := r.SyncState(tableID, 3)
 			assert.Nil(t, err)
 
 			t.Logf("Table %s: %d players, %d new players, should release %d players", tableID, len(players), len(newPlayers), releaseCount)
