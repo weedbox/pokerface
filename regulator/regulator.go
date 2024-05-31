@@ -367,13 +367,13 @@ func (r *regulator) updateTableRequirements() {
 		// Attempt to update table requirements
 		remains := requiredTables
 		playerRemains := r.playerCount
+		waterLevel := int(math.Ceil(float64(playerRemains) / float64(remains)))
 
 		for _, t := range r.tables {
 
 			//fmt.Println("Remains:", remains)
 			//fmt.Println("Player remains:", playerRemains)
 
-			waterLevel := int(math.Floor(float64(playerRemains) / float64(remains)))
 			if t.PlayerCount < waterLevel {
 				t.Required = waterLevel - t.PlayerCount
 			}
