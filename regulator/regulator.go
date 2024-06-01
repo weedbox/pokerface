@@ -516,6 +516,19 @@ func (r *regulator) drainWaitingQueue() error {
 			}
 		}
 
+		if len(candidates) > 0 {
+			r.updateTableRequirements()
+		}
+
+		// still have players available in the queue
+		for len(candidates) > 0 {
+			// re-calculate the water level for the tables that need more players
+			candidates, err = r.dispatchPlayer(candidates)
+			if err == ErrNoAvailableTable {
+				break
+			}
+		}
+
 		r.waitingQueue = candidates
 		//fmt.Println("[MTT#DEBUG#regulator#drainWaitingQueue] waitingQueue:", r.waitingQueue)
 

@@ -166,17 +166,9 @@ func TestRegulator_3TablesTo2Tables(t *testing.T) {
 	assert.Equal(t, 18, r.GetPlayerCount())
 	assert.Equal(t, 2, r.GetTableCount())
 
-	// Update the rest of tables to get new players
-	assignedCount := 0
-	for tableID, _ := range tables {
-		releaseCount, newPlayers, err := r.SyncState(tableID, 0)
-		assert.Nil(t, err)
-		assert.Equal(t, 0, releaseCount)
-
-		assignedCount += len(newPlayers)
+	for _, players := range tables {
+		assert.Len(t, players, 9)
 	}
-
-	assert.Equal(t, 5, assignedCount)
 }
 
 func TestRegulator_11Problem(t *testing.T) {
@@ -498,6 +490,7 @@ func TestRegulator_91Problem(t *testing.T) {
 
 			for _, player := range players {
 				t.Log("  Assigned player", player, "to table")
+				tables[tableID] = append(tables[tableID], player)
 			}
 
 			return nil
@@ -553,7 +546,16 @@ func TestRegulator_91Problem(t *testing.T) {
 		tables[tableID] = table
 
 		err = r.ReleasePlayers(tableID, releasedPlayers)
+		assert.Nil(t, err)
 	}
+
+	expectedPlayers := 0
+	for _, players := range tables {
+		t.Log(len(players))
+		expectedPlayers += len(players)
+	}
+
+	assert.Equal(t, 91, expectedPlayers)
 
 	assert.Equal(t, 7, totalRequired)
 	assert.Equal(t, 0, r.GetTable("table_11").Required)
@@ -661,6 +663,262 @@ func TestRegulator_AfterRegDeadline(t *testing.T) {
 			assert.Equal(t, 1, r.GetTableCount())
 		}
 	}
+}
+
+func TestRegulator_AfterRegDeadline_2TablesToFinalTable(t *testing.T) {
+
+	tables := make(map[string][]string)
+
+	tableCounter := 0
+
+	r := NewRegulator(
+		WithRequestTableFn(func(players []string) (string, error) {
+			tableCounter++
+			tableID := fmt.Sprintf("table_%d", tableCounter)
+			tables[tableID] = []string{}
+
+			t.Log("Request to create table: ", tableID)
+
+			for _, player := range players {
+				t.Log("  Player", player, "joined table")
+				tables[tableID] = append(tables[tableID], player)
+			}
+
+			return tableID, nil
+		}),
+
+		WithAssignPlayersFn(func(tableID string, players []string) error {
+			t.Log("Request to assign players to table", tableID)
+
+			for _, player := range players {
+				t.Log("  Assigned player", player, "to table")
+				tables[tableID] = append(tables[tableID], player)
+			}
+
+			return nil
+		}),
+	)
+
+	killPlayers := func(tableID string, count int) {
+
+		players := tables[tableID]
+		players = players[count:]
+
+		releaseCount, newPlayers, err := r.SyncState(tableID, count)
+		assert.Nil(t, err)
+
+		t.Logf("Table %s: %d players, %d new players, should release %d players", tableID, len(players), len(newPlayers), releaseCount)
+
+		// Attempt to release players
+		var releasedPlayers []string
+		for n := 0; n < releaseCount; n++ {
+
+			// Pick one player to release
+			player := players[0]
+			players = players[1:]
+
+			releasedPlayers = append(releasedPlayers, player)
+		}
+
+		err = r.ReleasePlayers(tableID, releasedPlayers)
+		assert.Nil(t, err)
+	}
+
+	totalPlayers := 0
+
+	// Prepare 18 players for 2 tables
+	for i := 0; i < 18; i++ {
+		totalPlayers++
+		r.AddPlayers([]string{fmt.Sprintf("player_%d", totalPlayers)})
+	}
+
+	assert.Equal(t, 18, r.GetPlayerCount())
+	assert.Equal(t, 0, r.GetTableCount())
+
+	r.SetStatus(CompetitionStatus_Normal)
+	assert.Equal(t, 2, r.GetTableCount())
+
+	r.SetStatus(CompetitionStatus_AfterRegDeadline)
+
+	killPlayers("table_1", 3) // 6 players remaining
+	killPlayers("table_2", 4) // 5 players remaining
+	killPlayers("table_2", 2) // 2 players left (3 players remaining)
+
+	assert.Equal(t, 9, r.GetPlayerCount())
+	assert.Equal(t, 1, r.GetTableCount())
+	assert.Equal(t, 9, r.GetTable("table_1").PlayerCount)
+}
+
+func TestRegulator_4TablesTo3Tables(t *testing.T) {
+
+	tables := make(map[string][]string)
+
+	tableCounter := 0
+
+	r := NewRegulator(
+		WithRequestTableFn(func(players []string) (string, error) {
+			tableCounter++
+			tableID := fmt.Sprintf("table_%d", tableCounter)
+			tables[tableID] = []string{}
+
+			t.Log("Request to create table: ", tableID)
+
+			for _, player := range players {
+				t.Log("  Player", player, "joined table")
+				tables[tableID] = append(tables[tableID], player)
+			}
+
+			return tableID, nil
+		}),
+
+		WithAssignPlayersFn(func(tableID string, players []string) error {
+			t.Log("Request to assign players to table", tableID)
+
+			for _, player := range players {
+				t.Log("  Assigned player", player, "to table")
+				tables[tableID] = append(tables[tableID], player)
+			}
+
+			return nil
+		}),
+	)
+
+	killPlayers := func(tableID string, count int) {
+
+		players := tables[tableID]
+		players = players[count:]
+
+		releaseCount, newPlayers, err := r.SyncState(tableID, count)
+		assert.Nil(t, err)
+
+		t.Logf("Table %s: %d players, %d new players, should release %d players", tableID, len(players), len(newPlayers), releaseCount)
+
+		// Attempt to release players
+		var releasedPlayers []string
+		for n := 0; n < releaseCount; n++ {
+
+			// Pick one player to release
+			player := players[0]
+			players = players[1:]
+
+			releasedPlayers = append(releasedPlayers, player)
+		}
+
+		err = r.ReleasePlayers(tableID, releasedPlayers)
+		assert.Nil(t, err)
+	}
+
+	totalPlayers := 0
+
+	// Prepare 36 players for 4 tables
+	for i := 0; i < 36; i++ {
+		totalPlayers++
+		r.AddPlayers([]string{fmt.Sprintf("player_%d", totalPlayers)})
+	}
+
+	assert.Equal(t, 36, r.GetPlayerCount())
+	assert.Equal(t, 0, r.GetTableCount())
+
+	r.SetStatus(CompetitionStatus_Normal)
+	assert.Equal(t, 4, r.GetTableCount())
+
+	r.SetStatus(CompetitionStatus_AfterRegDeadline)
+
+	killPlayers("table_1", 2) // 7 players remaining
+	killPlayers("table_2", 2) // 7 players remaining
+	killPlayers("table_4", 4) // 5 players remaining
+	assert.Equal(t, 4, r.GetTableCount())
+
+	killPlayers("table_1", 1) // 1 players left
+	assert.Equal(t, 3, r.GetTableCount())
+	assert.Equal(t, 27, r.GetPlayerCount())
+
+	assert.Equal(t, 9, r.GetTable("table_2").PlayerCount)
+	assert.Equal(t, 9, r.GetTable("table_3").PlayerCount)
+	assert.Equal(t, 9, r.GetTable("table_4").PlayerCount)
+}
+
+func TestRegulator_4TablesDispatcher(t *testing.T) {
+
+	tables := make(map[string][]string)
+
+	tableCounter := 0
+
+	r := NewRegulator(
+		WithRequestTableFn(func(players []string) (string, error) {
+			tableCounter++
+			tableID := fmt.Sprintf("table_%d", tableCounter)
+			tables[tableID] = []string{}
+
+			t.Log("Request to create table: ", tableID)
+
+			for _, player := range players {
+				t.Log("  Player", player, "joined table")
+				tables[tableID] = append(tables[tableID], player)
+			}
+
+			return tableID, nil
+		}),
+
+		WithAssignPlayersFn(func(tableID string, players []string) error {
+			t.Log("Request to assign players to table", tableID)
+
+			for _, player := range players {
+				t.Log("  Assigned player", player, "to table")
+				tables[tableID] = append(tables[tableID], player)
+			}
+
+			return nil
+		}),
+	)
+
+	killPlayers := func(tableID string, count int) {
+
+		players := tables[tableID]
+		players = players[count:]
+
+		releaseCount, newPlayers, err := r.SyncState(tableID, count)
+		assert.Nil(t, err)
+
+		t.Logf("Table %s: %d players, %d new players, should release %d players", tableID, len(players), len(newPlayers), releaseCount)
+
+		// Attempt to release players
+		var releasedPlayers []string
+		for n := 0; n < releaseCount; n++ {
+
+			// Pick one player to release
+			player := players[0]
+			players = players[1:]
+
+			releasedPlayers = append(releasedPlayers, player)
+		}
+
+		err = r.ReleasePlayers(tableID, releasedPlayers)
+		assert.Nil(t, err)
+	}
+
+	totalPlayers := 0
+
+	// Prepare 36 players for 4 tables
+	for i := 0; i < 36; i++ {
+		totalPlayers++
+		r.AddPlayers([]string{fmt.Sprintf("player_%d", totalPlayers)})
+	}
+
+	assert.Equal(t, 36, r.GetPlayerCount())
+	assert.Equal(t, 0, r.GetTableCount())
+
+	r.SetStatus(CompetitionStatus_Normal)
+	assert.Equal(t, 4, r.GetTableCount())
+
+	killPlayers("table_4", 6) // 6 players left (3 players remaining)
+	assert.Equal(t, 3, r.GetTable("table_4").PlayerCount)
+
+	killPlayers("table_2", 0) // no players left
+
+	assert.Equal(t, 4, r.GetTableCount())
+	assert.Equal(t, 7, r.GetTable("table_2").PlayerCount)
+	assert.Equal(t, 5, r.GetTable("table_4").PlayerCount)
 }
 
 func TestRegulator_AllocateTable_NormalStatus(t *testing.T) {
