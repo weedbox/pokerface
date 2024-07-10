@@ -754,23 +754,19 @@ func (g *game) StartRound() error {
 			return g.EmitEvent(GameEvent_RoundClosed)
 		}
 
-		// Find the last player who has paid
-		var lp Player
-		for i, p := range g.GetPlayers() {
+		// Set Dealer to the first player
+		g.SetCurrentPlayer(g.Dealer())
 
-			// First one is dealer, skip it
-			if i == 0 {
-				continue
-			}
+		for i := 0; i < g.GetPlayerCount(); i++ {
+			p := g.NextPlayer()
 
-			if p.State().Wager == 0 {
+			if p.CheckPosition("bb") {
+				g.SetCurrentPlayer(g.NextPlayer())
 				break
 			}
 
-			lp = p
+			g.SetCurrentPlayer(p)
 		}
-
-		g.SetCurrentPlayer(lp)
 
 	} else {
 

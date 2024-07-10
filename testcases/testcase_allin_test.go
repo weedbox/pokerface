@@ -334,3 +334,79 @@ func Test_Allin_PreviousRaiseSize(t *testing.T) {
 
 	//g.PrintState()
 }
+
+func Test_Allin_PreflopFirstCurrentPlayer(t *testing.T) {
+
+	pf := pokerface.NewPokerFace()
+
+	opts := pokerface.NewStardardGameOptions()
+	opts.Blind.SB = 150
+	opts.Blind.BB = 300
+	opts.Ante = 30
+
+	// Preparing deck
+	opts.Deck = pokerface.NewStandardDeckCards()
+
+	// Preparing players
+	players := []*pokerface.PlayerSetting{
+		&pokerface.PlayerSetting{
+			Bankroll:  23889,
+			Positions: []string{"dealer"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  8,
+			Positions: []string{"sb"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  176346,
+			Positions: []string{"bb"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  101206,
+			Positions: []string{"ug"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  92602,
+			Positions: []string{"ug2"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  84727,
+			Positions: []string{"mp"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  99009,
+			Positions: []string{"hj"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  61560,
+			Positions: []string{"co"},
+		},
+	}
+	opts.Players = append(opts.Players, players...)
+
+	// Initializing game
+	g := pf.NewGame(opts)
+
+	assert.Nil(t, g.Start())
+
+	// Waiting for ready
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.ReadyForAll())
+
+	// Ante
+	assert.Nil(t, g.PayAnte())
+
+	// Blinds
+	assert.Nil(t, g.PayBlinds())
+
+	// Waiting for ready
+	assert.Nil(t, g.ReadyForAll())
+
+	// Entering Preflop
+	assert.Equal(t, "preflop", g.GetState().Status.Round)
+
+	// Validate First Action Player (start from ug)
+	assert.Equal(t, g.GetState().Status.CurrentPlayer, 3)
+
+	// g.PrintState()
+}
