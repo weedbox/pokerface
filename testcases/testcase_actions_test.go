@@ -312,3 +312,64 @@ func Test_Fold_RaiseInPreflop(t *testing.T) {
 	// Game closed
 	assert.Nil(t, g.Next())
 }
+
+func Test_Actions_CallTo1BBInPreflop(t *testing.T) {
+
+	pf := pokerface.NewPokerFace()
+
+	// Options
+	opts := pokerface.NewStardardGameOptions()
+	opts.Blind.SB = 10
+	opts.Blind.BB = 20
+	opts.Ante = 0
+
+	// Preparing deck
+	opts.Deck = pokerface.NewStandardDeckCards()
+
+	// Preparing players
+	players := []*pokerface.PlayerSetting{
+		&pokerface.PlayerSetting{
+			Bankroll:  100,
+			Positions: []string{"dealer"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  200,
+			Positions: []string{"sb"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  15,
+			Positions: []string{"bb"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  150,
+			Positions: []string{"ug"},
+		},
+	}
+	opts.Players = append(opts.Players, players...)
+
+	// Initializing game
+	g := pf.NewGame(opts)
+
+	// Start the game
+	assert.Nil(t, g.Start())
+
+	// Waiting for initial ready
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.ReadyForAll())
+
+	// Blinds
+	assert.Equal(t, "BlindsRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.PayBlinds())
+
+	// Round: Preflop
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.ReadyForAll()) // ready for the round
+
+	assert.Equal(t, "RoundStarted", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.Call()) // UG action
+
+	// ug wager should be equal to BB
+	assert.Equal(t, g.Player(g.GetState().Status.LastAction.Source).State().Wager, g.GetState().Meta.Blind.BB)
+
+	// g.PrintState()
+}
