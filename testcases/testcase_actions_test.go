@@ -373,3 +373,282 @@ func Test_Actions_CallTo1BBInPreflop(t *testing.T) {
 
 	// g.PrintState()
 }
+
+func Test_Actions_EmptySB_Basic(t *testing.T) {
+
+	pf := pokerface.NewPokerFace()
+
+	// Options
+	opts := pokerface.NewStardardGameOptions()
+	opts.Blind.SB = 10
+	opts.Blind.BB = 20
+	opts.Ante = 0
+
+	// Preparing deck
+	opts.Deck = pokerface.NewStandardDeckCards()
+
+	// Preparing players
+	players := []*pokerface.PlayerSetting{
+		&pokerface.PlayerSetting{
+			Bankroll:  100,
+			Positions: []string{"dealer"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  100,
+			Positions: []string{},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  100,
+			Positions: []string{"bb"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  100,
+			Positions: []string{"ug"},
+		},
+	}
+	opts.Players = append(opts.Players, players...)
+
+	// Initializing game
+	g := pf.NewGame(opts)
+
+	// Start the game
+	assert.Nil(t, g.Start())
+
+	// Waiting for initial ready
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.ReadyForAll())
+
+	// Blinds
+	assert.Equal(t, "BlindsRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.PayBlinds())
+
+	// Round: Preflop
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.ReadyForAll()) // ready for the round
+
+	assert.Equal(t, "RoundStarted", g.GetState().Status.CurrentEvent)
+
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("ug")) // start from UG
+	assert.Nil(t, g.Call())                                  // UG call
+
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("dealer")) // start from UG
+	assert.Nil(t, g.Call())                                      // Dealer call
+
+	assert.Equal(t, g.GetState().Status.CurrentPlayer, 1) // turn to Empty SB
+	assert.Nil(t, g.Call())                               // Empty SB call
+
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("bb")) // turn to BB
+	assert.Nil(t, g.Check())                                 // BB check
+
+	// flop
+	assert.Nil(t, g.Next())
+	assert.Nil(t, g.ReadyForAll())                               // ready for the round
+	assert.Equal(t, g.GetState().Status.CurrentPlayer, 1)        // turn to Empty SB
+	assert.Nil(t, g.Check())                                     // Empty SB check
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("bb"))     // turn to BB
+	assert.Nil(t, g.Bet(10))                                     // BB bet 10
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("ug"))     // turn to UG
+	assert.Nil(t, g.Call())                                      // UG call
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("dealer")) // turn to Dealer
+	assert.Nil(t, g.Call())                                      // Dealer call
+	assert.Equal(t, g.GetState().Status.CurrentPlayer, 1)        // turn to Empty SB
+	assert.Nil(t, g.Call())                                      // Empty SB call
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("bb"))     // turn to BB
+	assert.Nil(t, g.Call())                                      // BB call
+
+	// turn
+	assert.Nil(t, g.Next())
+	assert.Nil(t, g.ReadyForAll())                               // ready for the round
+	assert.Equal(t, g.GetState().Status.CurrentPlayer, 1)        // turn to Empty SB
+	assert.Nil(t, g.Check())                                     // Empty SB check
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("bb"))     // turn to BB
+	assert.Nil(t, g.Bet(10))                                     // BB bet 10
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("ug"))     // turn to UG
+	assert.Nil(t, g.Call())                                      // UG call
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("dealer")) // turn to Dealer
+	assert.Nil(t, g.Call())                                      // Dealer call
+	assert.Equal(t, g.GetState().Status.CurrentPlayer, 1)        // turn to Empty SB
+	assert.Nil(t, g.Call())                                      // Empty SB call
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("bb"))     // turn to BB
+	assert.Nil(t, g.Call())                                      // BB call
+
+	// river
+	assert.Nil(t, g.Next())
+	assert.Nil(t, g.ReadyForAll())                               // ready for the round
+	assert.Equal(t, g.GetState().Status.CurrentPlayer, 1)        // turn to Empty SB
+	assert.Nil(t, g.Check())                                     // Empty SB check
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("bb"))     // turn to BB
+	assert.Nil(t, g.Bet(10))                                     // BB bet 10
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("ug"))     // turn to UG
+	assert.Nil(t, g.Call())                                      // UG call
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("dealer")) // turn to Dealer
+	assert.Nil(t, g.Call())                                      // Dealer call
+	assert.Equal(t, g.GetState().Status.CurrentPlayer, 1)        // turn to Empty SB
+	assert.Nil(t, g.Call())                                      // Empty SB call
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("bb"))     // turn to BB
+	assert.Nil(t, g.Call())                                      // BB call
+
+	// close game
+	assert.Nil(t, g.Next())
+	assert.Equal(t, "GameClosed", g.GetState().Status.CurrentEvent)
+
+	// g.PrintState()
+}
+
+func Test_Actions_EmptySB_PreflopAllin(t *testing.T) {
+
+	pf := pokerface.NewPokerFace()
+
+	// Options
+	opts := pokerface.NewStardardGameOptions()
+	opts.Blind.SB = 10
+	opts.Blind.BB = 20
+	opts.Ante = 0
+
+	// Preparing deck
+	opts.Deck = pokerface.NewStandardDeckCards()
+
+	// Preparing players
+	players := []*pokerface.PlayerSetting{
+		&pokerface.PlayerSetting{
+			Bankroll:  100,
+			Positions: []string{"dealer"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  200,
+			Positions: []string{},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  15,
+			Positions: []string{"bb"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  150,
+			Positions: []string{"ug"},
+		},
+	}
+	opts.Players = append(opts.Players, players...)
+
+	// Initializing game
+	g := pf.NewGame(opts)
+
+	// Start the game
+	assert.Nil(t, g.Start())
+
+	// Waiting for initial ready
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.ReadyForAll())
+
+	// Blinds
+	assert.Equal(t, "BlindsRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.PayBlinds())
+
+	// Round: Preflop
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.ReadyForAll()) // ready for the round
+
+	assert.Equal(t, "RoundStarted", g.GetState().Status.CurrentEvent)
+
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("ug")) // start from UG
+	assert.Nil(t, g.Allin())                                 // UG allin
+
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("dealer")) // start from UG
+	assert.Nil(t, g.Allin())                                     // Dealer allin
+
+	assert.Equal(t, g.GetState().Status.CurrentPlayer, 1) // turn to Empty SB
+	assert.Nil(t, g.Allin())                              // Empty SB allin
+
+	// flop
+	assert.Nil(t, g.Next())
+
+	// turn
+	assert.Nil(t, g.Next())
+
+	// river
+	assert.Nil(t, g.Next())
+
+	// close game
+	assert.Nil(t, g.Next())
+	assert.Equal(t, "GameClosed", g.GetState().Status.CurrentEvent)
+
+	// g.PrintState()
+}
+
+func Test_Actions_EmptySB_PreflopAllin2(t *testing.T) {
+
+	pf := pokerface.NewPokerFace()
+
+	// Options
+	opts := pokerface.NewStardardGameOptions()
+	opts.Blind.SB = 10
+	opts.Blind.BB = 20
+	opts.Ante = 0
+
+	// Preparing deck
+	opts.Deck = pokerface.NewStandardDeckCards()
+
+	// Preparing players
+	players := []*pokerface.PlayerSetting{
+		&pokerface.PlayerSetting{
+			Bankroll:  100,
+			Positions: []string{"dealer"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  5,
+			Positions: []string{},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  15,
+			Positions: []string{"bb"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  150,
+			Positions: []string{"ug"},
+		},
+	}
+	opts.Players = append(opts.Players, players...)
+
+	// Initializing game
+	g := pf.NewGame(opts)
+
+	// Start the game
+	assert.Nil(t, g.Start())
+
+	// Waiting for initial ready
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.ReadyForAll())
+
+	// Blinds
+	assert.Equal(t, "BlindsRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.PayBlinds())
+
+	// Round: Preflop
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.ReadyForAll()) // ready for the round
+
+	assert.Equal(t, "RoundStarted", g.GetState().Status.CurrentEvent)
+
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("ug")) // start from UG
+	assert.Nil(t, g.Allin())                                 // UG allin
+
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("dealer")) // start from UG
+	assert.Nil(t, g.Allin())                                     // Dealer allin
+
+	assert.Equal(t, g.GetState().Status.CurrentPlayer, 1) // turn to Empty SB
+	assert.Nil(t, g.Allin())                              // Empty SB allin
+
+	// flop
+	assert.Nil(t, g.Next())
+
+	// turn
+	assert.Nil(t, g.Next())
+
+	// river
+	assert.Nil(t, g.Next())
+
+	// close game
+	assert.Nil(t, g.Next())
+	assert.Equal(t, "GameClosed", g.GetState().Status.CurrentEvent)
+
+	// g.PrintState()
+}
