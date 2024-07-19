@@ -652,3 +652,46 @@ func Test_Actions_EmptySB_PreflopAllin2(t *testing.T) {
 
 	// g.PrintState()
 }
+
+func Test_Actions_EmptyDealer_Basic(t *testing.T) {
+
+	pf := pokerface.NewPokerFace()
+
+	// Options
+	opts := pokerface.NewStardardGameOptions()
+	opts.Blind.SB = 10
+	opts.Blind.BB = 20
+	opts.Ante = 1
+
+	// Preparing deck
+	opts.Deck = pokerface.NewStandardDeckCards()
+
+	// Preparing players
+	players := []*pokerface.PlayerSetting{
+		&pokerface.PlayerSetting{
+			Bankroll:  100,
+			Positions: []string{},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  100,
+			Positions: []string{"sb"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  100,
+			Positions: []string{"bb"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  100,
+			Positions: []string{"ug"},
+		},
+	}
+	opts.Players = append(opts.Players, players...)
+
+	// Initializing game
+	g := pf.NewGame(opts)
+
+	// Start the game
+	assert.Nil(t, g.Start())
+
+	// g.PrintState()
+}
