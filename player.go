@@ -290,6 +290,9 @@ func (p *player) Call() error {
 	gs := p.game.GetState()
 
 	delta := gs.Status.CurrentWager - p.state.Wager
+	if gs.Status.CurrentWager < gs.Meta.Blind.BB {
+		delta = gs.Meta.Blind.BB - p.state.Wager
+	}
 
 	p.state.DidAction = "call"
 	p.state.Acted = true
