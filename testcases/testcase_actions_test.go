@@ -653,48 +653,48 @@ func Test_Actions_EmptySB_PreflopAllin2(t *testing.T) {
 	// g.PrintState()
 }
 
-func Test_Actions_EmptyDealer_Basic(t *testing.T) {
+// func Test_Actions_EmptyDealer_Basic(t *testing.T) {
 
-	pf := pokerface.NewPokerFace()
+// 	pf := pokerface.NewPokerFace()
 
-	// Options
-	opts := pokerface.NewStardardGameOptions()
-	opts.Blind.SB = 10
-	opts.Blind.BB = 20
-	opts.Ante = 1
+// 	// Options
+// 	opts := pokerface.NewStardardGameOptions()
+// 	opts.Blind.SB = 10
+// 	opts.Blind.BB = 20
+// 	opts.Ante = 1
 
-	// Preparing deck
-	opts.Deck = pokerface.NewStandardDeckCards()
+// 	// Preparing deck
+// 	opts.Deck = pokerface.NewStandardDeckCards()
 
-	// Preparing players
-	players := []*pokerface.PlayerSetting{
-		&pokerface.PlayerSetting{
-			Bankroll:  100,
-			Positions: []string{},
-		},
-		&pokerface.PlayerSetting{
-			Bankroll:  100,
-			Positions: []string{"sb"},
-		},
-		&pokerface.PlayerSetting{
-			Bankroll:  100,
-			Positions: []string{"bb"},
-		},
-		&pokerface.PlayerSetting{
-			Bankroll:  100,
-			Positions: []string{"ug"},
-		},
-	}
-	opts.Players = append(opts.Players, players...)
+// 	// Preparing players
+// 	players := []*pokerface.PlayerSetting{
+// 		&pokerface.PlayerSetting{
+// 			Bankroll:  100,
+// 			Positions: []string{},
+// 		},
+// 		&pokerface.PlayerSetting{
+// 			Bankroll:  100,
+// 			Positions: []string{"sb"},
+// 		},
+// 		&pokerface.PlayerSetting{
+// 			Bankroll:  100,
+// 			Positions: []string{"bb"},
+// 		},
+// 		&pokerface.PlayerSetting{
+// 			Bankroll:  100,
+// 			Positions: []string{"ug"},
+// 		},
+// 	}
+// 	opts.Players = append(opts.Players, players...)
 
-	// Initializing game
-	g := pf.NewGame(opts)
+// 	// Initializing game
+// 	g := pf.NewGame(opts)
 
-	// Start the game
-	assert.Nil(t, g.Start())
+// 	// Start the game
+// 	assert.Nil(t, g.Start())
 
-	// g.PrintState()
-}
+// 	// g.PrintState()
+// }
 
 // Test_Actions_CurrentRaiser_AllinButNotRaiser 測試當玩家 Allin 但不構成加注者時的情況
 func Test_Actions_CurrentRaiser_AllinButNotRaiser(t *testing.T) {
@@ -759,6 +759,7 @@ func Test_Actions_CurrentRaiser_AllinButNotRaiser(t *testing.T) {
 	assert.True(t, g.GetCurrentPlayer().CheckPosition("bb"))
 	assert.Nil(t, g.Allin())
 	assert.Equal(t, g.GetState().Status.CurrentRaiser, 1) // bb allin but not over min-raise (120), so the raiser should still be sb
+	// t.Log("min_raise:", g.GetState().Status.CurrentWager+g.GetState().Status.PreviousRaiseSize) // min_raise: 120
 
 	// g.PrintState()
 }

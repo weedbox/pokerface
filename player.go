@@ -131,9 +131,14 @@ func (p *player) pay(chips int64, isWager bool) error {
 		p.state.StackSize = 0
 
 		if isWager {
+			raised := p.state.InitialStackSize - gs.Status.CurrentWager
+			minRaise := gs.Status.CurrentWager + gs.Status.PreviousRaiseSize
+
 			if p.state.InitialStackSize > gs.Status.CurrentWager {
 				gs.Status.CurrentWager = p.state.InitialStackSize
+			}
 
+			if raised >= minRaise {
 				// Become new raiser
 				p.game.BecomeRaiser(p)
 			}
