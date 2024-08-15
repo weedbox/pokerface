@@ -713,7 +713,7 @@ func Test_Actions_CurrentRaiser_AllinButNotRaiser(t *testing.T) {
 	// Preparing players
 	players := []*pokerface.PlayerSetting{
 		&pokerface.PlayerSetting{
-			Bankroll:  300,
+			Bankroll:  90,
 			Positions: []string{"dealer"},
 		},
 		&pokerface.PlayerSetting{
@@ -761,5 +761,79 @@ func Test_Actions_CurrentRaiser_AllinButNotRaiser(t *testing.T) {
 	assert.Equal(t, g.GetState().Status.CurrentRaiser, 1) // bb allin but not over min-raise (120), so the raiser should still be sb
 	// t.Log("min_raise:", g.GetState().Status.CurrentWager+g.GetState().Status.PreviousRaiseSize) // min_raise: 120
 
-	// g.PrintState()
+	g.PrintState()
+}
+
+func Test_Actions_CurrentRaiser_AllinButNotRaiser2(t *testing.T) {
+
+	pf := pokerface.NewPokerFace()
+
+	// Options
+	opts := pokerface.NewStardardGameOptions()
+	opts.Blind.SB = 10
+	opts.Blind.BB = 20
+	opts.Ante = 0
+
+	// Preparing deck
+	opts.Deck = pokerface.NewStandardDeckCards()
+
+	// Preparing players
+	players := []*pokerface.PlayerSetting{
+		&pokerface.PlayerSetting{
+			Bankroll:  90,
+			Positions: []string{"dealer"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  300,
+			Positions: []string{"sb"},
+		},
+		&pokerface.PlayerSetting{
+			Bankroll:  100,
+			Positions: []string{"bb"},
+		},
+	}
+	opts.Players = append(opts.Players, players...)
+
+	// Initializing game
+	g := pf.NewGame(opts)
+
+	// Start the game
+	assert.Nil(t, g.Start())
+
+	// Waiting for initial ready
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.ReadyForAll())
+
+	// Blinds
+	assert.Equal(t, "BlindsRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.PayBlinds())
+
+	// Round: Preflop
+	assert.Equal(t, "ReadyRequested", g.GetState().Status.CurrentEvent)
+	assert.Nil(t, g.ReadyForAll()) // ready for the round
+
+	assert.Equal(t, "RoundStarted", g.GetState().Status.CurrentEvent)
+
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("dealer"))
+	assert.Nil(t, g.Raise(40))
+	assert.Equal(t, g.GetState().Status.CurrentRaiser, 0) // raiser is dealer
+
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("sb"))
+	assert.Nil(t, g.Raise(80))
+	assert.Equal(t, g.GetState().Status.CurrentRaiser, 1) // raiser is sb
+	// t.Log("min_raise:", g.GetState().Status.CurrentWager+g.GetState().Status.PreviousRaiseSize) // min_raise: 120
+
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("bb"))
+	assert.Nil(t, g.Allin())
+	assert.Equal(t, g.GetState().Status.CurrentRaiser, 1) // bb allin but not over min-raise (120), so the raiser should still be sb
+	// t.Log("min_raise:", g.GetState().Status.CurrentWager+g.GetState().Status.PreviousRaiseSize) // min_raise: 120
+
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("dealer"))
+	assert.Nil(t, g.Allin())
+
+	assert.True(t, g.GetCurrentPlayer().CheckPosition("sb"))
+	assert.Contains(t, g.GetCurrentPlayer().State().AllowedActions, "call")
+	assert.Contains(t, g.GetCurrentPlayer().State().AllowedActions, "fold")
+
+	g.PrintState()
 }
