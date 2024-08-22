@@ -35,6 +35,7 @@ type Game interface {
 	Deal(count int) []string
 	Burn(count int) error
 	BecomeRaiser(Player) error
+	ResetActedPlayers() error
 	ResetAllPlayerStatus() error
 	StartAtDealer() (Player, error)
 	GetPlayerCount() int
@@ -415,15 +416,14 @@ func (g *game) BecomeRaiser(p Player) error {
 	g.gs.Status.CurrentRaiser = p.SeatIndex()
 
 	// Reset all player states except raiser
+	g.ResetActedPlayers()
+	p.State().Acted = true
+
+	return nil
+}
+
+func (g *game) ResetActedPlayers() error {
 	for _, ps := range g.gs.Players {
-		if ps.Idx == p.SeatIndex() {
-			continue
-		}
-
-		// if ps.DidAction != "fold" && ps.DidAction != "allin" {
-		// 	ps.DidAction = ""
-		// }
-
 		ps.Acted = false
 	}
 

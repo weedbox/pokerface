@@ -141,6 +141,8 @@ func (p *player) pay(chips int64, isWager bool) error {
 			if raised >= minRaise {
 				// Become new raiser
 				p.game.BecomeRaiser(p)
+			} else {
+				p.game.ResetActedPlayers()
 			}
 		}
 

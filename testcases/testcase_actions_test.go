@@ -834,6 +834,21 @@ func Test_Actions_CurrentRaiser_AllinButNotRaiser2(t *testing.T) {
 	assert.True(t, g.GetCurrentPlayer().CheckPosition("sb"))
 	assert.Contains(t, g.GetCurrentPlayer().State().AllowedActions, "call")
 	assert.Contains(t, g.GetCurrentPlayer().State().AllowedActions, "fold")
+	assert.Nil(t, g.Call())
 
-	g.PrintState()
+	// bb pass
+	assert.Nil(t, g.Pass())
+
+	// dealer pass
+	assert.Nil(t, g.Pass())
+
+	assert.Equal(t, "RoundClosed", g.GetState().Status.CurrentEvent)
+	assert.Equal(t, "preflop", g.GetState().Status.Round)
+
+	// next round
+	assert.Nil(t, g.Next())
+
+	assert.Equal(t, "flop", g.GetState().Status.Round)
+
+	// g.PrintState()
 }
